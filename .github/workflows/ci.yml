@@ -1,0 +1,27 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+    strategy:
+      matrix:
+        py: ["3.9", "3.10", "3.11", "3.12"]
+        extras: ["minimal", "all"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '${{ matrix.py }}'
+      - run: pip install uv
+      - run: |
+          uv pip install -e ".[$([[ ${{ matrix.extras }} == all ]] && echo all || echo test)]"
+      - run: pytest -q --cov=pydapter --cov-report=xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
