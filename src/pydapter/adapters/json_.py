@@ -18,7 +18,6 @@ class JsonAdapter(Adapter[T]):
 
     # ---------------- incoming
     @classmethod
-    @classmethod
     def from_obj(
         cls, subj_cls: type[T], obj: str | bytes | Path, /, *, many=False, **kw
     ):
