@@ -41,7 +41,8 @@ class TestNeo4jAdapterExtended:
         """Test conversion from Neo4j node to model with where clause."""
         # Setup mock session and run
         mock_session = MagicMock()
-        mock_graph_db.driver.return_value.session.return_value = mock_session
+        # Configure the context manager properly
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
         
         # Mock the result of the query
         mock_result = [{"n": MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})}]
@@ -64,7 +65,8 @@ class TestNeo4jAdapterExtended:
         """Test conversion from Neo4j node to model with custom label."""
         # Setup mock session and run
         mock_session = MagicMock()
-        mock_graph_db.driver.return_value.session.return_value = mock_session
+        # Configure the context manager properly
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
         
         # Mock the result of the query
         mock_result = [{"n": MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})}]
@@ -87,7 +89,8 @@ class TestNeo4jAdapterExtended:
         """Test conversion from model to Neo4j node with custom label."""
         # Setup mock session and run
         mock_session = MagicMock()
-        mock_graph_db.driver.return_value.session.return_value = mock_session
+        # Configure the context manager properly
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
         
         # Test to_obj with custom label
         neo4j_sample.adapt_to(
@@ -106,7 +109,8 @@ class TestNeo4jAdapterExtended:
         """Test conversion from model to Neo4j node with custom merge field."""
         # Setup mock session and run
         mock_session = MagicMock()
-        mock_graph_db.driver.return_value.session.return_value = mock_session
+        # Configure the context manager properly
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
         
         # Test to_obj with custom merge_on
         neo4j_sample.adapt_to(
@@ -133,7 +137,8 @@ class TestNeo4jAdapterExtended:
         
         # Setup mock session and run
         mock_session = MagicMock()
-        mock_graph_db.driver.return_value.session.return_value = mock_session
+        # Configure the context manager properly
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
         
         # Test to_obj with first model
         model1.adapt_to(
