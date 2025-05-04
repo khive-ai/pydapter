@@ -23,7 +23,7 @@ development workflow, after Implementation and before Documentation.
 | ---- | ---------------------------------------------------------------------- | --------------------------------------------------------------- |
 | 1    | **Read context** - Issue, Spec (`TDS-*.md`), Plan (`IP-*.md`), PR diff | `mcp: github.get_issue` / `mcp: get_pull_request_files`         |
 | 2    | **Checkout branch locally**                                            | `command: git fetch origin <pr-head> && git checkout <pr-head>` |
-| 3    | **Init env** (installs deps)                                           | `pydapter init`                                                 |
+| 3    | **Init env** (installs deps)                                           |                                                |
 | 4    | **Run full QA**                                                        |                                                                 |
 | 5    | **Manual smoke test** (optional)                                       |                                                                 |
 | 6    | **Evaluate code quality** - style, readability, perf, security         | local editor                                                    |

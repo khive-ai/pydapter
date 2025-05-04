@@ -12,6 +12,12 @@
 - _Quality Reviewer:_ **@pydapter-quality-reviewer**
 - _Documenter:_ **@pydapter-documenter**
 
+
+---
+AWLAYS CHECK YOUR BRANCH AND ISSUE, AND KNOW WHAT YOU ARE WORKING ON
+
+
+
 ## 1. Response Format
 
 > **Every response must begin with a structured reasoning format**
