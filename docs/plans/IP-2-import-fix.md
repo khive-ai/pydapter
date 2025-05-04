@@ -6,7 +6,7 @@ updated: "2025-05-03"
 version: "1.0"
 doc_type: IP
 output_subdir: ips
-description: "Plan for fixing ImportError: cannot import name 'Adaptable' from 'pydapter' in CI"
+description: "Plan to fix the ImportError: cannot import name 'Adaptable' from 'pydapter' in CI environment"
 ---
 
 # Implementation Plan: Fix ImportError for Adaptable
@@ -15,42 +15,55 @@ description: "Plan for fixing ImportError: cannot import name 'Adaptable' from '
 
 ### 1.1 Component Purpose
 
-This implementation plan addresses the `ImportError: cannot import name 'Adaptable' from 'pydapter'` occurring during test execution in the CI environment. This is blocking the stabilization effort tracked in Issue #2.
+Fix the `ImportError: cannot import name 'Adaptable' from 'pydapter'` occurring during test execution in the CI environment. This is blocking further progress and needs to be fixed before we can review the new adapter PRs (#11, #12, #13, #14).
 
 ### 1.2 Design Reference
 
-This implementation is based on Issue #2, which includes fixing CI issues.
+This implementation is based on Issue #2 (ohdearquant/pydapter#2), which tracks the stabilization of the testing infrastructure.
 
 ### 1.3 Implementation Approach
 
-We'll follow a systematic approach:
-1. Analyze the current package structure and imports
-2. Identify the root cause of the import error
-3. Implement a fix to ensure proper exporting of the `Adaptable` class
-4. Verify the fix locally and in CI
+The approach will be to:
+1. Analyze the current import structure
+2. Verify that the fix from PR #9 is correctly implemented
+3. Identify any remaining issues with imports
+4. Implement a solution that ensures all classes are properly exported and importable
+5. Test the solution locally
+6. Create a PR with the fix
 
 ## 2. Implementation Phases
 
-### 2.1 Phase 1: Analysis and Diagnosis
+### 2.1 Phase 1: Analysis
 
 **Key Deliverables:**
-- Understanding of the import error root cause
-- Identification of the specific issue in the package structure
+- Understand the current import structure
+- Identify the root cause of the ImportError
 
 **Dependencies:**
-- Access to the codebase and CI logs
+- Access to the codebase
+- Understanding of Python import system
 
 **Estimated Complexity:** Low
 
-### 2.2 Phase 2: Implementation of Fix
+### 2.2 Phase 2: Implementation
 
 **Key Deliverables:**
-- Updated package structure to fix the import error
-- Passing tests in CI environment
+- Fix the ImportError issue
+- Ensure all tests pass locally
 
 **Dependencies:**
-- Understanding of Python's import system
-- Identification of the specific issue causing the import error
+- Successful completion of Phase 1
+
+**Estimated Complexity:** Low
+
+### 2.3 Phase 3: Verification
+
+**Key Deliverables:**
+- Verify that the fix works in the CI environment
+- Ensure that the fix doesn't break any existing functionality
+
+**Dependencies:**
+- Successful completion of Phase 2
 
 **Estimated Complexity:** Low
 
@@ -58,24 +71,38 @@ We'll follow a systematic approach:
 
 ### 3.1 Unit Tests
 
-The existing test suite should be sufficient to verify the fix, as the issue is with importing the package, not with the functionality itself.
+#### 3.1.1 Test Group: Import Tests
+
+| ID   | Description                                                     | Fixtures/Mocks | Assertions                    |
+| ---- | --------------------------------------------------------------- | -------------- | ----------------------------- |
+| UT-1 | Test that Adaptable can be imported from pydapter               | None           | Import succeeds               |
+| UT-2 | Test that AsyncAdaptable can be imported from pydapter          | None           | Import succeeds               |
+
+### 3.2 Integration Tests
+
+#### 3.2.1 Test Group: Adapter Tests
+
+| ID   | Description                                                    | Setup                                                      | Assertions                                                         |
+| ---- | -------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------ |
+| IT-1 | Test that adapters can be registered and used with Adaptable   | Create a model that inherits from Adaptable                | Adapter functions correctly                                         |
+| IT-2 | Test that async adapters can be registered and used with AsyncAdaptable | Create a model that inherits from AsyncAdaptable | Async adapter functions correctly                                   |
+
+### 3.3 Mock and Stub Requirements
+
+No mocks or stubs are required for this implementation.
 
 ## 4. Implementation Tasks
 
-### 4.1 Analysis
+### 4.1 Core Framework
 
-| ID  | Task                                | Description                                                       | Dependencies | Priority | Complexity |
-| --- | ----------------------------------- | ----------------------------------------------------------------- | ------------ | -------- | ---------- |
-| T-1 | Analyze package structure           | Review the package structure and import statements                | None         | High     | Low        |
-| T-2 | Identify import error root cause    | Determine why `Adaptable` cannot be imported in CI               | T-1          | High     | Low        |
-
-### 4.2 Fix Implementation
-
-| ID  | Task                                | Description                                                       | Dependencies | Priority | Complexity |
-| --- | ----------------------------------- | ----------------------------------------------------------------- | ------------ | -------- | ---------- |
-| T-3 | Update package exports              | Modify `__init__.py` to ensure proper exporting of `Adaptable`   | T-2          | High     | Low        |
-| T-4 | Test fix locally                    | Verify that the fix works in a local environment                  | T-3          | High     | Low        |
-| T-5 | Create PR and verify in CI          | Create a PR and verify that the tests pass in CI                  | T-4          | High     | Low        |
+| ID  | Task                            | Description                                                       | Dependencies | Priority | Complexity |
+| --- | ------------------------------- | ----------------------------------------------------------------- | ------------ | -------- | ---------- |
+| T-1 | Analyze current import structure | Check how Adaptable is currently exported and imported            | None         | High     | Low        |
+| T-2 | Verify PR #9 implementation     | Check if the fix from PR #9 is correctly implemented              | T-1          | High     | Low        |
+| T-3 | Identify remaining issues       | Determine if there are any other issues with imports              | T-2          | High     | Low        |
+| T-4 | Implement fix                   | Make necessary changes to fix the ImportError                     | T-3          | High     | Low        |
+| T-5 | Test locally                    | Verify that the fix works locally                                 | T-4          | High     | Low        |
+| T-6 | Create PR                       | Create a PR with the fix                                          | T-5          | High     | Low        |
 
 ## 5. Implementation Sequence
 
@@ -85,13 +112,14 @@ gantt
     dateFormat  YYYY-MM-DD
 
     section Analysis
-    Analyze package structure       :t1, 2025-05-03, 1d
-    Identify import error root cause:t2, after t1, 1d
+    Analyze current import structure       :t1, 2025-05-03, 1d
+    Verify PR #9 implementation            :t2, after t1, 1d
+    Identify remaining issues              :t3, after t2, 1d
 
-    section Fix Implementation
-    Update package exports          :t3, after t2, 1d
-    Test fix locally                :t4, after t3, 1d
-    Create PR and verify in CI      :t5, after t4, 1d
+    section Implementation
+    Implement fix                          :t4, after t3, 1d
+    Test locally                           :t5, after t4, 1d
+    Create PR                              :t6, after t5, 1d
 ```
 
 ## 6. Acceptance Criteria
@@ -100,30 +128,44 @@ gantt
 
 | ID   | Criterion                                           | Validation Method            |
 | ---- | --------------------------------------------------- | ---------------------------- |
-| AC-1 | The `Adaptable` class can be imported from `pydapter` | Tests pass in CI environment |
-| AC-2 | All existing functionality works as expected        | All tests pass               |
+| AC-1 | The ImportError is resolved                         | CI tests pass                |
+| AC-2 | All tests pass in the CI environment                | CI tests pass                |
+| AC-3 | The fix doesn't break any existing functionality    | CI tests pass                |
 
 ## 7. Test Implementation Plan
 
 ### 7.1 Test Implementation Sequence
 
-1. Run existing tests locally to confirm they pass
-2. Implement the fix
-3. Run tests locally again to verify the fix
-4. Create a PR and verify that the tests pass in CI
+1. Run tests locally to verify the fix
+2. Push the fix to GitHub and verify that CI tests pass
+
+### 7.2 Test Code Examples
+
+#### Import Test Example
+
+```python
+def test_adaptable_import():
+    from pydapter import Adaptable
+    assert Adaptable is not None
+
+def test_async_adaptable_import():
+    from pydapter import AsyncAdaptable
+    assert AsyncAdaptable is not None
+```
 
 ## 8. Implementation Risks and Mitigations
 
 | Risk                                       | Impact | Likelihood | Mitigation                                                                                                  |
 | ------------------------------------------ | ------ | ---------- | ----------------------------------------------------------------------------------------------------------- |
-| Fix breaks other imports                   | High   | Low        | Ensure comprehensive test coverage for all package functionality                                            |
-| Issue is more complex than anticipated     | Medium | Low        | Be prepared to investigate deeper issues with Python's import system                                        |
+| Fix doesn't resolve the issue in CI        | High   | Low        | Thoroughly test the fix locally and ensure it addresses the root cause                                      |
+| Fix breaks existing functionality          | High   | Low        | Run all tests locally before pushing the fix                                                                |
+| Issue is environment-specific              | Medium | Medium     | Consider environment differences between local and CI, such as Python version or installation method        |
 
 ## 9. Dependencies and Environment
 
 ### 9.1 External Libraries
 
-No additional external libraries are required for this fix.
+No external libraries are required for this implementation.
 
 ### 9.2 Environment Setup
 
@@ -133,7 +175,7 @@ python -m venv venv
 source venv/bin/activate
 
 # Install dependencies
-uv pip install -e .[all,test]
+pip install -e ".[all,dev]"
 
 # Run tests
 pytest
@@ -143,13 +185,9 @@ pytest
 
 ### 10.1 Reference Implementation
 
-N/A
+PR #9 attempted to fix this issue by adding AsyncAdaptable, AsyncAdapter, and AsyncAdapterRegistry to the package exports.
 
 ### 10.2 Relevant Documentation
 
 - [Python Import System](https://docs.python.org/3/reference/import.html)
-- [Packaging Python Projects](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
-
-### 10.3 Design Patterns
-
-N/A
+- [Python Packaging Guide](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/)
