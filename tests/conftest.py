@@ -70,16 +70,15 @@ def neo4j_container():
     from testcontainers.neo4j import Neo4jContainer
 
     # Set Neo4j auth using environment variables
-    with (
-        Neo4jContainer("neo4j:5.9")
-        .with_env("NEO4J_AUTH", "neo4j/password")
-    ) as neo4j:
+    with Neo4jContainer("neo4j:5.9").with_env("NEO4J_AUTH", "neo4j/password") as neo4j:
         yield neo4j
+
 
 @pytest.fixture(scope="session")
 def neo4j_url(neo4j_container):
     """Get Neo4j connection URL."""
     return neo4j_container.get_connection_url()
+
 
 @pytest.fixture(scope="session")
 def neo4j_auth():

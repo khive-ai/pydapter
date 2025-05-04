@@ -2,13 +2,11 @@
 Tests for protocol compliance of adapter implementations.
 """
 
-from typing import Any, ClassVar, List, TypeVar
-
 import pytest
 
 from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
-from pydapter.async_core import AsyncAdaptable, AsyncAdapter, AsyncAdapterRegistry
-from pydapter.core import Adaptable, Adapter, AdapterRegistry
+from pydapter.async_core import AsyncAdaptable, AsyncAdapterRegistry
+from pydapter.core import Adaptable, AdapterRegistry
 from pydapter.exceptions import AdapterNotFoundError, ConfigurationError
 from pydapter.extras.async_mongo_ import AsyncMongoAdapter
 from pydapter.extras.async_postgres_ import AsyncPostgresAdapter

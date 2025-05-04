@@ -12,6 +12,7 @@ import pandas as pd
 from pydantic import BaseModel
 
 from ..core import Adapter
+from ..exceptions import AdapterError, ResourceError
 from .pandas_ import DataFrameAdapter
 
 T = TypeVar("T", bound=BaseModel)
@@ -39,18 +40,12 @@ class ExcelAdapter(Adapter[T]):
                 df = pd.read_excel(obj, sheet_name=sheet_name, **kw)
             return DataFrameAdapter.from_obj(subj_cls, df, many=many)
         except FileNotFoundError as e:
-            from ..exceptions import ResourceError
-
             raise ResourceError(f"File not found: {e}", resource=str(obj)) from e
         except ValueError as e:
-            from ..exceptions import AdapterError
-
             raise AdapterError(
                 f"Error adapting from xlsx (original_error='{e}')", adapter="xlsx"
             ) from e
         except Exception as e:
-            from ..exceptions import AdapterError
-
             raise AdapterError(
                 f"Unexpected error in Excel adapter: {e}", adapter="xlsx"
             ) from e

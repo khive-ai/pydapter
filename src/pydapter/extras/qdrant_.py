@@ -4,7 +4,7 @@ Qdrant vector-store adapter (requires `qdrant-client`).
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, TypeVar
+from typing import Sequence, TypeVar
 
 import grpc
 from pydantic import BaseModel, ValidationError
@@ -51,6 +51,7 @@ class QdrantAdapter(Adapter[T]):
             raise ConnectionError(
                 f"Unexpected error connecting to Qdrant: {e}", adapter="qdrant", url=url
             ) from e
+
     def _validate_vector_dimensions(vector, expected_dim=None):
         """Validate that the vector has the correct dimensions."""
         if not isinstance(vector, (list, tuple)) or not all(

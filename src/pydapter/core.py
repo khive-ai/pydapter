@@ -6,6 +6,13 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Protocol, TypeVar, runtime_checkable
 
+from .exceptions import (
+    PYDAPTER_PYTHON_ERRORS,
+    AdapterError,
+    AdapterNotFoundError,
+    ConfigurationError,
+)
+
 T = TypeVar("T")
 
 
@@ -31,8 +38,6 @@ class AdapterRegistry:
     def register(self, adapter_cls: type[Adapter]) -> None:
         key = getattr(adapter_cls, "obj_key", None)
         if not key:
-            from .exceptions import ConfigurationError
-
             raise ConfigurationError(
                 "Adapter must define 'obj_key'", adapter_cls=adapter_cls.__name__
             )
@@ -42,8 +47,6 @@ class AdapterRegistry:
         try:
             return self._reg[obj_key]
         except KeyError as exc:
-            from .exceptions import AdapterNotFoundError
-
             raise AdapterNotFoundError(
                 f"No adapter registered for '{obj_key}'", obj_key=obj_key
             ) from exc
@@ -53,43 +56,13 @@ class AdapterRegistry:
         try:
             result = self.get(obj_key).from_obj(subj_cls, obj, **kw)
             if result is None:
-                from .exceptions import AdapterError
-
                 raise AdapterError(f"Adapter {obj_key} returned None", adapter=obj_key)
             return result
+
         except Exception as exc:
-            # Import here to avoid circular imports
-            from .exceptions import (
-                AdapterError,
-                AdapterNotFoundError,
-                ConfigurationError,
-                ConnectionError,
-                ParseError,
-                QueryError,
-                ResourceError,
-                ValidationError,
-            )
-
-            # Re-raise our custom exceptions
-            if isinstance(
-                exc,
-                (
-                    AdapterNotFoundError,
-                    ConfigurationError,
-                    ConnectionError,
-                    ParseError,
-                    QueryError,
-                    ResourceError,
-                    ValidationError,
-                ),
-            ):
+            if isinstance(exc, AdapterError) or isinstance(exc, PYDAPTER_PYTHON_ERRORS):
                 raise
 
-            # Re-raise adapter-related errors and ValueError for tests
-            if isinstance(exc, (KeyError, ImportError, AttributeError, ValueError)):
-                raise
-
-            # Wrap other exceptions with context
             raise AdapterError(
                 f"Error adapting from {obj_key}", original_error=str(exc)
             ) from exc
@@ -98,43 +71,13 @@ class AdapterRegistry:
         try:
             result = self.get(obj_key).to_obj(subj, **kw)
             if result is None:
-                from .exceptions import AdapterError
-
                 raise AdapterError(f"Adapter {obj_key} returned None", adapter=obj_key)
             return result
+
         except Exception as exc:
-            # Import here to avoid circular imports
-            from .exceptions import (
-                AdapterError,
-                AdapterNotFoundError,
-                ConfigurationError,
-                ConnectionError,
-                ParseError,
-                QueryError,
-                ResourceError,
-                ValidationError,
-            )
-
-            # Re-raise our custom exceptions
-            if isinstance(
-                exc,
-                (
-                    AdapterNotFoundError,
-                    ConfigurationError,
-                    ConnectionError,
-                    ParseError,
-                    QueryError,
-                    ResourceError,
-                    ValidationError,
-                ),
-            ):
+            if isinstance(exc, AdapterError) or isinstance(exc, PYDAPTER_PYTHON_ERRORS):
                 raise
 
-            # Re-raise adapter-related errors and ValueError for tests
-            if isinstance(exc, (KeyError, ImportError, AttributeError, ValueError)):
-                raise
-
-            # Wrap other exceptions with context
             raise AdapterError(
                 f"Error adapting to {obj_key}", original_error=str(exc)
             ) from exc

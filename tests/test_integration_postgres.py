@@ -4,9 +4,7 @@ Integration tests for PostgreSQL adapter using TestContainers.
 
 import pytest
 import sqlalchemy as sa
-from pydantic import BaseModel
 
-from pydapter.core import Adaptable
 from pydapter.exceptions import ConnectionError
 from pydapter.extras.postgres_ import PostgresAdapter
 
@@ -138,10 +136,10 @@ class TestPostgresIntegration:
 
         # Create updated model with same ID
         updated_model = sync_model_factory(id=99, name="updated", value=200.0)
-        
+
         # Register adapter for updated model
         updated_model.__class__.register_adapter(PostgresAdapter)
-        
+
         # Update in database
         updated_model.adapt_to(
             obj_key="postgres", engine_url=pg_url, table="test_table"

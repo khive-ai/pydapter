@@ -4,14 +4,15 @@ Generic async SQL adapter - SQLAlchemy 2.x asyncio + asyncpg driver.
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, TypeVar
+from typing import Sequence, TypeVar
 
 import sqlalchemy as sa
+import sqlalchemy.exc as sa_exc
 from pydantic import BaseModel, ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from ..async_core import AsyncAdapter
-from ..exceptions import ConnectionError, QueryError, ResourceError
+from ..exceptions import AdapterError, ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
@@ -25,7 +26,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
     def _table(meta: sa.MetaData, name: str) -> sa.Table:
         try:
             return sa.Table(name, meta, autoload_with=meta.bind)
-        except sa.exc.NoSuchTableError as e:
+        except sa_exc.NoSuchTableError as e:
             raise ResourceError(f"Table '{name}' not found", resource=name) from e
         except Exception as e:
             raise ResourceError(
@@ -83,7 +84,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
             except ResourceError:
                 # Re-raise ResourceError from _table
                 raise
-            except sa.exc.SQLAlchemyError as e:
+            except sa_exc.SQLAlchemyError as e:
                 raise QueryError(
                     f"Error executing async SQL query: {e}",
                     query=str(obj.get("selectors", {})),
@@ -118,11 +119,10 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                     errors=e.errors(),
                 ) from e
 
-        except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
-            # Re-raise our custom exceptions
+        except AdapterError:
             raise
+
         except Exception as e:
-            # Wrap other exceptions
             raise QueryError(
                 f"Unexpected error in async SQL adapter: {e}", adapter="async_sql"
             )
@@ -188,9 +188,9 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                     else:
                         raise
             except ResourceError:
-                # Re-raise ResourceError from _table
                 raise
-            except sa.exc.SQLAlchemyError as e:
+
+            except sa_exc.SQLAlchemyError as e:
                 raise QueryError(
                     f"Error executing async SQL insert: {e}",
                     query=f"INSERT INTO {table}",
@@ -202,11 +202,10 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                     adapter="async_sql",
                 ) from e
 
-        except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
-            # Re-raise our custom exceptions
+        except AdapterError:
             raise
+
         except Exception as e:
-            # Wrap other exceptions
             raise QueryError(
                 f"Unexpected error in async SQL adapter: {e}", adapter="async_sql"
             )

@@ -2,7 +2,7 @@
 Extended tests for Qdrant adapter functionality.
 """
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import BaseModel
@@ -95,7 +95,7 @@ class TestQdrantAdapterExtended:
         assert len(points_arg) == 1
         assert points_arg[0].id == 1
         assert points_arg[0].vector == [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-        
+
         # Check that the payload contains the expected fields
         # Note: The payload may also contain the embedding field, which we don't check here
         payload = points_arg[0].payload

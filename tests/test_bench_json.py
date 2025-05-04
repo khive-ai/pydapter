@@ -1,5 +1,3 @@
-import pytest
-
 from pydapter.adapters import JsonAdapter
 
 

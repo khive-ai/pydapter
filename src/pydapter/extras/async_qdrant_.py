@@ -13,7 +13,7 @@ from qdrant_client.http import models as qd
 from qdrant_client.http.exceptions import UnexpectedResponse
 
 from ..async_core import AsyncAdapter
-from ..exceptions import ConnectionError, QueryError, ResourceError
+from ..exceptions import AdapterError, ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
@@ -154,11 +154,10 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
                     adapter="async_qdrant",
                 ) from e
 
-        except (ConnectionError, QueryError, AdapterValidationError):
-            # Re-raise our custom exceptions
+        except AdapterError:
             raise
+
         except Exception as e:
-            # Wrap other exceptions
             raise QueryError(
                 f"Unexpected error in async Qdrant adapter: {e}", adapter="async_qdrant"
             )
@@ -167,7 +166,6 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
     @classmethod
     async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=True, **kw):
         try:
-            # Validate required parameters
             if "collection" not in obj:
                 raise AdapterValidationError(
                     "Missing required parameter 'collection'", data=obj
@@ -177,10 +175,8 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
                     "Missing required parameter 'query_vector'", data=obj
                 )
 
-            # Validate query vector
+            # Validate query vector & Create client
             cls._validate_vector_dimensions(obj["query_vector"])
-
-            # Create client
             client = cls._client(obj.get("url"))
 
             # Execute search
@@ -237,11 +233,10 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
                     errors=e.errors(),
                 ) from e
 
-        except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
-            # Re-raise our custom exceptions
+        except AdapterError:
             raise
+
         except Exception as e:
-            # Wrap other exceptions
             raise QueryError(
                 f"Unexpected error in async Qdrant adapter: {e}", adapter="async_qdrant"
             )

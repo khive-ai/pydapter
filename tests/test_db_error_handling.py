@@ -9,7 +9,6 @@ from pydantic import BaseModel
 
 from pydapter.core import Adaptable
 from pydapter.exceptions import (
-    AdapterError,
     ConnectionError,
     QueryError,
     ResourceError,

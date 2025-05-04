@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Sequence, TypeVar
 
 import pymongo
+import pymongo.errors
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ValidationError
 from pymongo import MongoClient

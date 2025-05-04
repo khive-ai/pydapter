@@ -138,7 +138,17 @@ class Neo4jAdapter(Adapter[T]):
 
     # outgoing
     @classmethod
-    def to_obj(cls, subj: T | Sequence[T], /, *, url, auth=None, label=None, merge_on="id", **kw):
+    def to_obj(
+        cls,
+        subj: T | Sequence[T],
+        /,
+        *,
+        url,
+        auth=None,
+        label=None,
+        merge_on="id",
+        **kw,
+    ):
         try:
             # Validate required parameters
             if not url:
