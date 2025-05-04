@@ -21,9 +21,9 @@ class SQLAdapter(Adapter[T]):
 
     # ---- helpers
     @staticmethod
-    def _table(metadata: sa.MetaData, table: str) -> sa.Table:
+    def _table(metadata: sa.MetaData, table: str, engine=None) -> sa.Table:
         try:
-            return sa.Table(table, metadata, autoload_with=metadata.bind)
+            return sa.Table(table, metadata, autoload_with=engine)
         except sa.exc.NoSuchTableError as e:
             raise ResourceError(f"Table '{table}' not found", resource=table) from e
         except Exception as e:
@@ -65,8 +65,9 @@ class SQLAdapter(Adapter[T]):
 
             # Create metadata and get table
             try:
-                md = sa.MetaData(bind=eng)
-                tbl = cls._table(md, obj["table"])
+                md = sa.MetaData()
+                md.reflect(bind=eng)
+                tbl = cls._table(md, obj["table"], engine=eng)
             except ResourceError:
                 # Re-raise ResourceError from _table
                 raise
@@ -150,8 +151,9 @@ class SQLAdapter(Adapter[T]):
 
             # Create metadata and get table
             try:
-                md = sa.MetaData(bind=eng)
-                tbl = cls._table(md, table)
+                md = sa.MetaData()
+                md.reflect(bind=eng)
+                tbl = cls._table(md, table, engine=eng)
             except ResourceError:
                 # Re-raise ResourceError from _table
                 raise
@@ -168,14 +170,35 @@ class SQLAdapter(Adapter[T]):
 
             rows = [i.model_dump() for i in items]
 
-            # Execute insert
+            # Execute insert or update (upsert)
             try:
                 with eng.begin() as conn:
-                    conn.execute(sa.insert(tbl), rows)
+                    # Get primary key columns
+                    pk_columns = [c.name for c in tbl.primary_key.columns]
+                    
+                    if not pk_columns:
+                        # If no primary key, just insert
+                        conn.execute(sa.insert(tbl), rows)
+                    else:
+                        # For PostgreSQL, use ON CONFLICT DO UPDATE
+                        for row in rows:
+                            # Build the values to update (excluding primary key columns)
+                            update_values = {k: v for k, v in row.items() if k not in pk_columns}
+                            if not update_values:
+                                # If only primary key columns, just try to insert
+                                stmt = sa.insert(tbl).values(**row)
+                            else:
+                                # Otherwise, do an upsert
+                                stmt = sa.dialects.postgresql.insert(tbl).values(**row)
+                                stmt = stmt.on_conflict_do_update(
+                                    index_elements=pk_columns,
+                                    set_=update_values
+                                )
+                            conn.execute(stmt)
             except Exception as e:
                 raise QueryError(
-                    f"Error executing insert: {e}",
-                    query=f"INSERT INTO {table}",
+                    f"Error executing insert/update: {e}",
+                    query=f"UPSERT INTO {table}",
                     adapter="sql",
                 ) from e
 

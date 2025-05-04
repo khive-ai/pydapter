@@ -110,10 +110,17 @@ class QdrantAdapter(Adapter[T]):
                     adapter="qdrant",
                 ) from e
             except Exception as e:
-                raise QueryError(
-                    f"Unexpected error creating Qdrant collection: {e}",
-                    adapter="qdrant",
-                ) from e
+                if "nodename nor servname provided" in str(e) or "connection" in str(e).lower():
+                    raise ConnectionError(
+                        f"Failed to connect to Qdrant: {e}",
+                        adapter="qdrant",
+                        url=url,
+                    ) from e
+                else:
+                    raise QueryError(
+                        f"Unexpected error creating Qdrant collection: {e}",
+                        adapter="qdrant",
+                    ) from e
 
             # Create points
             try:
@@ -126,7 +133,7 @@ class QdrantAdapter(Adapter[T]):
                         qd.PointStruct(
                             id=getattr(item, id_field),
                             vector=vector,
-                            payload=item.model_dump(exclude={vector_field}),
+                            payload=item.model_dump(),
                         )
                     )
             except AdapterValidationError:
@@ -184,11 +191,13 @@ class QdrantAdapter(Adapter[T]):
 
             # Execute search
             try:
+                # Set a high score threshold to ensure we get enough results
                 res = client.search(
                     obj["collection"],
                     obj["query_vector"],
                     limit=obj.get("top_k", 5),
                     with_payload=True,
+                    score_threshold=0.0,  # Return all results regardless of similarity
                 )
             except UnexpectedResponse as e:
                 if "not found" in str(e).lower():
