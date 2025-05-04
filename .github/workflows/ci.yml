@@ -26,9 +26,9 @@ jobs:
         run: |
           uv pip install -e ".[$([[ ${{ matrix.extras }} == all ]] && echo all || echo test)]"
       - name: Run tests
-        run: pytest -q --cov=pydapter --cov-report=xml
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
+        run: uv run pytest -q --cov=pydapter --cov-report=xml
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v3
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     fail_ci_if_error: true
