@@ -1,0 +1,74 @@
+[project]
+name            = "pydapter"
+version         = "0.1.0"
+description     = "Tiny trait + adapter toolkit for pydantic models"
+readme          = "README.md"
+requires-python = ">=3.9"
+authors         = [{ name = "Ocean", email = "quantocean.li@gmail.com" }]
+dependencies = [
+    "pydantic>=2.6",
+    "toml>=0.10.2",
+]
+
+[dependency-groups]
+dev = [
+    "black[jupyter]>=25.1.0",
+    "ipykernel>=6.29.5",
+    "ipywidgets>=8.1.6",
+    "isort>=6.0.1",
+    "pytest-asyncio>=0.26.0",
+    "pytest>=8.3.5",
+    "pre-commit>=4.2.0",
+    "ruff>=0.11.7",
+]
+
+[project.optional-dependencies]
+
+pandas    = ["pandas>=2.2"]
+excel     = ["pandas>=2.2", "xlsxwriter>=3.2"]
+sql       = ["sqlalchemy>=2.0"]
+postgres  = ["sqlalchemy>=2.0", "psycopg[binary]>=3", "asyncpg>=0.29"]
+mongo     = ["pymongo>=4.7"]
+weaviate  = ["weaviate-client>=4.4"]
+neo4j     = ["neo4j>=5.19"]
+motor     = ["motor>=3"]
+qdrant    = ["qdrant-client>=1.14"]
+aiohttp   = ["aiohttp>=3.11.10"]
+
+# ----------------------------------
+all = [
+    "pandas",
+    "excel",
+    "sql",
+    "postgres",
+    "mongo",
+    "weaviate",
+    "neo4j",
+    "asyncpg",
+    "motor",
+    "qdrant-client",
+    "aiohttp"
+]
+
+
+
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pydapter"]
+
+[tool.hatch.build]
+exclude = [
+    "dev/*",
+    "data/*",
+    "notebooks/*",
+    "tests/*",
+    "*.pyc",
+    "__pycache__",
+    "temp_logs/*",
+    "logs/*"
+]
