@@ -27,7 +27,12 @@ class CsvAdapter(Adapter[T]):
         **kw,
     ):
         text = Path(obj).read_text() if Path(obj).exists() else obj
-        reader = csv.DictReader(io.StringIO(text), **kw)
+        
+        # Ensure we have an escape character to handle special characters
+        csv_kwargs = dict(escapechar='\\')
+        csv_kwargs.update(kw)  # User-provided kwargs override defaults
+        
+        reader = csv.DictReader(io.StringIO(text), **csv_kwargs)
         rows = list(reader)
 
         # If there's only one row, return a single object regardless of the 'many' parameter
@@ -49,7 +54,12 @@ class CsvAdapter(Adapter[T]):
     ) -> str:
         items = subj if isinstance(subj, list) else [subj]
         buf = io.StringIO()
-        writer = csv.DictWriter(buf, fieldnames=items[0].model_dump().keys(), **kw)
+        
+        # Ensure we have an escape character to handle special characters
+        csv_kwargs = dict(escapechar='\\')
+        csv_kwargs.update(kw)  # User-provided kwargs override defaults
+        
+        writer = csv.DictWriter(buf, fieldnames=items[0].model_dump().keys(), **csv_kwargs)
         writer.writeheader()
         writer.writerows([i.model_dump() for i in items])
         return buf.getvalue()
