@@ -1,5 +1,8 @@
 # pydapter
 
+[![CI](https://github.com/ohdearquant/pydapter/actions/workflows/ci.yml/badge.svg)](https://github.com/ohdearquant/pydapter/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ohdearquant/pydapter/branch/main/graph/badge.svg)](https://codecov.io/gh/ohdearquant/pydapter)
+
 **pydapter** is a micro-library that lets any Pydantic model become _adaptable_
 to / from arbitrary external representations (JSON, CSV, vector stores,
 databases …).
