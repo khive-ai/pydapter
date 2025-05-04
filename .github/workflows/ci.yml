@@ -10,7 +10,6 @@ jobs:
     strategy:
       matrix:
         py: ["3.9", "3.10", "3.11", "3.12"]
-        extras: ["minimal", "all"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
