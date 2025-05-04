@@ -4,6 +4,8 @@ pydapter.exceptions - Custom exception hierarchy for pydapter.
 
 from typing import Any, Dict, Optional
 
+PYDAPTER_PYTHON_ERRORS = (KeyError, ImportError, AttributeError, ValueError)
+
 
 class AdapterError(Exception):
     """Base exception for all pydapter errors."""

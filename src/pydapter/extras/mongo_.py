@@ -12,7 +12,7 @@ from pydantic import BaseModel, ValidationError
 from pymongo import MongoClient
 
 from ..core import Adapter
-from ..exceptions import ConnectionError, QueryError, ResourceError
+from ..exceptions import AdapterError, ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
@@ -137,11 +137,10 @@ class MongoAdapter(Adapter[T]):
                     errors=e.errors(),
                 ) from e
 
-        except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
-            # Re-raise our custom exceptions
+        except AdapterError:
             raise
+
         except Exception as e:
-            # Wrap other exceptions
             raise QueryError(
                 f"Unexpected error in MongoDB adapter: {e}", adapter="mongo"
             )
@@ -195,9 +194,9 @@ class MongoAdapter(Adapter[T]):
                     adapter="mongo",
                 ) from e
 
-        except (ConnectionError, QueryError, AdapterValidationError):
-            # Re-raise our custom exceptions
+        except AdapterError:
             raise
+
         except Exception as e:
             # Wrap other exceptions
             raise QueryError(

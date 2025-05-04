@@ -64,6 +64,28 @@ def mongo_url():
         yield f"mongodb://test:test@{mongo.get_container_host_ip()}:{mongo.get_exposed_port(27017)}"
 
 
+@pytest.fixture(scope="session")
+def neo4j_container():
+    """Neo4j container fixture for tests."""
+    from testcontainers.neo4j import Neo4jContainer
+
+    # Set Neo4j auth using environment variables
+    with Neo4jContainer("neo4j:5.9").with_env("NEO4J_AUTH", "neo4j/password") as neo4j:
+        yield neo4j
+
+
+@pytest.fixture(scope="session")
+def neo4j_url(neo4j_container):
+    """Get Neo4j connection URL."""
+    return neo4j_container.get_connection_url()
+
+
+@pytest.fixture(scope="session")
+def neo4j_auth():
+    """Get Neo4j authentication credentials."""
+    return ("neo4j", "password")
+
+
 @pytest.fixture
 def async_model_factory():
     from pydantic import BaseModel
@@ -89,3 +111,52 @@ def async_model_factory():
 @pytest.fixture
 def async_sample(async_model_factory):
     return async_model_factory(id=1, name="foo", value=42.5)
+
+
+@pytest.fixture
+def sync_model_factory():
+    """Factory for creating test models with adapters registered."""
+    from pydantic import BaseModel
+
+    from pydapter.core import Adaptable
+
+    def create_model(**kw):
+        class TestModel(Adaptable, BaseModel):
+            id: int
+            name: str
+            value: float
+
+        return TestModel(**kw)
+
+    return create_model
+
+
+@pytest.fixture
+def sync_vector_model_factory():
+    """Factory for creating test models with vector field."""
+    from pydantic import BaseModel
+
+    from pydapter.core import Adaptable
+
+    def create_model(**kw):
+        class VectorModel(Adaptable, BaseModel):
+            id: int
+            name: str
+            value: float
+            embedding: list[float] = [
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                0.5,
+            ]  # Default embedding for vector DBs
+
+        return VectorModel(**kw)
+
+    return create_model
+
+
+@pytest.fixture
+def sync_sample(sync_model_factory):
+    """Create a sample model instance."""
+    return sync_model_factory(id=1, name="foo", value=42.5)

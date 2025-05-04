@@ -2,7 +2,7 @@
 Extended tests for Async PostgreSQL adapter functionality.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pydantic import BaseModel

@@ -2,14 +2,13 @@
 Tests for Excel adapter functionality.
 """
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import BaseModel
 
 from pydapter.core import Adaptable
-from pydapter.exceptions import AdapterError, ResourceError
+from pydapter.exceptions import AdapterError
 from pydapter.extras.excel_ import ExcelAdapter
 
 

@@ -23,10 +23,13 @@ class Neo4jAdapter(Adapter[T]):
     obj_key = "neo4j"
 
     @classmethod
-    def _create_driver(cls, url: str) -> neo4j.Driver:
+    def _create_driver(cls, url: str, auth=None) -> neo4j.Driver:
         """Create a Neo4j driver with error handling."""
         try:
-            return GraphDatabase.driver(url)
+            if auth:
+                return GraphDatabase.driver(url, auth=auth)
+            else:
+                return GraphDatabase.driver(url)
         except neo4j.exceptions.ServiceUnavailable as e:
             raise ConnectionError(
                 f"Neo4j service unavailable: {e}", adapter="neo4j", url=url
@@ -62,7 +65,8 @@ class Neo4jAdapter(Adapter[T]):
                 )
 
             # Create driver
-            driver = cls._create_driver(obj["url"])
+            auth = obj.get("auth")
+            driver = cls._create_driver(obj["url"], auth=auth)
 
             # Prepare Cypher query
             label = obj.get("label", subj_cls.__name__)
@@ -134,7 +138,17 @@ class Neo4jAdapter(Adapter[T]):
 
     # outgoing
     @classmethod
-    def to_obj(cls, subj: T | Sequence[T], /, *, url, label=None, merge_on="id", **kw):
+    def to_obj(
+        cls,
+        subj: T | Sequence[T],
+        /,
+        *,
+        url,
+        auth=None,
+        label=None,
+        merge_on="id",
+        **kw,
+    ):
         try:
             # Validate required parameters
             if not url:
@@ -151,7 +165,7 @@ class Neo4jAdapter(Adapter[T]):
             label = label or items[0].__class__.__name__
 
             # Create driver
-            driver = cls._create_driver(url)
+            driver = cls._create_driver(url, auth=auth)
 
             try:
                 with driver.session() as s:
