@@ -46,6 +46,7 @@ all = [
     "sqlalchemy>=2.0",
     "psycopg[binary]>=3",
     "asyncpg>=0.29",
+    "greenlet>=3.0.0",
     "pymongo>=4.7",
     "weaviate-client>=4.4",
     "neo4j>=5.19",
