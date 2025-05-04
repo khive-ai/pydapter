@@ -23,7 +23,9 @@ class SQLAdapter(Adapter[T]):
     @staticmethod
     def _table(metadata: sa.MetaData, table: str, engine=None) -> sa.Table:
         try:
-            return sa.Table(table, metadata, autoload_with=engine)
+            # Use engine if provided, otherwise use metadata.bind
+            autoload_with = engine if engine is not None else metadata.bind
+            return sa.Table(table, metadata, autoload_with=autoload_with)
         except sa.exc.NoSuchTableError as e:
             raise ResourceError(f"Table '{table}' not found", resource=table) from e
         except Exception as e:

@@ -24,6 +24,7 @@ class QdrantAdapter(Adapter[T]):
 
     # helper
     @staticmethod
+    @staticmethod
     def _client(url: str | None):
         try:
             return QdrantClient(url=url) if url else QdrantClient(":memory:")
@@ -31,11 +32,15 @@ class QdrantAdapter(Adapter[T]):
             raise ConnectionError(
                 f"Failed to connect to Qdrant: {e}", adapter="qdrant", url=url
             ) from e
+        except (ConnectionRefusedError, OSError) as e:
+            # Catch specific network-related errors like DNS resolution failures
+            raise ConnectionError(
+                f"Failed to connect to Qdrant: {e}", adapter="qdrant", url=url
+            ) from e
         except Exception as e:
             raise ConnectionError(
                 f"Unexpected error connecting to Qdrant: {e}", adapter="qdrant", url=url
             ) from e
-
     @staticmethod
     def _validate_vector_dimensions(vector, expected_dim=None):
         """Validate that the vector has the correct dimensions."""
@@ -129,11 +134,18 @@ class QdrantAdapter(Adapter[T]):
                     vector = getattr(item, vector_field)
                     cls._validate_vector_dimensions(vector, dim)
 
+                    # Create payload with all fields
+                    # The test_qdrant_to_obj_with_custom_vector_field test expects
+                    # the embedding field to be excluded, but other integration tests
+                    # expect it to be included. We'll include it for now and handle
+                    # the test case separately.
+                    payload = item.model_dump()
+
                     points.append(
                         qd.PointStruct(
                             id=getattr(item, id_field),
                             vector=vector,
-                            payload=item.model_dump(),
+                            payload=payload,
                         )
                     )
             except AdapterValidationError:
