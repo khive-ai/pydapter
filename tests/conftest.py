@@ -1,9 +1,11 @@
-import pytest
-import uuid
 import tempfile
+import uuid
+
+import pytest
+
 from pydapter import Adaptable
+from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
 from pydapter.async_core import AsyncAdaptable
-from pydapter.adapters import JsonAdapter, CsvAdapter, TomlAdapter
 
 
 @pytest.fixture
@@ -21,7 +23,7 @@ def _ModelFactory():
             M.register_adapter(CsvAdapter)
             M.register_adapter(TomlAdapter)
             return M(**kw)
-    
+
     return Factory()
 
 
@@ -54,15 +56,20 @@ def mongo_url():
     from testcontainers.mongodb import MongoDbContainer
 
     # Use MongoDB container with authentication
-    with MongoDbContainer("mongo:6.0").with_env("MONGO_INITDB_ROOT_USERNAME", "test").with_env("MONGO_INITDB_ROOT_PASSWORD", "test") as mongo:
+    with (
+        MongoDbContainer("mongo:6.0")
+        .with_env("MONGO_INITDB_ROOT_USERNAME", "test")
+        .with_env("MONGO_INITDB_ROOT_PASSWORD", "test") as mongo
+    ):
         yield f"mongodb://test:test@{mongo.get_container_host_ip()}:{mongo.get_exposed_port(27017)}"
 
 
 @pytest.fixture
 def async_model_factory():
     from pydantic import BaseModel
-    from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
+
     from pydapter.extras.async_mongo_ import AsyncMongoAdapter
+    from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
     from pydapter.extras.async_qdrant_ import AsyncQdrantAdapter
 
     class AsyncModel(AsyncAdaptable, BaseModel):
@@ -75,7 +82,7 @@ def async_model_factory():
     AsyncModel.register_async_adapter(AsyncPostgresAdapter)
     AsyncModel.register_async_adapter(AsyncMongoAdapter)
     AsyncModel.register_async_adapter(AsyncQdrantAdapter)
-    
+
     return AsyncModel
 
 

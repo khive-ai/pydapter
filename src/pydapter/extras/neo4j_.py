@@ -39,5 +39,5 @@ class Neo4jAdapter(Adapter[T]):
         with driver.session() as s:
             for it in items:
                 props = it.model_dump()
-                cypher = f"MERGE (n:`{label}` {{{merge_on}: $val}}) " f"SET n += $props"
+                cypher = f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
                 s.run(cypher, val=props[merge_on], props=props)

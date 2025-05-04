@@ -1,5 +1,5 @@
 """
-AsyncWeaviateAdapter – minimal REST wrapper via aiohttp.
+AsyncWeaviateAdapter - minimal REST wrapper via aiohttp.
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
         }
         async with aiohttp.ClientSession() as sess:
             async with sess.post(
-                f'{obj.get("url","http://localhost:8080")}/v1/graphql', json=query
+                f"{obj.get('url', 'http://localhost:8080')}/v1/graphql", json=query
             ) as resp:
                 data = await resp.json()
         recs = data["data"]["Get"][obj["class_name"]]

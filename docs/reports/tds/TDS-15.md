@@ -15,30 +15,40 @@ description: "Technical specification for pydapter's core unit testing framework
 
 ### 1.1 Purpose
 
-This specification outlines the comprehensive testing strategy for pydapter's core interfaces, focusing on protocol conformance, adapter registration, and data conversion functionality across both synchronous and asynchronous variants.
+This specification outlines the comprehensive testing strategy for pydapter's
+core interfaces, focusing on protocol conformance, adapter registration, and
+data conversion functionality across both synchronous and asynchronous variants.
 
 ### 1.2 Scope
 
 The scope includes:
+
 - Protocol compliance testing for `Adapter` and `AsyncAdapter`
-- Registry pattern validation (`AdapterRegistry` and `AsyncAdapterRegistry`) 
+- Registry pattern validation (`AdapterRegistry` and `AsyncAdapterRegistry`)
 - Adaptable mixin functionality (`Adaptable` and `AsyncAdaptable`)
 - Property-based testing for extensive edge case coverage
 - Performance benchmarking for adapter operations
 
 Out of scope:
+
 - End-to-end application testing
-- External system integration testing (will be addressed in separate specifications)
+- External system integration testing (will be addressed in separate
+  specifications)
 
 ### 1.3 Background
 
-The research report (RR-15.md, PR #22) identified the need for a structured testing approach to ensure the core adapter pattern implementation remains reliable and robust. The report highlighted property-based testing as particularly valuable for validating protocol conformance and data transformations.
+The research report (RR-15.md, PR #22) identified the need for a structured
+testing approach to ensure the core adapter pattern implementation remains
+reliable and robust. The report highlighted property-based testing as
+particularly valuable for validating protocol conformance and data
+transformations.
 
 ### 1.4 Design Goals
 
 1. Ensure reliable testing of both synchronous and asynchronous adapter patterns
 2. Maximize test coverage of edge cases and error conditions
-3. Create a maintainable and extensible test structure that scales with new adapters
+3. Create a maintainable and extensible test structure that scales with new
+   adapters
 4. Implement performance benchmarking to identify bottlenecks
 5. Provide clear fixtures and utilities to simplify test creation
 
@@ -322,7 +332,8 @@ def invalid_adapters():
 
 #### Protocol Compliance Testing
 
-1. Verify that concrete adapter classes correctly implement the `Adapter` or `AsyncAdapter` protocol
+1. Verify that concrete adapter classes correctly implement the `Adapter` or
+   `AsyncAdapter` protocol
 2. Check that required attributes and methods are present
 3. Test that methods accept the correct parameters and return the expected types
 
@@ -378,7 +389,8 @@ def test_adapter_registry_error_handling(invalid_adapters):
 The test suite depends on:
 
 1. Pydapter core components (`Adapter`, `AdapterRegistry`, `Adaptable`)
-2. Pydapter async components (`AsyncAdapter`, `AsyncAdapterRegistry`, `AsyncAdaptable`)
+2. Pydapter async components (`AsyncAdapter`, `AsyncAdapterRegistry`,
+   `AsyncAdaptable`)
 3. Concrete adapter implementations (JSON, CSV, TOML, etc.)
 4. External databases for async adapter tests (Postgres, MongoDB, Qdrant)
 
@@ -530,33 +542,43 @@ HYPOTHESIS_PROFILE=dev  # Use development profile for property tests
 ## 11. Open Questions
 
 1. Should we implement custom protocol validators or rely on runtime_checkable?
-2. How should we handle skipping of specific async adapter tests in CI environments?
-3. Should we create a separate test directory structure for different test types?
+2. How should we handle skipping of specific async adapter tests in CI
+   environments?
+3. Should we create a separate test directory structure for different test
+   types?
 4. How granular should the test markers be for running specific test subsets?
 
 ## 12. Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Container startup failures in CI | Implement fallback mocking when containers unavailable with `@pytest.mark.skipif` |
-| Flaky async tests | Add retries for integration tests and use event loop isolation in pytest-asyncio (pplx:53ee45a2) |
-| Performance degradation from property tests | Use `--hypothesis-profile=dev` for faster runs during development (pplx:bbefd11c) |
-| Test maintenance burden | Create base classes and utilities to reduce code duplication (pplx:c9986b53) |
-| Protocol validation failures | Use explicit runtime protocol checks in dedicated test functions |
+| Risk                                        | Mitigation                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Container startup failures in CI            | Implement fallback mocking when containers unavailable with `@pytest.mark.skipif`                |
+| Flaky async tests                           | Add retries for integration tests and use event loop isolation in pytest-asyncio (pplx:53ee45a2) |
+| Performance degradation from property tests | Use `--hypothesis-profile=dev` for faster runs during development (pplx:bbefd11c)                |
+| Test maintenance burden                     | Create base classes and utilities to reduce code duplication (pplx:c9986b53)                     |
+| Protocol validation failures                | Use explicit runtime protocol checks in dedicated test functions                                 |
 
 ## 13. Appendices
 
 ### Appendix A: Alternative Designs
 
-An alternative approach would be to focus solely on unit tests with extensive mocking, which would be faster but less comprehensive. This approach might be preferred during rapid development cycles but would miss important edge cases that property-based testing can uncover.
+An alternative approach would be to focus solely on unit tests with extensive
+mocking, which would be faster but less comprehensive. This approach might be
+preferred during rapid development cycles but would miss important edge cases
+that property-based testing can uncover.
 
-Another alternative would be to use a more behavior-driven approach with tools like pytest-bdd, but this adds complexity that may not be warranted for this type of testing.
+Another alternative would be to use a more behavior-driven approach with tools
+like pytest-bdd, but this adds complexity that may not be warranted for this
+type of testing.
 
 ### Appendix B: Research References
 
-1. [pytest-asyncio Documentation - Advanced Async Testing Patterns](https://www.b-list.org/weblog/2023/dec/18/async-python-tests/) (pplx:53ee45a2)
-2. [Property-Based Testing in Python with Hypothesis](https://semaphoreci.com/blog/property-based-testing-python-hypothesis-pytest) (pplx:bbefd11c)
-3. [Protocol Conformance Testing Best Practices](https://realpython.com/pytest-python-testing/) (pplx:c9986b53)
+1. [pytest-asyncio Documentation - Advanced Async Testing Patterns](https://www.b-list.org/weblog/2023/dec/18/async-python-tests/)
+   (pplx:53ee45a2)
+2. [Property-Based Testing in Python with Hypothesis](https://semaphoreci.com/blog/property-based-testing-python-hypothesis-pytest)
+   (pplx:bbefd11c)
+3. [Protocol Conformance Testing Best Practices](https://realpython.com/pytest-python-testing/)
+   (pplx:c9986b53)
 
 ### Appendix C: Implementation Examples
 
@@ -601,3 +623,4 @@ async def test_async_postgres_adapter(async_model_factory, postgres_fixture):
     )
     
     assert retrieved == model
+```

@@ -1,5 +1,5 @@
 """
-AsyncNeo4jAdapter – uses neo4j.AsyncGraphDatabase.
+AsyncNeo4jAdapter - uses neo4j.AsyncGraphDatabase.
 """
 
 from __future__ import annotations
@@ -45,7 +45,5 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             async with driver.session() as s:
                 for it in items:
                     props = it.model_dump()
-                    cypher = (
-                        f"MERGE (n:`{label}` {{{merge_on}: $val}}) " f"SET n += $props"
-                    )
+                    cypher = f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
                     await s.run(cypher, val=props[merge_on], props=props)

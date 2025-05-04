@@ -1,5 +1,5 @@
 """
-pydapter.async_core – async counterparts to the sync Adapter stack
+pydapter.async_core - async counterparts to the sync Adapter stack
 """
 
 from __future__ import annotations
