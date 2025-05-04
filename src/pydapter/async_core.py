@@ -33,21 +33,117 @@ class AsyncAdapterRegistry:
     def register(self, adapter_cls: type[AsyncAdapter]) -> None:
         key = getattr(adapter_cls, "obj_key", None)
         if not key:
-            raise AttributeError("AsyncAdapter must define 'obj_key'")
+            from .exceptions import ConfigurationError
+
+            raise ConfigurationError(
+                "AsyncAdapter must define 'obj_key'", adapter_cls=adapter_cls.__name__
+            )
         self._reg[key] = adapter_cls
 
     def get(self, obj_key: str) -> type[AsyncAdapter]:
         try:
             return self._reg[obj_key]
         except KeyError as exc:
-            raise KeyError(f"No async adapter for '{obj_key}'") from exc
+            from .exceptions import AdapterNotFoundError
+
+            raise AdapterNotFoundError(
+                f"No async adapter for '{obj_key}'", obj_key=obj_key
+            ) from exc
 
     # convenience helpers
     async def adapt_from(self, subj_cls: type[T], obj, *, obj_key: str, **kw):
-        return await self.get(obj_key).from_obj(subj_cls, obj, **kw)
+        try:
+            result = await self.get(obj_key).from_obj(subj_cls, obj, **kw)
+            if result is None:
+                from .exceptions import AdapterError
+
+                raise AdapterError(
+                    f"Async adapter {obj_key} returned None", adapter=obj_key
+                )
+            return result
+        except Exception as exc:
+            # Import here to avoid circular imports
+            from .exceptions import (
+                AdapterError,
+                AdapterNotFoundError,
+                ConfigurationError,
+                ConnectionError,
+                ParseError,
+                QueryError,
+                ResourceError,
+                ValidationError,
+            )
+
+            # Re-raise our custom exceptions
+            if isinstance(
+                exc,
+                (
+                    AdapterNotFoundError,
+                    ConfigurationError,
+                    ConnectionError,
+                    ParseError,
+                    QueryError,
+                    ResourceError,
+                    ValidationError,
+                ),
+            ):
+                raise
+
+            # Re-raise adapter-related errors
+            if isinstance(exc, (KeyError, ImportError, AttributeError)):
+                raise
+
+            # Wrap other exceptions with context
+            raise AdapterError(
+                f"Error in async adapt_from for {obj_key}", original_error=str(exc)
+            ) from exc
 
     async def adapt_to(self, subj, *, obj_key: str, **kw):
-        return await self.get(obj_key).to_obj(subj, **kw)
+        try:
+            result = await self.get(obj_key).to_obj(subj, **kw)
+            if result is None:
+                from .exceptions import AdapterError
+
+                raise AdapterError(
+                    f"Async adapter {obj_key} returned None", adapter=obj_key
+                )
+            return result
+        except Exception as exc:
+            # Import here to avoid circular imports
+            from .exceptions import (
+                AdapterError,
+                AdapterNotFoundError,
+                ConfigurationError,
+                ConnectionError,
+                ParseError,
+                QueryError,
+                ResourceError,
+                ValidationError,
+            )
+
+            # Re-raise our custom exceptions
+            if isinstance(
+                exc,
+                (
+                    AdapterNotFoundError,
+                    ConfigurationError,
+                    ConnectionError,
+                    ParseError,
+                    QueryError,
+                    ResourceError,
+                    ValidationError,
+                ),
+            ):
+                raise
+
+            # Re-raise adapter-related errors
+            if isinstance(exc, (KeyError, ImportError, AttributeError)):
+                raise
+
+            # Wrap other exceptions with context
+            raise AdapterError(
+                f"Error in async adapt_to for {obj_key}", original_error=str(exc)
+            ) from exc
 
 
 # -------------------------------------------------------------- AsyncAdaptable

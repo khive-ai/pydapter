@@ -40,7 +40,11 @@ class ConnectionError(AdapterError):
     """Exception raised when a connection to a data source fails."""
 
     def __init__(
-        self, message: str, adapter: Optional[str] = None, url: Optional[str] = None, **context: Any
+        self,
+        message: str,
+        adapter: Optional[str] = None,
+        url: Optional[str] = None,
+        **context: Any,
     ):
         super().__init__(message, **context)
         self.adapter = adapter
@@ -65,9 +69,7 @@ class QueryError(AdapterError):
 class ResourceError(AdapterError):
     """Exception raised when a resource (file, database, etc.) cannot be accessed."""
 
-    def __init__(
-        self, message: str, resource: Optional[str] = None, **context: Any
-    ):
+    def __init__(self, message: str, resource: Optional[str] = None, **context: Any):
         super().__init__(message, **context)
         self.resource = resource
 

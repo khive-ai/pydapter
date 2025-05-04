@@ -31,21 +31,113 @@ class AdapterRegistry:
     def register(self, adapter_cls: type[Adapter]) -> None:
         key = getattr(adapter_cls, "obj_key", None)
         if not key:
-            raise AttributeError("Adapter must define 'obj_key'")
+            from .exceptions import ConfigurationError
+
+            raise ConfigurationError(
+                "Adapter must define 'obj_key'", adapter_cls=adapter_cls.__name__
+            )
         self._reg[key] = adapter_cls
 
     def get(self, obj_key: str) -> type[Adapter]:
         try:
             return self._reg[obj_key]
         except KeyError as exc:
-            raise KeyError(f"No adapter registered for '{obj_key}'") from exc
+            from .exceptions import AdapterNotFoundError
+
+            raise AdapterNotFoundError(
+                f"No adapter registered for '{obj_key}'", obj_key=obj_key
+            ) from exc
 
     # convenience
     def adapt_from(self, subj_cls: type[T], obj, *, obj_key: str, **kw):
-        return self.get(obj_key).from_obj(subj_cls, obj, **kw)
+        try:
+            result = self.get(obj_key).from_obj(subj_cls, obj, **kw)
+            if result is None:
+                from .exceptions import AdapterError
+
+                raise AdapterError(f"Adapter {obj_key} returned None", adapter=obj_key)
+            return result
+        except Exception as exc:
+            # Import here to avoid circular imports
+            from .exceptions import (
+                AdapterError,
+                AdapterNotFoundError,
+                ConfigurationError,
+                ConnectionError,
+                ParseError,
+                QueryError,
+                ResourceError,
+                ValidationError,
+            )
+
+            # Re-raise our custom exceptions
+            if isinstance(
+                exc,
+                (
+                    AdapterNotFoundError,
+                    ConfigurationError,
+                    ConnectionError,
+                    ParseError,
+                    QueryError,
+                    ResourceError,
+                    ValidationError,
+                ),
+            ):
+                raise
+
+            # Re-raise adapter-related errors
+            if isinstance(exc, (KeyError, ImportError, AttributeError)):
+                raise
+
+            # Wrap other exceptions with context
+            raise AdapterError(
+                f"Error adapting from {obj_key}", original_error=str(exc)
+            ) from exc
 
     def adapt_to(self, subj, *, obj_key: str, **kw):
-        return self.get(obj_key).to_obj(subj, **kw)
+        try:
+            result = self.get(obj_key).to_obj(subj, **kw)
+            if result is None:
+                from .exceptions import AdapterError
+
+                raise AdapterError(f"Adapter {obj_key} returned None", adapter=obj_key)
+            return result
+        except Exception as exc:
+            # Import here to avoid circular imports
+            from .exceptions import (
+                AdapterError,
+                AdapterNotFoundError,
+                ConfigurationError,
+                ConnectionError,
+                ParseError,
+                QueryError,
+                ResourceError,
+                ValidationError,
+            )
+
+            # Re-raise our custom exceptions
+            if isinstance(
+                exc,
+                (
+                    AdapterNotFoundError,
+                    ConfigurationError,
+                    ConnectionError,
+                    ParseError,
+                    QueryError,
+                    ResourceError,
+                    ValidationError,
+                ),
+            ):
+                raise
+
+            # Re-raise adapter-related errors
+            if isinstance(exc, (KeyError, ImportError, AttributeError)):
+                raise
+
+            # Wrap other exceptions with context
+            raise AdapterError(
+                f"Error adapting to {obj_key}", original_error=str(exc)
+            ) from exc
 
 
 # ----------------------------------------------------------------- Adaptable
