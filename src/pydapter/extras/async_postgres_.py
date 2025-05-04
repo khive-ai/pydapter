@@ -1,5 +1,5 @@
 """
-AsyncPostgresAdapter – presets AsyncSQLAdapter for PostgreSQL/pgvector.
+AsyncPostgresAdapter - presets AsyncSQLAdapter for PostgreSQL/pgvector.
 """
 
 from __future__ import annotations

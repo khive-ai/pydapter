@@ -21,7 +21,7 @@ splitting it into separate issues. Copy this into a single GitHub Issue titled
 | `.github/khive_modes.json` | Paste the full role-definition JSON (above).                                                                                                                                                                              |
 | `CONTRIBUTING.md`          | Add a new “Automated Roles” section pointing at that file and summarising how the `khive-orchestrator` opens tasks / PRs.                                                                                                 |
 | `.coveragerc`              | Exclude `tests/*` and the _generated_ khive JSON from coverage.                                                                                                                                                           |
-| `pyproject.toml` updates   | – add `all` extra that aggregates every optional dep <br> – under `[project.optional-dependencies]` list: `pandas`, `excel`, `sql`, `postgres`, `motor`, `asyncpg`, `qdrant`, `weaviate`, `neo4j`, `test` (pytest stack). |
+| `pyproject.toml` updates   | - add `all` extra that aggregates every optional dep <br> - under `[project.optional-dependencies]` list: `pandas`, `excel`, `sql`, `postgres`, `motor`, `asyncpg`, `qdrant`, `weaviate`, `neo4j`, `test` (pytest stack). |
 
 ---
 
@@ -196,13 +196,13 @@ jobs:
 
 ## 8 — Rollout order for the bots
 
-1. **khive-implementer** commits sections _0–2_ in a single PR.
+1. **khive-implementer** commits sections _0-2_ in a single PR.
 2. **khive-quality-reviewer** reviews; on ✅ CI merges.
 3. **implementer** adds _3_ (async) and _4_ (bench).
 4. **quality-reviewer** approves, **orchestrator** merges.
 5. **implementer** lands CI workflow (_5_) and Codecov config (_6_).
 6. **documenter** updates README (_7_).
-7. Done – master branch now has agents, tests, coverage, CI matrix.
+7. Done - master branch now has agents, tests, coverage, CI matrix.
 
 ---
 
@@ -217,31 +217,46 @@ jobs:
 Once this single issue is created, the khive bots can autonomously open the PRs
 in the order above. Human maintainers only need to merge once reviews are green.
 
+To increase our reasoning context, Let us think through with 5 random
+perspectives in random order:
 
-To increase our reasoning context, Let us think through with 5 random perspectives in random order:
+[^System] The pydapter project requires a comprehensive testing strategy. The
+feedback provides insights into effective testing approaches including
+parameterization, containerization, and CI setup. A well-designed test suite
+should verify both sync and async adapter functionality.
 
-[^System] The pydapter project requires a comprehensive testing strategy. The feedback provides insights into effective testing approaches including parameterization, containerization, and CI setup. A well-designed test suite should verify both sync and async adapter functionality.
+[^Breakdown] We need to create a phased implementation plan that builds the
+infrastructure incrementally: test harness first, then container fixtures,
+parameterized tests for standard adapters, async adapter tests, and finally CI
+integration.
 
-[^Breakdown] We need to create a phased implementation plan that builds the infrastructure incrementally: test harness first, then container fixtures, parameterized tests for standard adapters, async adapter tests, and finally CI integration.
+[^Critical] The feedback emphasizes several critical improvements to the initial
+proposal: using testcontainers instead of environment checks, pytest-benchmark
+for performance testing, and pytest.importorskip for optional dependencies.
 
-[^Critical] The feedback emphasizes several critical improvements to the initial proposal: using testcontainers instead of environment checks, pytest-benchmark for performance testing, and pytest.importorskip for optional dependencies.
+[^Stakeholder] From a maintainer's perspective, we need balanced coverage with
+execution speed, an issue/PR sequence that provides incremental value, and a
+testing approach that scales as new adapters are added.
 
-[^Stakeholder] From a maintainer's perspective, we need balanced coverage with execution speed, an issue/PR sequence that provides incremental value, and a testing approach that scales as new adapters are added.
+## [^Risk] External system dependencies and async code paths present the highest testing risks. Our strategy must prioritize containerization for deterministic results and proper async fixtures for reliable testing.
 
-[^Risk] External system dependencies and async code paths present the highest testing risks. Our strategy must prioritize containerization for deterministic results and proper async fixtures for reliable testing.
----
-
-Based on the excellent feedback received, I'll outline a comprehensive implementation plan for testing the pydapter package. This plan will guide our development team in setting up a robust testing infrastructure.
+Based on the excellent feedback received, I'll outline a comprehensive
+implementation plan for testing the pydapter package. This plan will guide our
+development team in setting up a robust testing infrastructure.
 
 # pydapter Testing Implementation Plan
 
 ## Overview
 
-We'll implement a comprehensive test suite for pydapter with the following key characteristics:
+We'll implement a comprehensive test suite for pydapter with the following key
+characteristics:
 
-1. **Pytest-based infrastructure** with coverage reporting and parameterized tests
-2. **Containerized dependencies** using testcontainers-python for reliable, deterministic testing
-3. **Balanced coverage** across sync/async adapters (excluding Weaviate and Neo4j)
+1. **Pytest-based infrastructure** with coverage reporting and parameterized
+   tests
+2. **Containerized dependencies** using testcontainers-python for reliable,
+   deterministic testing
+3. **Balanced coverage** across sync/async adapters (excluding Weaviate and
+   Neo4j)
 4. **Performance benchmarking** using pytest-benchmark
 5. **CI integration** with GitHub Actions matrix testing
 
@@ -283,7 +298,8 @@ We'll implement a comprehensive test suite for pydapter with the following key c
    testcontainers-python>=3.7.0
    ```
 
-4. Add an `all` extra in `pyproject.toml` or `setup.py` that includes all optional dependencies:
+4. Add an `all` extra in `pyproject.toml` or `setup.py` that includes all
+   optional dependencies:
    ```python
    extras_require={
        "test": ["pytest>=7.0.0", "pytest-cov", "pytest-asyncio", "pytest-benchmark", "testcontainers-python"],
@@ -302,7 +318,8 @@ We'll implement a comprehensive test suite for pydapter with the following key c
 
 ### Phase 2: Container Fixtures and Test Data
 
-**Goal:** Create reusable test fixtures for database dependencies and sample data.
+**Goal:** Create reusable test fixtures for database dependencies and sample
+data.
 
 **Implementation:**
 
@@ -1104,21 +1121,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e "${{ matrix.install }}"
-      
+
       - name: Run tests
         run: |
           pytest --cov=pydapter --cov-report=xml
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
@@ -1156,4 +1173,6 @@ This comprehensive testing plan:
 5. **Supports both minimal and full dependency configurations**
 6. **Includes CI configuration** for matrix testing
 
-The plan can be implemented incrementally, starting with the basic infrastructure and adding more sophisticated tests in phases. Each phase builds on the previous one, ensuring continuous progress and value.
+The plan can be implemented incrementally, starting with the basic
+infrastructure and adding more sophisticated tests in phases. Each phase builds
+on the previous one, ensuring continuous progress and value.

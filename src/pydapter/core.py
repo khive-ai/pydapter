@@ -1,5 +1,5 @@
 """
-pydapter.core – Adapter protocol, registry, Adaptable mix-in.
+pydapter.core - Adapter protocol, registry, Adaptable mix-in.
 """
 
 from __future__ import annotations

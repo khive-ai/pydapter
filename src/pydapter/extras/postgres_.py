@@ -1,5 +1,5 @@
 """
-PostgresAdapter – thin preset over SQLAdapter (pgvector-ready if you add vec column).
+PostgresAdapter - thin preset over SQLAdapter (pgvector-ready if you add vec column).
 """
 
 from __future__ import annotations

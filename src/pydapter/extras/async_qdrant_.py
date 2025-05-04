@@ -1,5 +1,5 @@
 """
-AsyncQdrantAdapter – vector upsert / search using AsyncQdrantClient.
+AsyncQdrantAdapter - vector upsert / search using AsyncQdrantClient.
 """
 
 from __future__ import annotations

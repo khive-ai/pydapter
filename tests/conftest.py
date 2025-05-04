@@ -1,9 +1,11 @@
-import pytest
-import uuid
 import tempfile
+import uuid
+
+import pytest
+
 from pydapter import Adaptable
+from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
 from pydapter.async_core import AsyncAdaptable
-from pydapter.adapters import JsonAdapter, CsvAdapter, TomlAdapter
 
 
 @pytest.fixture
@@ -65,8 +67,9 @@ def mongo_url():
 @pytest.fixture
 def async_model_factory():
     from pydantic import BaseModel
-    from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
+
     from pydapter.extras.async_mongo_ import AsyncMongoAdapter
+    from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
     from pydapter.extras.async_qdrant_ import AsyncQdrantAdapter
 
     class AsyncModel(AsyncAdaptable, BaseModel):

@@ -2,15 +2,16 @@
 Benchmark tests for pydapter adapters.
 """
 
-import pytest
-import json
-import toml
 import csv
 import io
+import json
+
+import pytest
+import toml
 from pydantic import BaseModel
 
+from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
 from pydapter.core import Adaptable, AdapterRegistry
-from pydapter.adapters import JsonAdapter, CsvAdapter, TomlAdapter
 
 
 @pytest.fixture

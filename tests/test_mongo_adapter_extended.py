@@ -2,8 +2,9 @@
 Extended tests for MongoDB adapter functionality.
 """
 
+from unittest.mock import MagicMock, call, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, call
 from pydantic import BaseModel
 
 from pydapter.core import Adaptable
@@ -42,7 +43,7 @@ class TestMongoAdapterExtended:
         with patch("pydapter.extras.mongo_.MongoClient") as mock_mongo_client:
             # Call the _client helper
             MongoAdapter._client("mongodb://localhost:27017")
-            
+
             # Verify MongoClient was called with the URL
             mock_mongo_client.assert_called_once_with("mongodb://localhost:27017")
 
@@ -54,12 +55,10 @@ class TestMongoAdapterExtended:
         mock_collection = MagicMock()
         mock_mongo_client.return_value.__getitem__.return_value = mock_db
         mock_db.__getitem__.return_value = mock_collection
-        
+
         # Mock the find result
-        mock_collection.find.return_value = [
-            {"id": 1, "name": "test", "value": 42.5}
-        ]
-        
+        mock_collection.find.return_value = [{"id": 1, "name": "test", "value": 42.5}]
+
         # Test from_obj with filter
         model_cls = mongo_sample.__class__
         result = model_cls.adapt_from(
@@ -67,14 +66,14 @@ class TestMongoAdapterExtended:
                 "url": "mongodb://localhost:27017",
                 "db": "test_db",
                 "collection": "test_collection",
-                "filter": {"id": 1}
-            }, 
-            obj_key="mongo"
+                "filter": {"id": 1},
+            },
+            obj_key="mongo",
         )
-        
+
         # Verify find was called with the filter
         mock_collection.find.assert_called_once_with({"id": 1})
-        
+
         # Verify the result
         assert isinstance(result, list)
         assert len(result) == 1
@@ -90,26 +89,24 @@ class TestMongoAdapterExtended:
         mock_collection = MagicMock()
         mock_mongo_client.return_value.__getitem__.return_value = mock_db
         mock_db.__getitem__.return_value = mock_collection
-        
+
         # Mock the find result
-        mock_collection.find.return_value = [
-            {"id": 1, "name": "test", "value": 42.5}
-        ]
-        
+        mock_collection.find.return_value = [{"id": 1, "name": "test", "value": 42.5}]
+
         # Test from_obj without filter
         model_cls = mongo_sample.__class__
         result = model_cls.adapt_from(
             {
                 "url": "mongodb://localhost:27017",
                 "db": "test_db",
-                "collection": "test_collection"
-            }, 
-            obj_key="mongo"
+                "collection": "test_collection",
+            },
+            obj_key="mongo",
         )
-        
+
         # Verify find was called with an empty filter
         mock_collection.find.assert_called_once_with({})
-        
+
         # Verify the result
         assert isinstance(result, list)
         assert len(result) == 1
@@ -125,24 +122,22 @@ class TestMongoAdapterExtended:
         mock_collection = MagicMock()
         mock_mongo_client.return_value.__getitem__.return_value = mock_db
         mock_db.__getitem__.return_value = mock_collection
-        
+
         # Mock the find result
-        mock_collection.find.return_value = [
-            {"id": 1, "name": "test", "value": 42.5}
-        ]
-        
+        mock_collection.find.return_value = [{"id": 1, "name": "test", "value": 42.5}]
+
         # Test from_obj with many=False
         model_cls = mongo_sample.__class__
         result = model_cls.adapt_from(
             {
                 "url": "mongodb://localhost:27017",
                 "db": "test_db",
-                "collection": "test_collection"
-            }, 
+                "collection": "test_collection",
+            },
             obj_key="mongo",
-            many=False
+            many=False,
         )
-        
+
         # Verify the result is a single model, not a list
         assert not isinstance(result, list)
         assert result.id == 1
@@ -155,25 +150,25 @@ class TestMongoAdapterExtended:
         # Create multiple models
         model1 = mongo_model_factory(id=1, name="test1", value=42.5)
         model2 = mongo_model_factory(id=2, name="test2", value=43.5)
-        
+
         # Setup mock client, database, collection, and insert_many
         mock_db = MagicMock()
         mock_collection = MagicMock()
         mock_mongo_client.return_value.__getitem__.return_value = mock_db
         mock_db.__getitem__.return_value = mock_collection
-        
+
         # Directly test the adapter's to_obj method with multiple items
         MongoAdapter.to_obj(
             [model1, model2],
             url="mongodb://localhost:27017",
             db="test_db",
-            collection="test_collection"
+            collection="test_collection",
         )
-        
+
         # Verify insert_many was called with the correct documents
         expected_docs = [
             {"id": 1, "name": "test1", "value": 42.5},
-            {"id": 2, "name": "test2", "value": 43.5}
+            {"id": 2, "name": "test2", "value": 43.5},
         ]
         mock_collection.insert_many.assert_called_once_with(expected_docs)
 
@@ -185,16 +180,16 @@ class TestMongoAdapterExtended:
         mock_collection = MagicMock()
         mock_mongo_client.return_value.__getitem__.return_value = mock_db
         mock_db.__getitem__.return_value = mock_collection
-        
+
         # Test to_obj with a single item and many=False
         mongo_sample.adapt_to(
-            obj_key="mongo", 
+            obj_key="mongo",
             url="mongodb://localhost:27017",
             db="test_db",
             collection="test_collection",
-            many=False
+            many=False,
         )
-        
+
         # Verify insert_many was called with a list containing the single document
         expected_docs = [{"id": 1, "name": "test", "value": 42.5}]
         mock_collection.insert_many.assert_called_once_with(expected_docs)
@@ -207,18 +202,20 @@ class TestMongoAdapterExtended:
         mock_collection = MagicMock()
         mock_mongo_client.return_value.__getitem__.return_value = mock_db
         mock_db.__getitem__.return_value = mock_collection
-        
+
         # Test to_obj with custom parameters
         mongo_sample.adapt_to(
-            obj_key="mongo", 
+            obj_key="mongo",
             url="mongodb://user:pass@localhost:27017/admin",
             db="custom_db",
-            collection="custom_collection"
+            collection="custom_collection",
         )
-        
+
         # Verify the client was created with the custom URL
-        mock_mongo_client.assert_called_once_with("mongodb://user:pass@localhost:27017/admin")
-        
+        mock_mongo_client.assert_called_once_with(
+            "mongodb://user:pass@localhost:27017/admin"
+        )
+
         # Verify the correct database and collection were accessed
         mock_mongo_client.return_value.__getitem__.assert_called_once_with("custom_db")
         mock_db.__getitem__.assert_called_once_with("custom_collection")
