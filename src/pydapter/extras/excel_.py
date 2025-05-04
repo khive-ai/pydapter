@@ -32,11 +32,28 @@ class ExcelAdapter(Adapter[T]):
         sheet_name=0,
         **kw,
     ):
-        if isinstance(obj, bytes):
-            df = pd.read_excel(io.BytesIO(obj), sheet_name=sheet_name, **kw)
-        else:
-            df = pd.read_excel(obj, sheet_name=sheet_name, **kw)
-        return DataFrameAdapter.from_obj(subj_cls, df, many=many)
+        try:
+            if isinstance(obj, bytes):
+                df = pd.read_excel(io.BytesIO(obj), sheet_name=sheet_name, **kw)
+            else:
+                df = pd.read_excel(obj, sheet_name=sheet_name, **kw)
+            return DataFrameAdapter.from_obj(subj_cls, df, many=many)
+        except FileNotFoundError as e:
+            from ..exceptions import ResourceError
+
+            raise ResourceError(f"File not found: {e}", resource=str(obj)) from e
+        except ValueError as e:
+            from ..exceptions import AdapterError
+
+            raise AdapterError(
+                f"Error adapting from xlsx (original_error='{e}')", adapter="xlsx"
+            ) from e
+        except Exception as e:
+            from ..exceptions import AdapterError
+
+            raise AdapterError(
+                f"Unexpected error in Excel adapter: {e}", adapter="xlsx"
+            ) from e
 
     # outgoing
     @classmethod

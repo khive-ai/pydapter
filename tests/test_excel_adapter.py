@@ -9,6 +9,7 @@ import pytest
 from pydantic import BaseModel
 
 from pydapter.core import Adaptable
+from pydapter.exceptions import AdapterError, ResourceError
 from pydapter.extras.excel_ import ExcelAdapter
 
 
@@ -140,7 +141,7 @@ class TestExcelAdapterErrorHandling:
 
         # Test from_obj with non-existent file
         model_cls = excel_sample.__class__
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(AdapterError, match="File not found"):
             model_cls.adapt_from({"path": "nonexistent.xlsx"}, obj_key="xlsx")
 
     @patch("pydapter.extras.excel_.pd")
@@ -170,5 +171,5 @@ class TestExcelAdapterErrorHandling:
 
         # Test from_obj with invalid data
         model_cls = excel_sample.__class__
-        with pytest.raises(ValueError):
+        with pytest.raises(AdapterError, match="Invalid data"):
             model_cls.adapt_from({"path": "invalid.xlsx"}, obj_key="xlsx")

@@ -4,9 +4,11 @@ from pathlib import Path
 from typing import List, TypeVar
 
 import toml
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from ..core import Adapter
+from ..exceptions import ParseError
+from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -24,22 +26,69 @@ class TomlAdapter(Adapter[T]):
 
     @classmethod
     def from_obj(cls, subj_cls: type[T], obj: str | Path, /, *, many=False, **kw):
-        text = (
-            Path(obj).read_text()
-            if isinstance(obj, (str, Path)) and Path(obj).exists()
-            else obj
-        )
-        parsed = toml.loads(text, **kw)
-        if many:
-            return [subj_cls.model_validate(x) for x in _ensure_list(parsed)]
-        return subj_cls.model_validate(parsed)
+        try:
+            # Handle file path
+            if isinstance(obj, Path):
+                try:
+                    text = Path(obj).read_text()
+                except Exception as e:
+                    raise ParseError(f"Failed to read TOML file: {e}", source=str(obj))
+            else:
+                text = obj
+
+            # Check for empty input
+            if not text or (isinstance(text, str) and not text.strip()):
+                raise ParseError(
+                    "Empty TOML content",
+                    source=str(obj)[:100] if isinstance(obj, str) else str(obj),
+                )
+
+            # Parse TOML
+            try:
+                parsed = toml.loads(text, **kw)
+            except toml.TomlDecodeError as e:
+                raise ParseError(
+                    f"Invalid TOML: {e}",
+                    source=str(text)[:100] if isinstance(text, str) else str(text),
+                )
+
+            # Validate against model
+            try:
+                if many:
+                    return [subj_cls.model_validate(x) for x in _ensure_list(parsed)]
+                return subj_cls.model_validate(parsed)
+            except ValidationError as e:
+                raise AdapterValidationError(
+                    f"Validation error: {e}",
+                    data=parsed,
+                    errors=e.errors(),
+                )
+
+        except (ParseError, AdapterValidationError):
+            # Re-raise our custom exceptions
+            raise
+        except Exception as e:
+            # Wrap other exceptions
+            raise ParseError(
+                f"Unexpected error parsing TOML: {e}",
+                source=str(obj)[:100] if isinstance(obj, str) else str(obj),
+            )
 
     @classmethod
     def to_obj(cls, subj: T | List[T], /, *, many=False, **kw) -> str:
-        items = subj if isinstance(subj, list) else [subj]
-        payload = (
-            {"items": [i.model_dump() for i in items]}
-            if many
-            else items[0].model_dump()
-        )
-        return toml.dumps(payload, **kw)
+        try:
+            items = subj if isinstance(subj, list) else [subj]
+
+            if not items:
+                return ""
+
+            payload = (
+                {"items": [i.model_dump() for i in items]}
+                if many
+                else items[0].model_dump()
+            )
+            return toml.dumps(payload, **kw)
+
+        except Exception as e:
+            # Wrap exceptions
+            raise ParseError(f"Error generating TOML: {e}")
