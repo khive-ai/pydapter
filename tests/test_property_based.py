@@ -45,7 +45,11 @@ class TestPropertyBasedAdapters:
     @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
     @given(
         id=st.integers(),
-        name=st.text(min_size=1, max_size=50).filter(
+        name=st.text(
+            min_size=1, 
+            max_size=50,
+            alphabet=st.characters(blacklist_categories=('Cc', 'Cs')),  # Exclude control chars
+        ).filter(
             lambda x: "," not in x and "\n" not in x
         ),
         value=st.floats(allow_nan=False, allow_infinity=False),

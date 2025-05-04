@@ -28,6 +28,9 @@ class CsvAdapter(Adapter[T]):
     ):
         text = Path(obj).read_text() if Path(obj).exists() else obj
         
+        # Sanitize text to remove NULL bytes
+        text = text.replace('\0', '')
+        
         # Ensure we have an escape character to handle special characters
         csv_kwargs = dict(escapechar='\\')
         csv_kwargs.update(kw)  # User-provided kwargs override defaults
@@ -54,6 +57,15 @@ class CsvAdapter(Adapter[T]):
     ) -> str:
         items = subj if isinstance(subj, list) else [subj]
         buf = io.StringIO()
+        
+        # Sanitize any string values to remove NULL bytes
+        sanitized_items = []
+        for item in items:
+            item_dict = item.model_dump()
+            for key, value in item_dict.items():
+                if isinstance(value, str):
+                    item_dict[key] = value.replace('\0', '')
+            sanitized_items.append(item_dict)
         
         # Ensure we have an escape character to handle special characters
         csv_kwargs = dict(escapechar='\\')
