@@ -1,0 +1,14 @@
+[run]
+source = src/pydapter
+omit = 
+    tests/*
+    .github/khive_modes.json
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    pass
+    raise ImportError
