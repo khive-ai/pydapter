@@ -10,6 +10,19 @@ from pydapter.core import Adaptable
 from pydapter.extras.async_sql_ import AsyncSQLAdapter
 
 
+class AsyncContextManagerMock:
+    """A mock for async context managers."""
+    
+    def __init__(self, return_value=None):
+        self.return_value = return_value
+        
+    async def __aenter__(self):
+        return self.return_value
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 @pytest.fixture
 def async_sql_model_factory():
     """Factory for creating test models with Async SQL adapter registered."""
@@ -57,13 +70,14 @@ class TestAsyncSQLAdapterExtended:
         """Test conversion from Async SQL record to model with selectors."""
         # Setup mocks
         with patch("pydapter.extras.async_sql_.create_async_engine") as mock_create_engine:
-            # Create a mock engine that returns a context manager
-            mock_engine = AsyncMock()
-            mock_create_engine.return_value = mock_engine
-            
             # Create a mock connection
             mock_conn = AsyncMock()
-            mock_engine.begin.return_value.__aenter__.return_value = mock_conn
+            
+            # Create a mock engine with a begin method that returns our async context manager
+            mock_engine = MagicMock()
+            mock_begin_ctx = AsyncContextManagerMock(mock_conn)
+            mock_engine.begin = MagicMock(return_value=mock_begin_ctx)
+            mock_create_engine.return_value = mock_engine
             
             # Create a mock metadata
             with patch("pydapter.extras.async_sql_.sa.MetaData") as mock_metadata_class:
@@ -80,14 +94,12 @@ class TestAsyncSQLAdapterExtended:
                         mock_select = MagicMock()
                         mock_select_func.return_value = mock_select
                         
-                        # Create a mock result
-                        mock_result = AsyncMock()
-                        mock_conn.execute.return_value = mock_result
-                        
-                        # Mock the fetchall result
-                        mock_result.fetchall.return_value = [
+                        # Create a mock result with proper fetchall method
+                        mock_result = MagicMock()
+                        mock_result.fetchall = MagicMock(return_value=[
                             {"id": 1, "name": "test", "value": 42.5}
-                        ]
+                        ])
+                        mock_conn.execute = AsyncMock(return_value=mock_result)
                         
                         # Create a test model class
                         class TestModel(Adaptable, BaseModel):
@@ -123,13 +135,14 @@ class TestAsyncSQLAdapterExtended:
         """Test conversion from Async SQL record to model with many=False."""
         # Setup mocks
         with patch("pydapter.extras.async_sql_.create_async_engine") as mock_create_engine:
-            # Create a mock engine that returns a context manager
-            mock_engine = AsyncMock()
-            mock_create_engine.return_value = mock_engine
-            
             # Create a mock connection
             mock_conn = AsyncMock()
-            mock_engine.begin.return_value.__aenter__.return_value = mock_conn
+            
+            # Create a mock engine with a begin method that returns our async context manager
+            mock_engine = MagicMock()
+            mock_begin_ctx = AsyncContextManagerMock(mock_conn)
+            mock_engine.begin = MagicMock(return_value=mock_begin_ctx)
+            mock_create_engine.return_value = mock_engine
             
             # Create a mock metadata
             with patch("pydapter.extras.async_sql_.sa.MetaData") as mock_metadata_class:
@@ -146,14 +159,12 @@ class TestAsyncSQLAdapterExtended:
                         mock_select = MagicMock()
                         mock_select_func.return_value = mock_select
                         
-                        # Create a mock result
-                        mock_result = AsyncMock()
-                        mock_conn.execute.return_value = mock_result
-                        
-                        # Mock the fetchall result
-                        mock_result.fetchall.return_value = [
+                        # Create a mock result with proper fetchall method
+                        mock_result = MagicMock()
+                        mock_result.fetchall = MagicMock(return_value=[
                             {"id": 1, "name": "test", "value": 42.5}
-                        ]
+                        ])
+                        mock_conn.execute = AsyncMock(return_value=mock_result)
                         
                         # Create a test model class
                         class TestModel(Adaptable, BaseModel):
@@ -195,13 +206,14 @@ class TestAsyncSQLAdapterExtended:
         
         # Setup mocks
         with patch("pydapter.extras.async_sql_.create_async_engine") as mock_create_engine:
-            # Create a mock engine that returns a context manager
-            mock_engine = AsyncMock()
-            mock_create_engine.return_value = mock_engine
-            
             # Create a mock connection
             mock_conn = AsyncMock()
-            mock_engine.begin.return_value.__aenter__.return_value = mock_conn
+            
+            # Create a mock engine with a begin method that returns our async context manager
+            mock_engine = MagicMock()
+            mock_begin_ctx = AsyncContextManagerMock(mock_conn)
+            mock_engine.begin = MagicMock(return_value=mock_begin_ctx)
+            mock_create_engine.return_value = mock_engine
             
             # Create a mock metadata
             with patch("pydapter.extras.async_sql_.sa.MetaData") as mock_metadata_class:
@@ -243,13 +255,14 @@ class TestAsyncSQLAdapterExtended:
         """Test conversion from a single model to Async SQL record."""
         # Setup mocks
         with patch("pydapter.extras.async_sql_.create_async_engine") as mock_create_engine:
-            # Create a mock engine that returns a context manager
-            mock_engine = AsyncMock()
-            mock_create_engine.return_value = mock_engine
-            
             # Create a mock connection
             mock_conn = AsyncMock()
-            mock_engine.begin.return_value.__aenter__.return_value = mock_conn
+            
+            # Create a mock engine with a begin method that returns our async context manager
+            mock_engine = MagicMock()
+            mock_begin_ctx = AsyncContextManagerMock(mock_conn)
+            mock_engine.begin = MagicMock(return_value=mock_begin_ctx)
+            mock_create_engine.return_value = mock_engine
             
             # Create a mock metadata
             with patch("pydapter.extras.async_sql_.sa.MetaData") as mock_metadata_class:
