@@ -3,7 +3,7 @@ name            = "pydapter"
 version         = "0.1.0"
 description     = "Tiny trait + adapter toolkit for pydantic models"
 readme          = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors         = [{ name = "Ocean", email = "quantocean.li@gmail.com" }]
 dependencies = [
     "pydantic>=2.6",
@@ -16,10 +16,14 @@ dev = [
     "ipykernel>=6.29.5",
     "ipywidgets>=8.1.6",
     "isort>=6.0.1",
-    "pytest-asyncio>=0.26.0",
     "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "pytest-cov>=4.1.0",
+    "pytest-benchmark>=4.0.0",
+    "testcontainers[postgres,qdrant,mongodb]>=3.7.0",
     "pre-commit>=4.2.0",
     "ruff>=0.11.7",
+    "hypothesis>=6.131.9",
 ]
 
 [project.optional-dependencies]
@@ -34,13 +38,6 @@ neo4j     = ["neo4j>=5.19"]
 motor     = ["motor>=3"]
 qdrant    = ["qdrant-client>=1.14"]
 aiohttp   = ["aiohttp>=3.11.10"]
-test      = [
-    "pytest>=8.3.5",
-    "pytest-asyncio>=0.26.0",
-    "pytest-cov>=4.1.0",
-    "pytest-benchmark>=4.0.0",
-    "testcontainers[postgres,qdrant,mongodb]>=3.7.0"
-]
 
 # ----------------------------------
 all = [
@@ -61,8 +58,13 @@ all = [
 addopts = "-ra --cov=pydapter --cov-report=term-missing"
 testpaths = ["tests"]
 
+[tool.black]
+line-length = 88
+target-version = ['py310']
 
-
+[tool.isort]
+profile = "black"
+line_length = 88
 
 [build-system]
 requires = ["hatchling"]
