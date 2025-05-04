@@ -23,7 +23,7 @@ class QdrantAdapter(Adapter[T]):
     obj_key = "qdrant"
 
     # helper
-    @staticmethod
+    # helper
     @staticmethod
     def _client(url: str | None):
         try:
@@ -32,16 +32,25 @@ class QdrantAdapter(Adapter[T]):
             raise ConnectionError(
                 f"Failed to connect to Qdrant: {e}", adapter="qdrant", url=url
             ) from e
-        except (ConnectionRefusedError, OSError) as e:
+        except (ConnectionRefusedError, OSError, grpc.RpcError) as e:
             # Catch specific network-related errors like DNS resolution failures
+            # Include grpc.RpcError to handle gRPC-specific connection issues
             raise ConnectionError(
                 f"Failed to connect to Qdrant: {e}", adapter="qdrant", url=url
             ) from e
         except Exception as e:
+            # Check for DNS resolution errors in the exception message
+            if (
+                "nodename nor servname provided" in str(e)
+                or "Name or service not known" in str(e)
+                or "getaddrinfo failed" in str(e)
+            ):
+                raise ConnectionError(
+                    f"DNS resolution failed for Qdrant: {e}", adapter="qdrant", url=url
+                ) from e
             raise ConnectionError(
                 f"Unexpected error connecting to Qdrant: {e}", adapter="qdrant", url=url
             ) from e
-    @staticmethod
     def _validate_vector_dimensions(vector, expected_dim=None):
         """Validate that the vector has the correct dimensions."""
         if not isinstance(vector, (list, tuple)) or not all(
@@ -115,7 +124,13 @@ class QdrantAdapter(Adapter[T]):
                     adapter="qdrant",
                 ) from e
             except Exception as e:
-                if "nodename nor servname provided" in str(e) or "connection" in str(e).lower():
+                # Check for various DNS and connection-related error messages
+                if (
+                    "nodename nor servname provided" in str(e)
+                    or "connection" in str(e).lower()
+                    or "Name or service not known" in str(e)
+                    or "getaddrinfo failed" in str(e)
+                ):
                     raise ConnectionError(
                         f"Failed to connect to Qdrant: {e}",
                         adapter="qdrant",
