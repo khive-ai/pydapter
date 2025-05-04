@@ -30,10 +30,10 @@ systems.
 pip install pydapter
 
 # With database support
-pip install pydapter[postgres,mongo,neo4j,qdrant]
+pip install "pydapter[postgres,mongo,neo4j,qdrant]"
 
 # With pandas support
-pip install pydapter[pandas]
+pip install "pydapter[pandas]"
 ```
 
 ## Quick Start
