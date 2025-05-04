@@ -2,8 +2,9 @@
 Tests for database adapter error handling in pydapter.
 """
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 from pydantic import BaseModel
 
 from pydapter.core import Adaptable
@@ -12,8 +13,8 @@ from pydapter.exceptions import (
     ConnectionError,
     QueryError,
     ResourceError,
-    ValidationError as AdapterValidationError,
 )
+from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.mongo_ import MongoAdapter
 from pydapter.extras.neo4j_ import Neo4jAdapter
 from pydapter.extras.postgres_ import PostgresAdapter
@@ -86,8 +87,7 @@ class TestSQLAdapterErrors:
         def mock_from_obj(cls, subj_cls, obj, **kw):
             if obj.get("table") == "nonexistent":
                 raise ResourceError(
-                    "Table 'nonexistent' not found",
-                    resource="nonexistent"
+                    "Table 'nonexistent' not found", resource="nonexistent"
                 )
             return original_from_obj(cls, subj_cls, obj, **kw)
 
@@ -121,7 +121,7 @@ class TestSQLAdapterErrors:
                 raise QueryError(
                     "Query failed: SQLAlchemyError('Query failed')",
                     query="SELECT * FROM test",
-                    adapter="sql"
+                    adapter="sql",
                 )
             return original_from_obj(cls, subj_cls, obj, **kw)
 
@@ -154,7 +154,7 @@ class TestSQLAdapterErrors:
                 raise ResourceError(
                     "No rows found matching the query",
                     resource="test",
-                    query="SELECT * FROM test"
+                    query="SELECT * FROM test",
                 )
             elif obj.get("table") == "test" and kw.get("many", True):
                 return []
@@ -302,7 +302,7 @@ class TestMongoAdapterErrors:
             raise ConnectionError(
                 "Invalid MongoDB connection string: Invalid connection string",
                 adapter="mongo",
-                url="invalid://url"
+                url="invalid://url",
             )
 
         monkeypatch.setattr(MongoAdapter, "_client", mock_client)
@@ -337,7 +337,9 @@ class TestMongoAdapterErrors:
         )
 
         # Mock _client to return our mock client
-        monkeypatch.setattr(MongoAdapter, "_client", lambda *args, **kwargs: mock_client)
+        monkeypatch.setattr(
+            MongoAdapter, "_client", lambda *args, **kwargs: mock_client
+        )
 
         # Test with authentication failure
         with pytest.raises(ConnectionError) as exc_info:
@@ -684,12 +686,13 @@ class TestQdrantAdapterErrors:
         mock_client = Mock()
         # Use QueryError directly instead of ResourceError
         mock_client.search.side_effect = QueryError(
-            "Failed to search Qdrant: Collection 'test' not found",
-            adapter="qdrant"
+            "Failed to search Qdrant: Collection 'test' not found", adapter="qdrant"
         )
 
         # Mock _client to return our mock client
-        monkeypatch.setattr(QdrantAdapter, "_client", lambda *args, **kwargs: mock_client)
+        monkeypatch.setattr(
+            QdrantAdapter, "_client", lambda *args, **kwargs: mock_client
+        )
 
         # Test with collection not found error
         with pytest.raises(QueryError) as exc_info:
@@ -718,7 +721,9 @@ class TestQdrantAdapterErrors:
         mock_client.search.return_value = []
 
         # Mock _client to return our mock client
-        monkeypatch.setattr(QdrantAdapter, "_client", lambda *args, **kwargs: mock_client)
+        monkeypatch.setattr(
+            QdrantAdapter, "_client", lambda *args, **kwargs: mock_client
+        )
 
         # Test with empty result set and many=False
         with pytest.raises(ResourceError) as exc_info:

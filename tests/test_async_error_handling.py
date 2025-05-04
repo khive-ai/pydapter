@@ -3,10 +3,10 @@ Tests for async adapter error handling in pydapter.
 """
 
 import asyncio
+from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
-from unittest.mock import Mock
 from pydantic import BaseModel
 
 from pydapter.async_core import AsyncAdaptable
@@ -16,8 +16,8 @@ from pydapter.exceptions import (
     ConnectionError,
     QueryError,
     ResourceError,
-    ValidationError as AdapterValidationError,
 )
+from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.async_mongo_ import AsyncMongoAdapter
 from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
 from pydapter.extras.async_qdrant_ import AsyncQdrantAdapter
@@ -36,11 +36,15 @@ class TestAsyncAdapterRegistry:
             name: str
             value: float
 
-        with pytest.raises(AdapterNotFoundError, match="No async adapter for 'nonexistent'"):
+        with pytest.raises(
+            AdapterNotFoundError, match="No async adapter for 'nonexistent'"
+        ):
             await TestModel.adapt_from_async({}, obj_key="nonexistent")
 
         model = TestModel(id=1, name="test", value=42.5)
-        with pytest.raises(AdapterNotFoundError, match="No async adapter for 'nonexistent'"):
+        with pytest.raises(
+            AdapterNotFoundError, match="No async adapter for 'nonexistent'"
+        ):
             await model.adapt_to_async(obj_key="nonexistent")
 
 
@@ -65,7 +69,9 @@ class TestAsyncSQLAdapterErrors:
 
         # Test missing table
         with pytest.raises(AdapterValidationError) as exc_info:
-            await TestModel.adapt_from_async({"engine_url": "sqlite+aiosqlite://"}, obj_key="async_sql")
+            await TestModel.adapt_from_async(
+                {"engine_url": "sqlite+aiosqlite://"}, obj_key="async_sql"
+            )
         assert "Missing required parameter 'table'" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -85,7 +91,9 @@ class TestAsyncSQLAdapterErrors:
         def mock_create_async_engine(*args, **kwargs):
             raise sa.exc.SQLAlchemyError("Invalid connection string")
 
-        monkeypatch.setattr(sa.ext.asyncio, "create_async_engine", mock_create_async_engine)
+        monkeypatch.setattr(
+            sa.ext.asyncio, "create_async_engine", mock_create_async_engine
+        )
 
         # Test with invalid connection string
         with pytest.raises(ConnectionError) as exc_info:
@@ -114,8 +122,7 @@ class TestAsyncSQLAdapterErrors:
         async def mock_from_obj(cls, subj_cls, obj, **kw):
             if obj.get("table") == "nonexistent":
                 raise ResourceError(
-                    "Table 'nonexistent' not found",
-                    resource="nonexistent"
+                    "Table 'nonexistent' not found", resource="nonexistent"
                 )
             return await original_from_obj(cls, subj_cls, obj, **kw)
 
@@ -124,7 +131,8 @@ class TestAsyncSQLAdapterErrors:
         # Test with non-existent table
         with pytest.raises(ResourceError) as exc_info:
             await TestModel.adapt_from_async(
-                {"engine_url": "sqlite+aiosqlite://", "table": "nonexistent"}, obj_key="async_sql"
+                {"engine_url": "sqlite+aiosqlite://", "table": "nonexistent"},
+                obj_key="async_sql",
             )
         assert "Table 'nonexistent' not found" in str(exc_info.value)
 
@@ -150,7 +158,7 @@ class TestAsyncSQLAdapterErrors:
                 raise QueryError(
                     "Error executing query: SQLAlchemyError('Query failed')",
                     query="SELECT * FROM test",
-                    adapter="async_sql"
+                    adapter="async_sql",
                 )
             return await original_from_obj(cls, subj_cls, obj, **kw)
 
@@ -159,7 +167,8 @@ class TestAsyncSQLAdapterErrors:
         # Test with query error
         with pytest.raises(QueryError) as exc_info:
             await TestModel.adapt_from_async(
-                {"engine_url": "sqlite+aiosqlite://", "table": "test"}, obj_key="async_sql"
+                {"engine_url": "sqlite+aiosqlite://", "table": "test"},
+                obj_key="async_sql",
             )
         assert "Error executing query" in str(exc_info.value)
         assert "Query failed" in str(exc_info.value)
@@ -184,7 +193,7 @@ class TestAsyncSQLAdapterErrors:
                 raise ResourceError(
                     "No rows found matching the query",
                     resource="test",
-                    query="SELECT * FROM test"
+                    query="SELECT * FROM test",
                 )
             elif obj.get("table") == "test" and kw.get("many", True):
                 return []
@@ -195,13 +204,17 @@ class TestAsyncSQLAdapterErrors:
         # Test with empty result set and many=False
         with pytest.raises(ResourceError) as exc_info:
             await TestModel.adapt_from_async(
-                {"engine_url": "sqlite+aiosqlite://", "table": "test"}, obj_key="async_sql", many=False
+                {"engine_url": "sqlite+aiosqlite://", "table": "test"},
+                obj_key="async_sql",
+                many=False,
             )
         assert "No rows found matching the query" in str(exc_info.value)
 
         # Test with empty result set and many=True
         result = await TestModel.adapt_from_async(
-            {"engine_url": "sqlite+aiosqlite://", "table": "test"}, obj_key="async_sql", many=True
+            {"engine_url": "sqlite+aiosqlite://", "table": "test"},
+            obj_key="async_sql",
+            many=True,
         )
         assert isinstance(result, list)
         assert len(result) == 0
@@ -226,7 +239,9 @@ class TestAsyncPostgresAdapterErrors:
         def mock_create_async_engine(*args, **kwargs):
             raise sa.exc.SQLAlchemyError("authentication failed")
 
-        monkeypatch.setattr(sa.ext.asyncio, "create_async_engine", mock_create_async_engine)
+        monkeypatch.setattr(
+            sa.ext.asyncio, "create_async_engine", mock_create_async_engine
+        )
 
         # Test with authentication error
         with pytest.raises(ConnectionError) as exc_info:
@@ -251,7 +266,9 @@ class TestAsyncPostgresAdapterErrors:
         def mock_create_async_engine(*args, **kwargs):
             raise sa.exc.SQLAlchemyError("connection refused")
 
-        monkeypatch.setattr(sa.ext.asyncio, "create_async_engine", mock_create_async_engine)
+        monkeypatch.setattr(
+            sa.ext.asyncio, "create_async_engine", mock_create_async_engine
+        )
 
         # Test with connection refused error
         with pytest.raises(ConnectionError) as exc_info:
@@ -277,7 +294,9 @@ class TestAsyncPostgresAdapterErrors:
         def mock_create_async_engine(*args, **kwargs):
             raise sa.exc.SQLAlchemyError("database does not exist")
 
-        monkeypatch.setattr(sa.ext.asyncio, "create_async_engine", mock_create_async_engine)
+        monkeypatch.setattr(
+            sa.ext.asyncio, "create_async_engine", mock_create_async_engine
+        )
 
         # Test with database does not exist error
         with pytest.raises(ConnectionError) as exc_info:
@@ -304,13 +323,16 @@ class TestAsyncMongoAdapterErrors:
 
         # Test missing url
         with pytest.raises(AdapterValidationError) as exc_info:
-            await TestModel.adapt_from_async({"db": "test", "collection": "test"}, obj_key="async_mongo")
+            await TestModel.adapt_from_async(
+                {"db": "test", "collection": "test"}, obj_key="async_mongo"
+            )
         assert "Missing required parameter 'url'" in str(exc_info.value)
 
         # Test missing db
         with pytest.raises(AdapterValidationError) as exc_info:
             await TestModel.adapt_from_async(
-                {"url": "mongodb://localhost", "collection": "test"}, obj_key="async_mongo"
+                {"url": "mongodb://localhost", "collection": "test"},
+                obj_key="async_mongo",
             )
         assert "Missing required parameter 'db'" in str(exc_info.value)
 
@@ -338,7 +360,7 @@ class TestAsyncMongoAdapterErrors:
             raise ConnectionError(
                 "Invalid MongoDB connection string: Invalid connection string",
                 adapter="async_mongo",
-                url="invalid://url"
+                url="invalid://url",
             )
 
         monkeypatch.setattr(AsyncMongoAdapter, "_client", mock_client)
@@ -375,7 +397,7 @@ class TestAsyncMongoAdapterErrors:
                 raise ConnectionError(
                     "Not authorized to access test.test: auth failed",
                     adapter="async_mongo",
-                    url=obj["url"]
+                    url=obj["url"],
                 )
             return await original_from_obj(cls, subj_cls, obj, **kw)
 
@@ -413,7 +435,7 @@ class TestAsyncMongoAdapterErrors:
                 raise QueryError(
                     "MongoDB query error: Invalid query",
                     query=obj["filter"],
-                    adapter="async_mongo"
+                    adapter="async_mongo",
                 )
             return await original_from_obj(cls, subj_cls, obj, **kw)
 
@@ -451,7 +473,7 @@ class TestAsyncMongoAdapterErrors:
                 raise ResourceError(
                     "No documents found matching the query",
                     resource=f"{obj['db']}.{obj['collection']}",
-                    filter=obj.get("filter", {})
+                    filter=obj.get("filter", {}),
                 )
             else:
                 return []
@@ -510,7 +532,9 @@ class TestAsyncQdrantAdapterErrors:
 
         # Test missing query_vector
         with pytest.raises(AdapterValidationError) as exc_info:
-            await TestModel.adapt_from_async({"collection": "test"}, obj_key="async_qdrant")
+            await TestModel.adapt_from_async(
+                {"collection": "test"}, obj_key="async_qdrant"
+            )
         assert "Missing required parameter 'query_vector'" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -539,7 +563,8 @@ class TestAsyncQdrantAdapterErrors:
         # Test with string instead of vector
         with pytest.raises(AdapterValidationError) as exc_info:
             await TestModel.adapt_from_async(
-                {"collection": "test", "query_vector": "not_a_vector"}, obj_key="async_qdrant"
+                {"collection": "test", "query_vector": "not_a_vector"},
+                obj_key="async_qdrant",
             )
         assert "Vector must be a list or tuple of numbers" in str(exc_info.value)
 
@@ -561,7 +586,7 @@ class TestAsyncQdrantAdapterErrors:
             raise ConnectionError(
                 "Failed to connect to Qdrant: Connection failed",
                 adapter="async_qdrant",
-                url=None
+                url=None,
             )
 
         monkeypatch.setattr(AsyncQdrantAdapter, "_client", mock_client)
@@ -597,7 +622,7 @@ class TestAsyncQdrantAdapterErrors:
             if obj.get("collection") == "test":
                 raise ResourceError(
                     "Qdrant collection not found: Collection 'test' not found",
-                    resource="test"
+                    resource="test",
                 )
             return await original_from_obj(cls, subj_cls, obj, **kw)
 
@@ -633,7 +658,7 @@ class TestAsyncQdrantAdapterErrors:
             if not kw.get("many", True):
                 raise ResourceError(
                     "No points found matching the query vector",
-                    resource=obj["collection"]
+                    resource=obj["collection"],
                 )
             else:
                 return []
@@ -696,9 +721,7 @@ class TestAsyncCancellation:
         TestModel.register_async_adapter(MockAsyncAdapter)
 
         # Create a task that will be cancelled
-        task = asyncio.create_task(
-            TestModel.adapt_from_async({}, obj_key="mock_async")
-        )
+        task = asyncio.create_task(TestModel.adapt_from_async({}, obj_key="mock_async"))
 
         # Wait a bit and then cancel the task
         await asyncio.sleep(0.1)

@@ -22,8 +22,8 @@ from pydapter.exceptions import (
     ParseError,
     QueryError,
     ResourceError,
-    ValidationError as AdapterValidationError,
 )
+from pydapter.exceptions import ValidationError as AdapterValidationError
 
 
 class TestCustomExceptions:
@@ -252,7 +252,9 @@ class TestJsonAdapterErrors:
 
         # Test JSON array with many=False
         with pytest.raises(AdapterValidationError) as exc_info:
-            TestModel.adapt_from('[{"id": 1, "name": "test", "value": 42.5}]', obj_key="json", many=False)
+            TestModel.adapt_from(
+                '[{"id": 1, "name": "test", "value": 42.5}]', obj_key="json", many=False
+            )
         assert "Validation error" in str(exc_info.value)
 
 
@@ -289,7 +291,7 @@ class TestCsvAdapterErrors:
             # Create a CSV reader with empty fieldnames
             TestModel.adapt_from("", obj_key="csv")
         assert "Empty CSV content" in str(exc_info.value)
-        
+
         # Test CSV with empty headers
         with pytest.raises(ParseError) as exc_info:
             # Create a CSV with empty header row
@@ -452,7 +454,9 @@ class TestTomlAdapterErrors:
 
         # Test TOML with invalid field types
         with pytest.raises(AdapterValidationError) as exc_info:
-            TestModel.adapt_from("id = 'not_an_int'\nname = 'test'\nvalue = 42.5", obj_key="toml")
+            TestModel.adapt_from(
+                "id = 'not_an_int'\nname = 'test'\nvalue = 42.5", obj_key="toml"
+            )
         assert "Validation error" in str(exc_info.value)
         assert "id" in str(exc_info.value)
 
@@ -479,7 +483,9 @@ class TestRegistryErrors:
         """Test retrieval of unregistered adapter."""
         registry = AdapterRegistry()
 
-        with pytest.raises(AdapterNotFoundError, match="No adapter registered for 'nonexistent'"):
+        with pytest.raises(
+            AdapterNotFoundError, match="No adapter registered for 'nonexistent'"
+        ):
             registry.get("nonexistent")
 
     def test_duplicate_registration(self):
@@ -528,10 +534,14 @@ class TestAdaptableErrors:
 
         model = TestModel(id=1, name="test", value=42.5)
 
-        with pytest.raises(AdapterNotFoundError, match="No adapter registered for 'nonexistent'"):
+        with pytest.raises(
+            AdapterNotFoundError, match="No adapter registered for 'nonexistent'"
+        ):
             model.adapt_to(obj_key="nonexistent")
 
-        with pytest.raises(AdapterNotFoundError, match="No adapter registered for 'nonexistent'"):
+        with pytest.raises(
+            AdapterNotFoundError, match="No adapter registered for 'nonexistent'"
+        ):
             TestModel.adapt_from({}, obj_key="nonexistent")
 
     def test_invalid_model_data(self):
@@ -572,7 +582,9 @@ class TestEdgeCases:
         TestModel.register_adapter(JsonAdapter)
 
         # Test with very large integer
-        json_data = '{"id": 9223372036854775807, "name": "test", "value": 42.5}'  # Max int64
+        json_data = (
+            '{"id": 9223372036854775807, "name": "test", "value": 42.5}'  # Max int64
+        )
         model = TestModel.adapt_from(json_data, obj_key="json")
         assert model.id == 9223372036854775807
 
@@ -613,7 +625,7 @@ class TestEdgeCases:
         TestModel.register_adapter(JsonAdapter)
 
         # Test with empty array for many=True
-        json_data = '[]'
+        json_data = "[]"
         result = TestModel.adapt_from(json_data, obj_key="json", many=True)
         assert isinstance(result, list)
         assert len(result) == 0
