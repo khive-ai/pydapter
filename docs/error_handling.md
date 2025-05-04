@@ -1,10 +1,14 @@
 # Error Handling in pydapter
 
-pydapter provides a comprehensive error handling system to help you diagnose and resolve issues when working with adapters. This document explains the exception hierarchy and how to handle errors effectively in your applications.
+pydapter provides a comprehensive error handling system to help you diagnose and
+resolve issues when working with adapters. This document explains the exception
+hierarchy and how to handle errors effectively in your applications.
 
 ## Exception Hierarchy
 
-All pydapter exceptions inherit from the base `AdapterError` class, which provides context-rich error messages and a consistent interface for error handling.
+All pydapter exceptions inherit from the base `AdapterError` class, which
+provides context-rich error messages and a consistent interface for error
+handling.
 
 ```
 AdapterError
@@ -19,7 +23,8 @@ AdapterError
 
 ### AdapterError
 
-The base exception class for all pydapter errors. It provides a mechanism to attach context information to errors.
+The base exception class for all pydapter errors. It provides a mechanism to
+attach context information to errors.
 
 ```python
 try:
@@ -31,7 +36,8 @@ except AdapterError as e:
 
 ### ValidationError
 
-Raised when data validation fails, such as when required fields are missing or have incorrect types.
+Raised when data validation fails, such as when required fields are missing or
+have incorrect types.
 
 ```python
 try:
@@ -43,7 +49,8 @@ except ValidationError as e:
 
 ### ParseError
 
-Raised when data parsing fails, such as when trying to parse invalid JSON, CSV, or TOML.
+Raised when data parsing fails, such as when trying to parse invalid JSON, CSV,
+or TOML.
 
 ```python
 try:
@@ -55,7 +62,8 @@ except ParseError as e:
 
 ### ConnectionError
 
-Raised when a connection to a data source fails, such as when a database is unavailable.
+Raised when a connection to a data source fails, such as when a database is
+unavailable.
 
 ```python
 try:
@@ -68,7 +76,8 @@ except ConnectionError as e:
 
 ### QueryError
 
-Raised when a query to a data source fails, such as when an SQL query contains errors.
+Raised when a query to a data source fails, such as when an SQL query contains
+errors.
 
 ```python
 try:
@@ -93,7 +102,8 @@ except ResourceError as e:
 
 ### ConfigurationError
 
-Raised when adapter configuration is invalid, such as when required parameters are missing.
+Raised when adapter configuration is invalid, such as when required parameters
+are missing.
 
 ```python
 try:
@@ -219,4 +229,7 @@ except ResourceError as e:
 
 ## Conclusion
 
-Proper error handling is essential for building robust applications with pydapter. By understanding the exception hierarchy and following best practices, you can create more resilient code that gracefully handles failure scenarios and provides clear feedback to users.
+Proper error handling is essential for building robust applications with
+pydapter. By understanding the exception hierarchy and following best practices,
+you can create more resilient code that gracefully handles failure scenarios and
+provides clear feedback to users.

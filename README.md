@@ -33,11 +33,13 @@ only when you need them.
 - **Extensible**: Create your own adapters for any data source
 - **Type-safe**: Leverages Pydantic's validation system
 - **Async support**: Works with async data sources via `AsyncAdaptable`
-- **Robust error handling**: Comprehensive exception hierarchy for clear error messages
+- **Robust error handling**: Comprehensive exception hierarchy for clear error
+  messages
 
 ## Error Handling
 
-pydapter provides a robust error handling system with a comprehensive exception hierarchy:
+pydapter provides a robust error handling system with a comprehensive exception
+hierarchy:
 
 ```python
 try:

@@ -51,15 +51,19 @@ PRs, and coordinates work between different specialized roles:
 
 ## Testing
 
-pydapter uses a comprehensive testing strategy that includes both unit tests and integration tests:
+pydapter uses a comprehensive testing strategy that includes both unit tests and
+integration tests:
 
 ### Unit Tests
 
-Unit tests use mocks to test adapter functionality in isolation. These tests are fast and don't require external dependencies.
+Unit tests use mocks to test adapter functionality in isolation. These tests are
+fast and don't require external dependencies.
 
 ### Integration Tests
 
-Integration tests use [TestContainers](https://testcontainers.com/) to spin up real database instances in Docker containers. These tests verify that adapters work correctly with actual database systems:
+Integration tests use [TestContainers](https://testcontainers.com/) to spin up
+real database instances in Docker containers. These tests verify that adapters
+work correctly with actual database systems:
 
 - **PostgreSQL** - Tests SQL adapter with a real PostgreSQL database
 - **MongoDB** - Tests document storage and retrieval
@@ -87,7 +91,8 @@ pytest -k "not test_integration"
 If Docker is not available, integration tests will be automatically skipped.
 
 Please ensure that your contributions include appropriate tests and maintain or
-improve the current test coverage. For database adapters, consider adding both unit tests with mocks and integration tests with TestContainers.
+improve the current test coverage. For database adapters, consider adding both
+unit tests with mocks and integration tests with TestContainers.
 
 ## License
 

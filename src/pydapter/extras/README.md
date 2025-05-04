@@ -1,6 +1,7 @@
 # pydapter extras
 
-This directory contains additional adapters for various data sources and formats.
+This directory contains additional adapters for various data sources and
+formats.
 
 ## Available Adapters
 
@@ -10,15 +11,18 @@ This directory contains additional adapters for various data sources and formats
 
 ## Error Handling
 
-All adapters in this directory implement robust error handling using the pydapter exception hierarchy:
+All adapters in this directory implement robust error handling using the
+pydapter exception hierarchy:
 
 - `ConnectionError`: Raised when connection to a data source fails
 - `QueryError`: Raised when a query to a data source fails
-- `ResourceError`: Raised when a resource (table, collection, etc.) cannot be accessed
+- `ResourceError`: Raised when a resource (table, collection, etc.) cannot be
+  accessed
 - `ValidationError`: Raised when data validation fails
 - `ConfigurationError`: Raised when adapter configuration is invalid
 
-See the [Error Handling Documentation](../../../docs/error_handling.md) for more details.
+See the [Error Handling Documentation](../../../docs/error_handling.md) for more
+details.
 
 ## Template for AsyncAdapter
 

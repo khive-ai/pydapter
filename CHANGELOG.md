@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+
 - Integration tests for database adapters using TestContainers
   - PostgreSQL integration tests
   - MongoDB integration tests
@@ -10,6 +11,7 @@
   - Qdrant vector database integration tests
 
 ### Fixed
+
 - Neo4j adapter now supports authentication
 - Qdrant adapter improved connection error handling
 - SQL adapter enhanced error handling for connection issues

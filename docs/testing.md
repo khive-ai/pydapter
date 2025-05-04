@@ -1,17 +1,22 @@
 # Testing in pydapter
 
-pydapter uses a comprehensive testing strategy to ensure reliability and correctness of all adapters. This document explains the testing approach and how to run tests.
+pydapter uses a comprehensive testing strategy to ensure reliability and
+correctness of all adapters. This document explains the testing approach and how
+to run tests.
 
 ## Testing Strategy
 
 pydapter employs two main types of tests:
 
 1. **Unit Tests** - Test adapter functionality in isolation using mocks
-2. **Integration Tests** - Test adapters with real database systems using TestContainers
+2. **Integration Tests** - Test adapters with real database systems using
+   TestContainers
 
 ## Unit Tests
 
-Unit tests are designed to test adapter functionality without requiring external dependencies. These tests use mocks to simulate database connections and responses, making them fast and reliable.
+Unit tests are designed to test adapter functionality without requiring external
+dependencies. These tests use mocks to simulate database connections and
+responses, making them fast and reliable.
 
 Example unit test for a database adapter:
 
@@ -33,7 +38,9 @@ def test_postgres_adapter_to_obj(mocker):
 
 ## Integration Tests
 
-Integration tests verify that adapters work correctly with actual database systems. These tests use [TestContainers](https://testcontainers.com/) to spin up isolated database instances in Docker containers during test execution.
+Integration tests verify that adapters work correctly with actual database
+systems. These tests use [TestContainers](https://testcontainers.com/) to spin
+up isolated database instances in Docker containers during test execution.
 
 ### Supported Databases
 
@@ -59,7 +66,8 @@ def pg_url():
         yield url
 ```
 
-These fixtures handle container lifecycle, ensuring proper cleanup after tests complete.
+These fixtures handle container lifecycle, ensuring proper cleanup after tests
+complete.
 
 ### Example Integration Test
 
@@ -127,7 +135,8 @@ pytest tests/test_*postgres*.py
 
 ### Docker Availability Check
 
-Integration tests automatically check for Docker availability and are skipped if Docker is not running:
+Integration tests automatically check for Docker availability and are skipped if
+Docker is not running:
 
 ```python
 def is_docker_available():
@@ -147,10 +156,13 @@ pytestmark = pytest.mark.skipif(
 
 ## Writing New Tests
 
-When contributing new adapters or features to pydapter, please include both unit tests and integration tests:
+When contributing new adapters or features to pydapter, please include both unit
+tests and integration tests:
 
-1. **Unit tests** should test the adapter's functionality in isolation using mocks
-2. **Integration tests** should verify the adapter works with a real database instance
+1. **Unit tests** should test the adapter's functionality in isolation using
+   mocks
+2. **Integration tests** should verify the adapter works with a real database
+   instance
 
 ### Integration Test Template
 
@@ -181,7 +193,8 @@ def test_new_adapter_integration(container_url, model_factory, cleanup_fixture):
 
 ## Test Coverage
 
-pydapter aims to maintain high test coverage. You can generate a coverage report with:
+pydapter aims to maintain high test coverage. You can generate a coverage report
+with:
 
 ```bash
 pytest --cov=pydapter
