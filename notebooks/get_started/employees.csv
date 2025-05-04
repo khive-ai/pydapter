@@ -1,0 +1,4 @@
+id,name,department,salary,hire_date
+1,Alice,Engineering,85000.0,2020-01-15
+2,Bob,Marketing,75000.0,2021-03-20
+3,Charlie,Finance,95000.0,2019-11-01

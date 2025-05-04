@@ -1,0 +1,54 @@
+{
+  "last_updated": "2025-05-04T17:56:06.722449",
+  "products": [
+    {
+      "attributes": {
+        "brand": "TechX",
+        "color": "silver",
+        "ram": "16GB"
+      },
+      "categories": [
+        "electronics",
+        "computers"
+      ],
+      "description": "Powerful laptop for developers",
+      "id": 1,
+      "name": "Laptop",
+      "price": 1299.99,
+      "stock": 10
+    },
+    {
+      "attributes": {
+        "brand": "ViewClear",
+        "resolution": "4K",
+        "size": "27in"
+      },
+      "categories": [
+        "electronics",
+        "accessories"
+      ],
+      "description": "27-inch 4K monitor",
+      "id": 2,
+      "name": "Monitor",
+      "price": 499.99,
+      "stock": 15
+    },
+    {
+      "attributes": {
+        "backlight": "RGB",
+        "brand": "GameMaster",
+        "type": "mechanical"
+      },
+      "categories": [
+        "electronics",
+        "accessories",
+        "gaming"
+      ],
+      "description": "Mechanical gaming keyboard",
+      "id": 3,
+      "name": "Keyboard",
+      "price": 149.99,
+      "stock": 30
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+app_name = "MyApp"
+version = "1.0.0"
+debug = true
+allowed_hosts = [ "localhost", "example.com",]
+
+[database]
+host = "localhost"
+port = "5432"
+name = "myapp"

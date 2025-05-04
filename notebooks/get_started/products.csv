@@ -1,0 +1,4 @@
+id,name,description,price,stock,categories,attributes
+1,Laptop,Powerful laptop for developers,1299.99,10,"['electronics', 'computers']","{'brand': 'TechX', 'color': 'silver', 'ram': '16GB'}"
+2,Monitor,27-inch 4K monitor,499.99,15,"['electronics', 'accessories']","{'brand': 'ViewClear', 'resolution': '4K', 'size': '27in'}"
+3,Keyboard,Mechanical gaming keyboard,149.99,30,"['electronics', 'accessories', 'gaming']","{'brand': 'GameMaster', 'type': 'mechanical', 'backlight': 'RGB'}"
