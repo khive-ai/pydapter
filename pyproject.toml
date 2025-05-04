@@ -27,7 +27,7 @@ dev = [
 pandas    = ["pandas>=2.2"]
 excel     = ["pandas>=2.2", "xlsxwriter>=3.2"]
 sql       = ["sqlalchemy>=2.0"]
-postgres  = ["sqlalchemy>=2.0", "psycopg[binary]>=3", "asyncpg>=0.29"]
+postgres  = ["sqlalchemy>=2.0", "psycopg[binary]>=3", "asyncpg>=0.29", "greenlet>=3.0.0"]
 mongo     = ["pymongo>=4.7"]
 weaviate  = ["weaviate-client>=4.4"]
 neo4j     = ["neo4j>=5.19"]
@@ -39,7 +39,7 @@ test      = [
     "pytest-asyncio>=0.26.0",
     "pytest-cov>=4.1.0",
     "pytest-benchmark>=4.0.0",
-    "testcontainers[postgres,qdrant]>=3.7.0"
+    "testcontainers[postgres,qdrant,mongodb]>=3.7.0"
 ]
 
 # ----------------------------------
