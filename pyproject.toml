@@ -1,6 +1,6 @@
 [project]
 name            = "pydapter"
-version         = "0.1.0"
+version         = "0.1.1"
 description     = "Tiny trait + adapter toolkit for pydantic models"
 readme          = "README.md"
 requires-python = ">=3.10"
@@ -29,7 +29,7 @@ dev = [
 [project.optional-dependencies]
 
 pandas    = ["pandas>=2.2"]
-excel     = ["pandas>=2.2", "xlsxwriter>=3.2"]
+excel     = ["pandas>=2.2", "xlsxwriter>=3.2", "openpyxl>=3.1.5"]
 sql       = ["sqlalchemy>=2.0"]
 postgres  = ["sqlalchemy>=2.0", "psycopg[binary]>=3", "asyncpg>=0.29", "greenlet>=3.0.0", "psycopg2-binary>=2.9.10"]
 mongo     = ["pymongo>=4.7"]
@@ -53,7 +53,8 @@ all = [
     "neo4j>=5.19",
     "motor>=3",
     "qdrant-client>=1.14",
-    "aiohttp>=3.11.10"
+    "aiohttp>=3.11.10",
+    "openpyxl>=3.1.5"
 ]
 
 [tool.pytest.ini_options]
