@@ -1,0 +1,37 @@
+last_updated = "2025-05-04T17:56:06.722449"
+[[products]]
+id = 1
+name = "Laptop"
+description = "Powerful laptop for developers"
+price = 1299.99
+stock = 10
+categories = [ "electronics", "computers",]
+
+[products.attributes]
+brand = "TechX"
+color = "silver"
+ram = "16GB"
+[[products]]
+id = 2
+name = "Monitor"
+description = "27-inch 4K monitor"
+price = 499.99
+stock = 15
+categories = [ "electronics", "accessories",]
+
+[products.attributes]
+brand = "ViewClear"
+resolution = "4K"
+size = "27in"
+[[products]]
+id = 3
+name = "Keyboard"
+description = "Mechanical gaming keyboard"
+price = 149.99
+stock = 30
+categories = [ "electronics", "accessories", "gaming",]
+
+[products.attributes]
+brand = "GameMaster"
+type = "mechanical"
+backlight = "RGB"
