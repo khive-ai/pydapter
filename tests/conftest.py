@@ -35,7 +35,10 @@ def pg_url():
     from testcontainers.postgres import PostgresContainer
 
     with PostgresContainer("postgres:16-alpine") as pg:
-        yield pg.get_connection_url()  # postgresql://user:pass@host:port/db
+        # Convert the URL to use asyncpg instead of psycopg2
+        url = pg.get_connection_url()  # postgresql://user:pass@host:port/db
+        url = url.replace("postgresql://", "postgresql+asyncpg://")
+        yield url
 
 
 @pytest.fixture(scope="session")
