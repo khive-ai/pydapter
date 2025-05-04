@@ -2,7 +2,7 @@
 Tests for Async PostgreSQL adapter functionality.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from pydantic import BaseModel

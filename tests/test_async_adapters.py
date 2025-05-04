@@ -1,7 +1,4 @@
-import asyncio
-
 import pytest
-import pytest_asyncio
 
 from pydapter.extras.async_mongo_ import AsyncMongoAdapter
 from pydapter.extras.async_postgres_ import AsyncPostgresAdapter

@@ -4,7 +4,7 @@ PostgresAdapter - thin preset over SQLAdapter (pgvector-ready if you add vec col
 
 from __future__ import annotations
 
-from typing import Sequence, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel
 

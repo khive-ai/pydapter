@@ -95,7 +95,7 @@ class CsvAdapter(Adapter[T]):
                         result.append(subj_cls.model_validate(row))
                     except ValidationError as e:
                         raise AdapterValidationError(
-                            f"Validation error in row {i+1}: {e}",
+                            f"Validation error in row {i + 1}: {e}",
                             data=row,
                             row=i + 1,
                             errors=e.errors(),

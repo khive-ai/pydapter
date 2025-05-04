@@ -3,15 +3,12 @@ Tests for async adapter error handling in pydapter.
 """
 
 import asyncio
-from unittest.mock import Mock
 
 import pytest
-import pytest_asyncio
 from pydantic import BaseModel
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import (
-    AdapterError,
     AdapterNotFoundError,
     ConnectionError,
     QueryError,

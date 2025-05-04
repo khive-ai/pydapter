@@ -2,15 +2,10 @@
 Tests for error handling in pydapter.
 """
 
-import io
-import json
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
-import toml
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
 from pydapter.core import Adaptable, Adapter, AdapterRegistry

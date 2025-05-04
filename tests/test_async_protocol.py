@@ -2,16 +2,12 @@
 Tests for async protocol compliance and functionality.
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
-import pytest_asyncio
 from pydantic import BaseModel
 
-from pydapter.async_core import AsyncAdaptable, AsyncAdapter, AsyncAdapterRegistry
-from pydapter.extras.async_mongo_ import AsyncMongoAdapter
-from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
-from pydapter.extras.async_qdrant_ import AsyncQdrantAdapter
+from pydapter.async_core import AsyncAdaptable, AsyncAdapterRegistry
 
 
 class MockAsyncAdapter:

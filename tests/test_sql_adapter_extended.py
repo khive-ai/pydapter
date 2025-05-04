@@ -2,7 +2,7 @@
 Extended tests for SQL adapter functionality.
 """
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import BaseModel

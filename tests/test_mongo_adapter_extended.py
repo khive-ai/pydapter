@@ -2,7 +2,7 @@
 Extended tests for MongoDB adapter functionality.
 """
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import BaseModel
@@ -174,7 +174,6 @@ class TestMongoAdapterExtended:
 
         # Patch the _client method to return our mock client
         with patch.object(MongoAdapter, "_client", return_value=mock_client):
-
             # Directly test the adapter's to_obj method with multiple items
             MongoAdapter.to_obj(
                 [model1, model2],
@@ -201,7 +200,6 @@ class TestMongoAdapterExtended:
 
         # Patch the _client method to return our mock client
         with patch.object(MongoAdapter, "_client", return_value=mock_client):
-
             # Test to_obj with a single item and many=False
             mongo_sample.adapt_to(
                 obj_key="mongo",
@@ -229,7 +227,6 @@ class TestMongoAdapterExtended:
 
         # Patch the _client method with our mock
         with patch.object(MongoAdapter, "_client", mock_client_method):
-
             # Test to_obj with custom parameters
             mongo_sample.adapt_to(
                 obj_key="mongo",
