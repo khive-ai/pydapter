@@ -270,3 +270,18 @@ Ensure proper branch management throughout the development process:
 
 This disciplined branch management approach will keep the repository clean,
 prevent merge conflicts, and ensure everyone is working with the latest code.
+
+Hint:
+to use mcp tool you need 
+
+corrcect: 
+```
+{json stuff}
+```
+----------
+
+incorrect:
+```
+{json stuff}
+</use_mcp_tool>
+```
