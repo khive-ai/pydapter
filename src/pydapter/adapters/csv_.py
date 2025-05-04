@@ -29,7 +29,7 @@ class CsvAdapter(Adapter[T]):
         text = Path(obj).read_text() if Path(obj).exists() else obj
         reader = csv.DictReader(io.StringIO(text), **kw)
         rows = list(reader)
-        
+
         # If there's only one row, return a single object regardless of the 'many' parameter
         # This fixes the test_text_roundtrip[csv] test which expects a single object
         if len(rows) == 1:

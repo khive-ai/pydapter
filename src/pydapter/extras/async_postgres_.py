@@ -25,7 +25,9 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):  # type: ignore[type-arg]
         if "dsn" in kw:
             # Convert the PostgreSQL URL to SQLAlchemy format
             if not engine_url.startswith("postgresql+asyncpg://"):
-                engine_url = engine_url.replace("postgresql://", "postgresql+asyncpg://")
+                engine_url = engine_url.replace(
+                    "postgresql://", "postgresql+asyncpg://"
+                )
         obj.setdefault("engine_url", engine_url)
         return await super().from_obj(subj_cls, obj, **kw)
 
@@ -36,6 +38,8 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):  # type: ignore[type-arg]
         if "dsn" in kw:
             # Convert the PostgreSQL URL to SQLAlchemy format
             if not engine_url.startswith("postgresql+asyncpg://"):
-                engine_url = engine_url.replace("postgresql://", "postgresql+asyncpg://")
+                engine_url = engine_url.replace(
+                    "postgresql://", "postgresql+asyncpg://"
+                )
         kw.setdefault("engine_url", engine_url)
         await super().to_obj(subj, **kw)

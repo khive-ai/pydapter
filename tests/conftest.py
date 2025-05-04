@@ -21,7 +21,7 @@ def _ModelFactory():
             M.register_adapter(CsvAdapter)
             M.register_adapter(TomlAdapter)
             return M(**kw)
-    
+
     return Factory()
 
 
@@ -54,7 +54,11 @@ def mongo_url():
     from testcontainers.mongodb import MongoDbContainer
 
     # Use MongoDB container with authentication
-    with MongoDbContainer("mongo:6.0").with_env("MONGO_INITDB_ROOT_USERNAME", "test").with_env("MONGO_INITDB_ROOT_PASSWORD", "test") as mongo:
+    with (
+        MongoDbContainer("mongo:6.0")
+        .with_env("MONGO_INITDB_ROOT_USERNAME", "test")
+        .with_env("MONGO_INITDB_ROOT_PASSWORD", "test") as mongo
+    ):
         yield f"mongodb://test:test@{mongo.get_container_host_ip()}:{mongo.get_exposed_port(27017)}"
 
 
@@ -75,7 +79,7 @@ def async_model_factory():
     AsyncModel.register_async_adapter(AsyncPostgresAdapter)
     AsyncModel.register_async_adapter(AsyncMongoAdapter)
     AsyncModel.register_async_adapter(AsyncQdrantAdapter)
-    
+
     return AsyncModel
 
 
