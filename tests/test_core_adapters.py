@@ -1,9 +1,11 @@
-import pytest
-import json
-import toml
 import csv
 import io
-from pydapter.adapters import JsonAdapter, CsvAdapter, TomlAdapter
+import json
+
+import pytest
+import toml
+
+from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
 
 
 @pytest.mark.parametrize("adapter_key", ["json", "toml", "csv"])

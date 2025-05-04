@@ -1,5 +1,5 @@
 """
-AsyncMongoAdapter – uses `motor.motor_asyncio`.
+AsyncMongoAdapter - uses `motor.motor_asyncio`.
 """
 
 from __future__ import annotations

@@ -2,12 +2,12 @@
 Property-based tests for pydapter adapters.
 """
 
-import pytest
-from hypothesis import given, settings, HealthCheck, strategies as st
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 from pydantic import BaseModel
 
+from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
 from pydapter.core import Adaptable
-from pydapter.adapters import JsonAdapter, CsvAdapter, TomlAdapter
 
 
 def create_test_model(**kw):
@@ -46,12 +46,12 @@ class TestPropertyBasedAdapters:
     @given(
         id=st.integers(),
         name=st.text(
-            min_size=1, 
+            min_size=1,
             max_size=50,
-            alphabet=st.characters(blacklist_categories=('Cc', 'Cs')),  # Exclude control chars
-        ).filter(
-            lambda x: "," not in x and "\n" not in x
-        ),
+            alphabet=st.characters(
+                blacklist_categories=("Cc", "Cs")
+            ),  # Exclude control chars
+        ).filter(lambda x: "," not in x and "\n" not in x),
         value=st.floats(allow_nan=False, allow_infinity=False),
     )
     def test_csv_adapter_roundtrip(self, id, name, value):
@@ -149,6 +149,7 @@ class TestCrossAdapterConsistency:
     def test_cross_adapter_consistency(self, id, name, value):
         """Test that different adapters produce consistent results."""
         import json
+
         import toml
 
         model = create_test_model(id=id, name=name, value=value)

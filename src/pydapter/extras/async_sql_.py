@@ -1,5 +1,5 @@
 """
-Generic async SQL adapter – SQLAlchemy 2.x asyncio + asyncpg driver.
+Generic async SQL adapter - SQLAlchemy 2.x asyncio + asyncpg driver.
 """
 
 from __future__ import annotations
@@ -37,7 +37,9 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                 rows = (await conn.execute(stmt)).fetchall()
         except TypeError:
             # Handle case where eng.begin() is a coroutine in tests
-            if hasattr(eng.begin, "__self__") and hasattr(eng.begin.__self__, "__aenter__"):
+            if hasattr(eng.begin, "__self__") and hasattr(
+                eng.begin.__self__, "__aenter__"
+            ):
                 # This is for test mocks
                 conn = await eng.begin().__aenter__()
                 meta = sa.MetaData()
@@ -53,7 +55,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
             if many
             else subj_cls.model_validate(records[0])
         )
-        
+
     # outgoing
     @classmethod
     async def to_obj(
@@ -78,7 +80,9 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                 await conn.execute(sa.insert(tbl), rows)
         except TypeError:
             # Handle case where eng.begin() is a coroutine in tests
-            if hasattr(eng.begin, "__self__") and hasattr(eng.begin.__self__, "__aenter__"):
+            if hasattr(eng.begin, "__self__") and hasattr(
+                eng.begin.__self__, "__aenter__"
+            ):
                 # This is for test mocks
                 conn = await eng.begin().__aenter__()
                 meta = sa.MetaData()

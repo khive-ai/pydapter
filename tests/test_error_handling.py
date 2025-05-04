@@ -2,12 +2,13 @@
 Tests for error handling in pydapter.
 """
 
-import pytest
 import json
+
+import pytest
 from pydantic import BaseModel, ValidationError
 
-from pydapter.core import Adapter, AdapterRegistry, Adaptable
-from pydapter.adapters import JsonAdapter, CsvAdapter, TomlAdapter
+from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
+from pydapter.core import Adaptable, Adapter, AdapterRegistry
 
 
 class TestInvalidAdapters:

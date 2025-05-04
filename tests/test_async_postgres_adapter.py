@@ -2,8 +2,9 @@
 Tests for Async PostgreSQL adapter functionality.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from pydantic import BaseModel
 
 from pydapter.core import Adaptable
@@ -172,6 +173,4 @@ class TestAsyncPostgresAdapterErrorHandling:
             # Test from_obj with invalid data
             model_cls = async_postgres_sample.__class__
             with pytest.raises(ValueError, match="Invalid data"):
-                await model_cls.adapt_from(
-                    {"invalid": "data"}, obj_key="async_pg"
-                )
+                await model_cls.adapt_from({"invalid": "data"}, obj_key="async_pg")
