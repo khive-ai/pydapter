@@ -236,3 +236,35 @@ _(CLI encouraged; MCP always available)_
 5. **Merge & clean** - PR merged, issue closed, branch deleted.
 
 ---
+
+## Branch Management
+
+Ensure proper branch management throughout the development process:
+
+1. Create dedicated feature branches for each test category (e.g., `feature/core-unit-tests`, `feature/integration-tests`)
+2. After merging a PR, immediately clean up the corresponding feature branch:
+   ```bash
+   git checkout main
+   git pull origin main
+   git branch -d feature/core-unit-tests  # Replace with actual branch name
+   ```
+3. Always create new feature branches from an up-to-date main branch:
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feature/new-test-category
+   ```
+4. Verify that the main branch passes all tests after each merge:
+   ```bash
+   git checkout main
+   uv run pytest tests
+   ```
+5. Document branch creation and cleanup in issue comments to maintain visibility of the development process
+6. Always sync with remote before creating new branches to avoid divergence:
+   ```bash
+   git fetch origin
+   git checkout main
+   git reset --hard origin/main
+   ```
+
+This disciplined branch management approach will keep the repository clean, prevent merge conflicts, and ensure everyone is working with the latest code.
