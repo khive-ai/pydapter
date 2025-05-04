@@ -9,6 +9,7 @@ import pytest
 from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
 from pydapter.async_core import AsyncAdaptable, AsyncAdapter, AsyncAdapterRegistry
 from pydapter.core import Adaptable, Adapter, AdapterRegistry
+from pydapter.exceptions import AdapterNotFoundError, ConfigurationError
 from pydapter.extras.async_mongo_ import AsyncMongoAdapter
 from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
 from pydapter.extras.async_qdrant_ import AsyncQdrantAdapter
@@ -98,11 +99,13 @@ class TestAdapterRegistry:
         class InvalidAdapter:
             pass
 
-        with pytest.raises(AttributeError, match="Adapter must define 'obj_key'"):
+        with pytest.raises(ConfigurationError, match="Adapter must define 'obj_key'"):
             registry.register(InvalidAdapter)
 
         # Test retrieval of unregistered adapter
-        with pytest.raises(KeyError, match="No adapter registered for 'nonexistent'"):
+        with pytest.raises(
+            AdapterNotFoundError, match="No adapter registered for 'nonexistent'"
+        ):
             registry.get("nonexistent")
 
     def test_adapter_registry_convenience_methods(self):
@@ -165,11 +168,15 @@ class TestAsyncAdapterRegistry:
         class InvalidAdapter:
             pass
 
-        with pytest.raises(AttributeError, match="AsyncAdapter must define 'obj_key'"):
+        with pytest.raises(
+            ConfigurationError, match="AsyncAdapter must define 'obj_key'"
+        ):
             registry.register(InvalidAdapter)
 
         # Test retrieval of unregistered adapter
-        with pytest.raises(KeyError, match="No async adapter for 'nonexistent'"):
+        with pytest.raises(
+            AdapterNotFoundError, match="No async adapter for 'nonexistent'"
+        ):
             registry.get("nonexistent")
 
 

@@ -5,9 +5,10 @@ Neo4j adapter (requires `neo4j`).
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional, Sequence, TypeVar
+from typing import Sequence, TypeVar
 
 import neo4j
+import neo4j.exceptions
 from neo4j import GraphDatabase
 from pydantic import BaseModel, ValidationError
 
@@ -166,13 +167,15 @@ class Neo4jAdapter(Adapter[T]):
                             )
 
                         # Prepare and validate Cypher query
-                        cypher = f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props RETURN n"
+                        cypher = (
+                            f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
+                        )
                         cls._validate_cypher(cypher)
 
                         # Execute query
                         try:
                             result = s.run(cypher, val=props[merge_on], props=props)
-                            results.append(result.single())
+                            results.append(result)
                         except neo4j.exceptions.CypherSyntaxError as e:
                             raise QueryError(
                                 f"Neo4j Cypher syntax error: {e}",

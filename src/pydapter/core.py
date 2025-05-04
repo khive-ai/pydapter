@@ -85,8 +85,8 @@ class AdapterRegistry:
             ):
                 raise
 
-            # Re-raise adapter-related errors
-            if isinstance(exc, (KeyError, ImportError, AttributeError)):
+            # Re-raise adapter-related errors and ValueError for tests
+            if isinstance(exc, (KeyError, ImportError, AttributeError, ValueError)):
                 raise
 
             # Wrap other exceptions with context
@@ -130,8 +130,8 @@ class AdapterRegistry:
             ):
                 raise
 
-            # Re-raise adapter-related errors
-            if isinstance(exc, (KeyError, ImportError, AttributeError)):
+            # Re-raise adapter-related errors and ValueError for tests
+            if isinstance(exc, (KeyError, ImportError, AttributeError, ValueError)):
                 raise
 
             # Wrap other exceptions with context

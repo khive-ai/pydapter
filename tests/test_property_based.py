@@ -58,7 +58,7 @@ class TestPropertyBasedAdapters:
         """Test that objects can be round-tripped through the CsvAdapter."""
         model = create_test_model(id=id, name=name, value=value)
         serialized = model.adapt_to(obj_key="csv")
-        deserialized = model.__class__.adapt_from(serialized, obj_key="csv")
+        deserialized = model.__class__.adapt_from(serialized, obj_key="csv", many=False)
         assert deserialized == model
 
     @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])

@@ -4,12 +4,11 @@ AsyncPostgresAdapter - presets AsyncSQLAdapter for PostgreSQL/pgvector.
 
 from __future__ import annotations
 
-from typing import Sequence, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel
 
-from ..async_core import AsyncAdapter
-from ..exceptions import ConnectionError, QueryError
+from ..exceptions import ConnectionError
 from .async_sql_ import AsyncSQLAdapter
 
 T = TypeVar("T", bound=BaseModel)

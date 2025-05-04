@@ -4,16 +4,24 @@ MongoDB adapter (requires `pymongo`).
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, TypeVar
+from typing import Sequence, TypeVar
 
 import pymongo
+import pymongo.errors
 from pydantic import BaseModel, ValidationError
+from pymongo import MongoClient
 
 from ..core import Adapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
+
+
+__all__ = (
+    "MongoAdapter",
+    "MongoClient",
+)
 
 
 class MongoAdapter(Adapter[T]):

@@ -179,7 +179,8 @@ class SQLAdapter(Adapter[T]):
                     adapter="sql",
                 ) from e
 
-            return None
+            # Return a success indicator instead of None
+            return {"success": True, "count": len(rows)}
 
         except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
             # Re-raise our custom exceptions

@@ -4,7 +4,7 @@ AsyncQdrantAdapter - vector upsert / search using AsyncQdrantClient.
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, TypeVar
+from typing import Sequence, TypeVar
 
 import grpc
 from pydantic import BaseModel, ValidationError

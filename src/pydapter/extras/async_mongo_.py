@@ -4,18 +4,24 @@ AsyncMongoAdapter - uses `motor.motor_asyncio`.
 
 from __future__ import annotations
 
-import asyncio
-from typing import List, Optional, Sequence, TypeVar
+from typing import Sequence, TypeVar
 
 import pymongo
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ValidationError
+from pymongo import MongoClient
 
 from ..async_core import AsyncAdapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
+
+
+__all__ = (
+    "AsyncMongoAdapter",
+    "MongoClient",
+)
 
 
 class AsyncMongoAdapter(AsyncAdapter[T]):
