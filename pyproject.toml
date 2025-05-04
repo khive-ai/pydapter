@@ -34,22 +34,32 @@ neo4j     = ["neo4j>=5.19"]
 motor     = ["motor>=3"]
 qdrant    = ["qdrant-client>=1.14"]
 aiohttp   = ["aiohttp>=3.11.10"]
+test      = [
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "pytest-cov>=4.1.0",
+    "pytest-benchmark>=4.0.0",
+    "testcontainers[postgres,qdrant]>=3.7.0"
+]
 
 # ----------------------------------
 all = [
-    "pandas",
-    "excel",
-    "sql",
-    "postgres",
-    "mongo",
-    "weaviate",
-    "neo4j",
-    "asyncpg",
-    "motor",
-    "qdrant-client",
-    "aiohttp"
+    "pandas>=2.2",
+    "xlsxwriter>=3.2",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3",
+    "asyncpg>=0.29",
+    "pymongo>=4.7",
+    "weaviate-client>=4.4",
+    "neo4j>=5.19",
+    "motor>=3",
+    "qdrant-client>=1.14",
+    "aiohttp>=3.11.10"
 ]
 
+[tool.pytest.ini_options]
+addopts = "-ra --cov=pydapter --cov-report=term-missing"
+testpaths = ["tests"]
 
 
 
