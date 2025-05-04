@@ -250,7 +250,10 @@ class TestAsyncPostgresAdapterErrors:
             )
         # Check for PostgreSQL-related error message
         error_msg = str(exc_info.value)
-        assert any(text in error_msg for text in ["PostgreSQL authentication failed", "Connect call failed"])
+        assert any(
+            text in error_msg
+            for text in ["PostgreSQL authentication failed", "Connect call failed"]
+        )
 
     @pytest.mark.asyncio
     async def test_connection_refused(self, monkeypatch):
@@ -280,11 +283,14 @@ class TestAsyncPostgresAdapterErrors:
         # Check for PostgreSQL-related error message
         error_msg = str(exc_info.value)
         # This assertion works in both local and CI environments
-        assert any(text in error_msg for text in [
-            "PostgreSQL authentication failed",
-            "Connect call failed",
-            "connection refused"
-        ])
+        assert any(
+            text in error_msg
+            for text in [
+                "PostgreSQL authentication failed",
+                "Connect call failed",
+                "connection refused",
+            ]
+        )
 
     @pytest.mark.asyncio
     async def test_database_not_exist(self, monkeypatch):
@@ -314,11 +320,14 @@ class TestAsyncPostgresAdapterErrors:
         # Check for PostgreSQL-related error message
         error_msg = str(exc_info.value)
         # This assertion works in both local and CI environments
-        assert any(text in error_msg for text in [
-            "PostgreSQL authentication failed",
-            "Connect call failed",
-            "database does not exist"
-        ])
+        assert any(
+            text in error_msg
+            for text in [
+                "PostgreSQL authentication failed",
+                "Connect call failed",
+                "database does not exist",
+            ]
+        )
 
 
 class TestAsyncMongoAdapterErrors:
