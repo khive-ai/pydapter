@@ -7,7 +7,7 @@ scope: "project"
 # project: pydapter
 
 - _Human Creator:_ **Ocean**
-- _GitHub Owner:_ **ohdearquant**
+- _GitHub Owner:_ **agenticsorg**
 - _Repository:_ **pydapter**
 
 ## Team Memebers
