@@ -13,7 +13,6 @@ Document → Merge) **Prioritize speed, clarity, and effective delegation.**
 - use comments in stead of `assignees`, `reviewers`, you should indicate which
   mode the task is for
 - leave clear instructions in GitHub comments / Issues / PRs
-- local CLI helpers (`pydapter-init`, `pydapter pr`, `pydapter clean`, …)
 - verify that quality gates (template usage, search citation, ≥ 80 pct coverage)
   are met.
 
