@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Optional: Add some test data
-INSERT INTO users (name, email) VALUES 
+INSERT INTO users (name, email) VALUES
     ('Alice', 'alice@example.com'),
     ('Bob', 'bob@example.com'),
     ('Charlie', 'charlie@example.com');
@@ -98,11 +98,11 @@ def read_users():
         },
         many=True  # Return a list of users
     )
-    
+
     print(f"Found {len(users)} users:")
     for user in users:
         print(f"  - {user.name} ({user.email}): Active={user.active}")
-    
+
     return users
 
 # Query a specific user
@@ -126,14 +126,14 @@ def get_user_by_email(email):
 # Create a new user
 def create_user(name, email):
     user = User(name=name, email=email)
-    
+
     result = PostgresAdapter.to_obj(
         user,
         **db_config,
         table="users",
         many=False
     )
-    
+
     print(f"Created user: {result}")
     return user
 
@@ -141,13 +141,13 @@ def create_user(name, email):
 def main():
     print("Reading all users:")
     users = read_users()
-    
+
     print("\nFinding user by email:")
     alice = get_user_by_email("alice@example.com")
-    
+
     print("\nCreating a new user:")
     new_user = create_user("Dave", "dave@example.com")
-    
+
     print("\nVerifying new user was added:")
     read_users()
 
@@ -194,11 +194,11 @@ async def read_users():
         },
         many=True  # Return a list of users
     )
-    
+
     print(f"Found {len(users)} users:")
     for user in users:
         print(f"  - {user.name} ({user.email}): Active={user.active}")
-    
+
     return users
 
 # Query a specific user asynchronously
@@ -222,14 +222,14 @@ async def get_user_by_email(email):
 # Create a new user asynchronously
 async def create_user(name, email):
     user = User(name=name, email=email)
-    
+
     result = await AsyncPostgresAdapter.to_obj(
         user,
         **db_config,
         table="users",
         many=False
     )
-    
+
     print(f"Created user: {result}")
     return user
 
@@ -237,13 +237,13 @@ async def create_user(name, email):
 async def main():
     print("Reading all users:")
     users = await read_users()
-    
+
     print("\nFinding user by email:")
     alice = await get_user_by_email("alice@example.com")
-    
+
     print("\nCreating a new user:")
     new_user = await create_user("Eve", "eve@example.com")
-    
+
     print("\nVerifying new user was added:")
     await read_users()
 
@@ -283,26 +283,26 @@ async def main():
         "table": "users",
         "selectors": {}
     }
-    
+
     # Read users using the mixin methods
     users = await User.adapt_from_async(db_config, obj_key="async_pg", many=True)
-    
+
     print(f"Found {len(users)} users:")
     for user in users:
         print(f"  - {user.name} ({user.email})")
-    
+
     # Create a new user
     new_user = User(name="Frank", email="frank@example.com")
-    
+
     # Save to database
     result = await new_user.adapt_to_async(
         obj_key="async_pg",
         engine_url="postgresql+asyncpg://pydapter:password@localhost/pydapter_demo",
         table="users"
     )
-    
+
     print(f"\nCreated new user: {result}")
-    
+
     # Verify the user was added
     updated_users = await User.adapt_from_async(db_config, obj_key="async_pg", many=True)
     print(f"\nUpdated user count: {len(updated_users)}")
@@ -338,7 +338,7 @@ def handle_postgres_errors():
         )
     except ConnectionError as e:
         print(f"Authentication error handled: {e}")
-    
+
     # 2. Connection error - wrong host
     try:
         PostgresAdapter.from_obj(
@@ -350,7 +350,7 @@ def handle_postgres_errors():
         )
     except ConnectionError as e:
         print(f"Host connection error handled: {e}")
-    
+
     # 3. Resource error - table doesn't exist
     try:
         PostgresAdapter.from_obj(
@@ -362,7 +362,7 @@ def handle_postgres_errors():
         )
     except ResourceError as e:
         print(f"Table resource error handled: {e}")
-    
+
     # 4. Query error - SQL syntax error
     try:
         # This would normally be handled internally, but for demonstration
@@ -436,7 +436,7 @@ DB_CONFIG = {
 class TaskManager:
     def __init__(self, db_config):
         self.db_config = db_config
-    
+
     async def create_project(self, name, description=None):
         project = Project(name=name, description=description)
         result = await project.adapt_to_async(
@@ -444,7 +444,7 @@ class TaskManager:
             **self.db_config,
             table="projects"
         )
-        
+
         # Get the new project with its ID
         projects = await Project.adapt_from_async(
             {
@@ -455,11 +455,11 @@ class TaskManager:
             obj_key="async_pg",
             many=True
         )
-        
+
         if projects:
             return projects[0]
         return None
-    
+
     async def get_projects(self):
         return await Project.adapt_from_async(
             {
@@ -469,7 +469,7 @@ class TaskManager:
             obj_key="async_pg",
             many=True
         )
-    
+
     async def create_task(self, project_id, title, description=None, due_date=None):
         task = Task(
             project_id=project_id,
@@ -477,15 +477,15 @@ class TaskManager:
             description=description,
             due_date=due_date
         )
-        
+
         result = await task.adapt_to_async(
             obj_key="async_pg",
             **self.db_config,
             table="tasks"
         )
-        
+
         return task
-    
+
     async def get_tasks_for_project(self, project_id):
         return await Task.adapt_from_async(
             {
@@ -496,7 +496,7 @@ class TaskManager:
             obj_key="async_pg",
             many=True
         )
-    
+
     async def update_task_status(self, task_id, new_status):
         # First, get the task
         task = await Task.adapt_from_async(
@@ -508,23 +508,23 @@ class TaskManager:
             obj_key="async_pg",
             many=False
         )
-        
+
         # Update the status
         task.status = new_status
-        
+
         # Save back to database
         result = await task.adapt_to_async(
             obj_key="async_pg",
             **self.db_config,
             table="tasks"
         )
-        
+
         return task
 
 # Main function to demo the task manager
 async def main():
     manager = TaskManager(DB_CONFIG)
-    
+
     # Create a new project
     print("Creating a new project...")
     project = await manager.create_project(
@@ -532,7 +532,7 @@ async def main():
         "Redesign the company website with modern UI/UX"
     )
     print(f"Project created: {project.id} - {project.name}")
-    
+
     # Add tasks to the project
     print("\nAdding tasks to the project...")
     tasks = [
@@ -555,24 +555,24 @@ async def main():
             datetime.now().replace(day=datetime.now().day + 10)
         )
     ]
-    
+
     # Get all projects
     print("\nListing all projects:")
     projects = await manager.get_projects()
     for proj in projects:
         print(f"  - {proj.id}: {proj.name}")
-        
+
         # Get tasks for this project
         proj_tasks = await manager.get_tasks_for_project(proj.id)
         for task in proj_tasks:
-            print(f"      - {task.title} [{task.status}] " + 
+            print(f"      - {task.title} [{task.status}] " +
                   (f"(Due: {task.due_date.strftime('%Y-%m-%d')})" if task.due_date else ""))
-    
+
     # Update a task status
     print("\nUpdating task status...")
     updated_task = await manager.update_task_status(tasks[0].id, "in_progress")
     print(f"Updated task: {updated_task.title} - Status: {updated_task.status}")
-    
+
     # Final task list
     print("\nFinal task list:")
     final_tasks = await manager.get_tasks_for_project(project.id)
@@ -659,7 +659,7 @@ async def demo_advanced_postgres_features():
             }
         )
     ]
-    
+
     # Save products to database
     print("Saving products with arrays and JSON data...")
     for product in products:
@@ -668,7 +668,7 @@ async def demo_advanced_postgres_features():
             **DB_CONFIG,
             table="products"
         )
-    
+
     # Query all products
     print("\nRetrieving products from database:")
     db_products = await Product.adapt_from_async(
@@ -679,7 +679,7 @@ async def demo_advanced_postgres_features():
         obj_key="async_pg",
         many=True
     )
-    
+
     # Display products with their array and JSON data
     for product in db_products:
         print(f"\n{product.name} - ${product.price}")

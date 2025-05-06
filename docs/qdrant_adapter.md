@@ -72,7 +72,7 @@ class Document(BaseModel):
     content: str
     tags: List[str] = []
     embedding: List[float] = []  # Vector embedding
-    
+
     def generate_embedding(self):
         """Generate embedding from the document content"""
         self.embedding = model.encode(self.content).tolist()
@@ -113,7 +113,7 @@ for doc in sample_docs:
 # Store documents in Qdrant
 def store_documents(documents):
     print(f"Storing {len(documents)} documents in Qdrant...")
-    
+
     # Store in Qdrant using the QdrantAdapter
     result = QdrantAdapter.to_obj(
         documents,
@@ -121,16 +121,16 @@ def store_documents(documents):
         url=None,  # Use in-memory storage for this example
         many=True
     )
-    
+
     print(f"Storage result: {result}")
 
 # Search for similar documents
 def search_documents(query_text, top_k=2):
     print(f"Searching for documents similar to: '{query_text}'")
-    
+
     # Generate embedding for the query
     query_embedding = model.encode(query_text).tolist()
-    
+
     # Search in Qdrant using the QdrantAdapter
     results = QdrantAdapter.from_obj(
         Document,
@@ -142,21 +142,21 @@ def search_documents(query_text, top_k=2):
         },
         many=True
     )
-    
+
     print(f"Found {len(results)} similar documents:")
     for i, doc in enumerate(results):
         print(f"{i+1}. {doc.title}")
         print(f"   Content: {doc.content}")
         print(f"   Tags: {', '.join(doc.tags)}")
         print()
-    
+
     return results
 
 # Main function to demo the adapter
 def main():
     # Store documents
     store_documents(sample_docs)
-    
+
     # Perform searches
     search_documents("What is machine learning?")
     search_documents("How do computers understand language?")
@@ -188,7 +188,7 @@ class Document(BaseModel):
     content: str
     tags: List[str] = []
     embedding: List[float] = []
-    
+
     def generate_embedding(self):
         self.embedding = model.encode(self.content).tolist()
         return self
@@ -228,7 +228,7 @@ for doc in sample_docs:
 # Store documents in Qdrant asynchronously
 async def store_documents(documents):
     print(f"Storing {len(documents)} documents in Qdrant...")
-    
+
     # Store in Qdrant using the AsyncQdrantAdapter
     result = await AsyncQdrantAdapter.to_obj(
         documents,
@@ -236,16 +236,16 @@ async def store_documents(documents):
         url=None,  # Use in-memory storage
         many=True
     )
-    
+
     print(f"Storage result: {result}")
 
 # Search for similar documents asynchronously
 async def search_documents(query_text, top_k=2):
     print(f"Searching for documents similar to: '{query_text}'")
-    
+
     # Generate embedding for the query
     query_embedding = model.encode(query_text).tolist()
-    
+
     # Search in Qdrant using the AsyncQdrantAdapter
     results = await AsyncQdrantAdapter.from_obj(
         Document,
@@ -257,21 +257,21 @@ async def search_documents(query_text, top_k=2):
         },
         many=True
     )
-    
+
     print(f"Found {len(results)} similar documents:")
     for i, doc in enumerate(results):
         print(f"{i+1}. {doc.title}")
         print(f"   Content: {doc.content}")
         print(f"   Tags: {', '.join(doc.tags)}")
         print()
-    
+
     return results
 
 # Main async function
 async def main():
     # Store documents
     await store_documents(sample_docs)
-    
+
     # Perform searches
     await search_documents("What is machine learning?")
     await search_documents("How do computers understand language?")
@@ -308,7 +308,7 @@ class Product(BaseModel, AsyncAdaptable):
     brand: str
     tags: List[str] = []
     embedding: List[float] = []
-    
+
     def generate_embedding(self):
         # Combine name and description for better semantic search
         text = f"{self.name}. {self.description}"
@@ -376,11 +376,11 @@ class ProductSearchSystem:
     def __init__(self, collection_name="products", url=None):
         self.collection_name = collection_name
         self.url = url
-    
+
     async def initialize(self, products):
         """Initialize the search system with products"""
         print(f"Initializing product search system with {len(products)} products...")
-        
+
         # Store products in Qdrant
         results = []
         for product in products:
@@ -390,23 +390,23 @@ class ProductSearchSystem:
                 url=self.url
             )
             results.append(result)
-        
+
         print("Product search system initialized successfully")
         return results
-    
+
     async def search(self, query_text, filters=None, top_k=3):
         """Search for products by semantic similarity with optional filtering"""
         print(f"Searching for products similar to: '{query_text}'")
         if filters:
             filter_desc = ", ".join(f"{k}={v}" for k, v in filters.items())
             print(f"With filters: {filter_desc}")
-        
+
         # Generate embedding for the query
         query_embedding = model.encode(query_text).tolist()
-        
+
         # We'll do the filtering in Python since pydapter doesn't directly expose Qdrant's filtering
         # In a real implementation, you could extend the adapter to support Qdrant's filtering
-        
+
         # First, search by vector similarity
         results = await Product.adapt_from_async(
             {
@@ -418,7 +418,7 @@ class ProductSearchSystem:
             obj_key="async_qdrant",
             many=True
         )
-        
+
         # Apply filters if specified
         if filters:
             filtered_results = []
@@ -439,10 +439,10 @@ class ProductSearchSystem:
                                 break
                 if match:
                     filtered_results.append(product)
-            
+
             # Limit to top_k after filtering
             results = filtered_results[:top_k]
-        
+
         print(f"Found {len(results)} matching products:")
         for i, product in enumerate(results):
             print(f"{i+1}. {product.name} - ${product.price}")
@@ -450,7 +450,7 @@ class ProductSearchSystem:
             print(f"   Description: {product.description}")
             print(f"   Tags: {', '.join(product.tags)}")
             print()
-        
+
         return results
 
 # Main function to demo the advanced search system
@@ -458,17 +458,17 @@ async def main():
     # Create and initialize the search system
     search_system = ProductSearchSystem()
     await search_system.initialize(sample_products)
-    
+
     # Perform various searches
     print("\n--- Basic Semantic Search ---")
     await search_system.search("wireless audio devices")
-    
+
     print("\n--- Search with Brand Filter ---")
     await search_system.search("wireless audio", filters={"brand": "SoundMaster"})
-    
+
     print("\n--- Search with Price Filter ---")
     await search_system.search("portable computing device", filters={"category": "Electronics"})
-    
+
     print("\n--- Search with Tag Filter ---")
     await search_system.search("advanced technology", filters={"tags": ["professional", "powerful"]})
 
@@ -496,7 +496,7 @@ class Document(BaseModel):
     title: str
     content: str
     embedding: List[float] = []
-    
+
     def generate_embedding(self):
         self.embedding = model.encode(self.content).tolist()
         return self
@@ -504,14 +504,14 @@ class Document(BaseModel):
 async def demo_persistent_qdrant():
     # Connect to Qdrant running in Docker
     qdrant_url = "http://localhost:6333"
-    
+
     # Create a test document
     doc = Document(
         id="test1",
         title="Test Document",
         content="This is a test document to verify connection to a persistent Qdrant instance."
     ).generate_embedding()
-    
+
     try:
         # Store the document
         print("Storing document in persistent Qdrant...")
@@ -521,7 +521,7 @@ async def demo_persistent_qdrant():
             url=qdrant_url
         )
         print(f"Storage result: {result}")
-        
+
         # Search for the document
         print("\nRetrieving document from persistent Qdrant...")
         query_embedding = model.encode("test document verify").tolist()
@@ -534,11 +534,11 @@ async def demo_persistent_qdrant():
             },
             many=True
         )
-        
+
         print(f"Retrieved {len(results)} documents:")
         for doc in results:
             print(f"  - {doc.title}: {doc.content}")
-            
+
     except Exception as e:
         print(f"Error connecting to Qdrant: {e}")
         print("Make sure Qdrant is running on localhost:6333")
@@ -566,7 +566,7 @@ class ImageVector(BaseModel):
 
 async def handle_vector_errors():
     print("Testing error handling for vector operations...")
-    
+
     # 1. Validation error - empty vector
     try:
         invalid_vector = ImageVector(id="test1", embedding=[])
@@ -577,7 +577,7 @@ async def handle_vector_errors():
         )
     except ValidationError as e:
         print(f"Vector validation error handled: {e}")
-    
+
     # 2. Validation error - inconsistent vector dimensions
     try:
         # First create a collection with 5D vectors
@@ -587,7 +587,7 @@ async def handle_vector_errors():
             collection="dimension_test",
             url=None
         )
-        
+
         # Then try to add a 3D vector to the same collection
         invalid_vector = ImageVector(id="test3", embedding=[0.1, 0.2, 0.3])
         await AsyncQdrantAdapter.to_obj(
@@ -597,7 +597,7 @@ async def handle_vector_errors():
         )
     except ValidationError as e:
         print(f"Vector dimension mismatch handled: {e}")
-    
+
     # 3. Connection error - wrong URL
     try:
         vector = ImageVector(id="test4", embedding=[0.1, 0.2, 0.3, 0.4, 0.5])
@@ -608,7 +608,7 @@ async def handle_vector_errors():
         )
     except ConnectionError as e:
         print(f"Connection error handled: {e}")
-    
+
     # 4. Resource error - collection doesn't exist
     try:
         await AsyncQdrantAdapter.from_obj(
@@ -648,23 +648,23 @@ class Document(BaseModel):
     title: str
     content: str
     embedding: List[float] = []
-    
+
     def generate_embedding(self):
         self.embedding = model.encode(self.content).tolist()
         return self
 
 async def demo_high_dim_vectors():
     print("Demonstrating high-dimensional vector operations...")
-    
+
     # Create a document with high-dim embedding
     doc = Document(
         id="highdim1",
         title="High-Dimensional Vector Example",
         content="This document has a higher-dimensional embedding vector for better semantic search accuracy."
     ).generate_embedding()
-    
+
     print(f"Generated embedding with {len(doc.embedding)} dimensions")
-    
+
     # Store in Qdrant
     print("Storing document...")
     result = await AsyncQdrantAdapter.to_obj(
@@ -672,11 +672,11 @@ async def demo_high_dim_vectors():
         collection="highdim_documents",
         url=None
     )
-    
+
     # Search with a similar query
     query_text = "semantic search with high dimensions"
     print(f"Searching with query: '{query_text}'")
-    
+
     query_embedding = model.encode(query_text).tolist()
     results = await AsyncQdrantAdapter.from_obj(
         Document,
@@ -687,7 +687,7 @@ async def demo_high_dim_vectors():
         },
         many=True
     )
-    
+
     print(f"Found {len(results)} results:")
     for doc in results:
         print(f"  - {doc.title}: {doc.content}")
@@ -722,7 +722,7 @@ class Document(BaseModel, AsyncAdaptable):
     source: Optional[str] = None
     tags: List[str] = []
     embedding: List[float] = []
-    
+
     def generate_embedding(self):
         # Combine title and content for better semantic search
         text = f"{self.title}. {self.content}"
@@ -736,36 +736,36 @@ class DocumentSearchEngine:
     def __init__(self, collection_name="documents", url=None):
         self.collection_name = collection_name
         self.url = url
-    
+
     async def add_document(self, document):
         """Add a single document to the search engine"""
         # Generate embedding if not already present
         if not document.embedding:
             document.generate_embedding()
-        
+
         # Store in Qdrant
         result = await document.adapt_to_async(
             obj_key="async_qdrant",
             collection=self.collection_name,
             url=self.url
         )
-        
+
         return result
-    
+
     async def add_documents(self, documents):
         """Add multiple documents to the search engine"""
         results = []
         for doc in documents:
             result = await self.add_document(doc)
             results.append(result)
-        
+
         return results
-    
+
     async def search(self, query_text, filters=None, top_k=5):
         """Search for documents similar to the query text with optional filters"""
         # Generate embedding for the query
         query_embedding = model.encode(query_text).tolist()
-        
+
         # Get raw results (we'll filter in Python)
         raw_results = await Document.adapt_from_async(
             {
@@ -777,7 +777,7 @@ class DocumentSearchEngine:
             obj_key="async_qdrant",
             many=True
         )
-        
+
         # Apply filters if any
         if filters:
             filtered_results = []
@@ -797,11 +797,11 @@ class DocumentSearchEngine:
                             if not doc_date:
                                 match = False
                                 break
-                                
+
                             if "from" in value and doc_date < value["from"]:
                                 match = False
                                 break
-                                
+
                             if "to" in value and doc_date > value["to"]:
                                 match = False
                                 break
@@ -810,17 +810,17 @@ class DocumentSearchEngine:
                             if getattr(doc, key) != value:
                                 match = False
                                 break
-                
+
                 if match:
                     filtered_results.append(doc)
-            
+
             # Limit to top_k after filtering
             results = filtered_results[:top_k]
         else:
             results = raw_results[:top_k]
-        
+
         return results
-    
+
     async def get_document(self, doc_id):
         """Retrieve a specific document by ID"""
         # In a real implementation, you would use Qdrant's point_id search
@@ -837,17 +837,17 @@ class DocumentSearchEngine:
                 obj_key="async_qdrant",
                 many=True
             )
-            
+
             # Find the exact ID match
             for doc in results:
                 if doc.id == doc_id:
                     return doc
-            
+
             return None
         except Exception as e:
             print(f"Error retrieving document: {e}")
             return None
-    
+
     async def delete_document(self, doc_id):
         """Delete a document by ID"""
         # This functionality would require extending the adapter
@@ -903,14 +903,14 @@ async def main():
             tags=["vector-database", "comparison", "Qdrant", "Pinecone", "Milvus"]
         ),
     ]
-    
+
     # Initialize the search engine
     search_engine = DocumentSearchEngine()
-    
+
     # Add sample documents
     print("Adding sample documents to the search engine...")
     await search_engine.add_documents(documents)
-    
+
     # Perform searches
     print("\n--- Basic Semantic Search ---")
     results = await search_engine.search("How do vector databases work?")
@@ -920,7 +920,7 @@ async def main():
         print(f"   Author: {doc.author}, Date: {doc.date}")
         print(f"   Content: {doc.content}")
         print()
-    
+
     print("\n--- Search with Author Filter ---")
     author_results = await search_engine.search(
         "AI and machine learning techniques",
@@ -932,7 +932,7 @@ async def main():
         print(f"   Author: {doc.author}, Date: {doc.date}")
         print(f"   Content: {doc.content}")
         print()
-    
+
     print("\n--- Search with Tag Filter ---")
     tag_results = await search_engine.search(
         "database technology",
@@ -944,7 +944,7 @@ async def main():
         print(f"   Tags: {', '.join(doc.tags)}")
         print(f"   Content: {doc.content}")
         print()
-    
+
     print("\n--- Get Document by ID ---")
     doc = await search_engine.get_document("doc3")
     if doc:
