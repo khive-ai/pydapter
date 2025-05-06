@@ -81,7 +81,7 @@ people = [
 # Store data in Neo4j
 def store_people(people_list):
     print(f"Storing {len(people_list)} people in Neo4j...")
-    
+
     for person in people_list:
         result = Neo4jAdapter.to_obj(
             person,
@@ -95,7 +95,7 @@ def store_people(people_list):
 # Retrieve all people
 def get_all_people():
     print("Retrieving all people from Neo4j...")
-    
+
     people = Neo4jAdapter.from_obj(
         Person,
         {
@@ -105,21 +105,21 @@ def get_all_people():
         },
         many=True
     )
-    
+
     print(f"Found {len(people)} people:")
     for person in people:
         print(f"  - {person.name} (Age: {person.age}, Email: {person.email})")
         if person.interests:
             print(f"    Interests: {', '.join(person.interests)}")
-    
+
     return people
 
 # Find people by property
 def find_people_by_property(property_name, property_value):
     print(f"Finding people with {property_name}={property_value}...")
-    
+
     where_clause = f"n.{property_name} = '{property_value}'"
-    
+
     people = Neo4jAdapter.from_obj(
         Person,
         {
@@ -130,24 +130,24 @@ def find_people_by_property(property_name, property_value):
         },
         many=True
     )
-    
+
     print(f"Found {len(people)} matching people:")
     for person in people:
         print(f"  - {person.name} (Age: {person.age}, Email: {person.email})")
-    
+
     return people
 
 # Main function to demo the adapter
 def main():
     # First, store people
     store_people(people)
-    
+
     # Retrieve all people
     all_people = get_all_people()
-    
+
     # Find people with specific properties
     young_people = find_people_by_property("age", "25")
-    
+
     # Find by email domain (using ENDS WITH in Cypher)
     print("\nFinding people with example.com email addresses...")
     example_emails = Neo4jAdapter.from_obj(
@@ -160,7 +160,7 @@ def main():
         },
         many=True
     )
-    
+
     print(f"Found {len(example_emails)} people with example.com emails:")
     for person in example_emails:
         print(f"  - {person.name}: {person.email}")
@@ -201,7 +201,7 @@ class Hobby(BaseModel):
 def create_relationship(person_id, hobby_id, relationship_type="ENJOYS"):
     """Create a relationship between a Person and a Hobby"""
     driver = GraphDatabase.driver(NEO4J_URI, auth=NEO4J_AUTH)
-    
+
     with driver.session() as session:
         result = session.run(
             f"""
@@ -213,19 +213,19 @@ def create_relationship(person_id, hobby_id, relationship_type="ENJOYS"):
             person_id=person_id,
             hobby_id=hobby_id
         )
-        
+
         for record in result:
             print(f"Created relationship: {record['p.name']} {relationship_type} {record['h.name']}")
-    
+
     driver.close()
 
 # Function to find people who enjoy a specific hobby
 def find_people_by_hobby(hobby_name):
     """Find all people who enjoy a specific hobby"""
     driver = GraphDatabase.driver(NEO4J_URI, auth=NEO4J_AUTH)
-    
+
     people_list = []
-    
+
     with driver.session() as session:
         result = session.run(
             """
@@ -234,14 +234,14 @@ def find_people_by_hobby(hobby_name):
             """,
             hobby_name=hobby_name
         )
-        
+
         for record in result:
             # Convert Neo4j node properties to dict
             person_data = dict(record["p"].items())
             # Create Pydantic model from data
             person = Person(**person_data)
             people_list.append(person)
-    
+
     driver.close()
     return people_list
 
@@ -249,9 +249,9 @@ def find_people_by_hobby(hobby_name):
 def find_hobbies_for_person(person_id):
     """Find all hobbies for a specific person"""
     driver = GraphDatabase.driver(NEO4J_URI, auth=NEO4J_AUTH)
-    
+
     hobbies_list = []
-    
+
     with driver.session() as session:
         result = session.run(
             """
@@ -260,12 +260,12 @@ def find_hobbies_for_person(person_id):
             """,
             person_id=person_id
         )
-        
+
         for record in result:
             hobby_data = dict(record["h"].items())
             hobby = Hobby(**hobby_data)
             hobbies_list.append(hobby)
-    
+
     driver.close()
     return hobbies_list
 
@@ -277,7 +277,7 @@ def main():
         Person(id="p2", name="Bob", age=25, email="bob@example.com"),
         Person(id="p3", name="Charlie", age=35, email="charlie@example.com")
     ]
-    
+
     # Create hobbies
     hobbies = [
         Hobby(id="h1", name="Coding", category="Technical"),
@@ -286,18 +286,18 @@ def main():
         Hobby(id="h4", name="Cooking", category="Indoor"),
         Hobby(id="h5", name="Gaming", category="Entertainment")
     ]
-    
+
     # Store people in Neo4j
     print("Storing people...")
     for person in people:
         Neo4jAdapter.to_obj(
-            person, 
+            person,
             url=NEO4J_URI,
             auth=NEO4J_AUTH,
             label="Person",
             merge_on="id"
         )
-    
+
     # Store hobbies in Neo4j
     print("\nStoring hobbies...")
     for hobby in hobbies:
@@ -308,28 +308,28 @@ def main():
             label="Hobby",
             merge_on="id"
         )
-    
+
     # Create relationships
     print("\nCreating relationships...")
     # Alice enjoys Coding, Hiking, and Reading
     create_relationship("p1", "h1")
     create_relationship("p1", "h2")
     create_relationship("p1", "h3")
-    
+
     # Bob enjoys Gaming and Cooking
     create_relationship("p2", "h4")
     create_relationship("p2", "h5")
-    
+
     # Charlie enjoys Reading and Hiking
     create_relationship("p3", "h2")
     create_relationship("p3", "h3")
-    
+
     # Find people who enjoy Hiking
     print("\nPeople who enjoy Hiking:")
     hikers = find_people_by_hobby("Hiking")
     for person in hikers:
         print(f"  - {person.name} (Age: {person.age})")
-    
+
     # Find hobbies for Alice
     print("\nAlice's hobbies:")
     alice_hobbies = find_hobbies_for_person("p1")
@@ -382,24 +382,24 @@ def get_driver():
 # Initialize the database with schema and constraints
 def initialize_database():
     driver = get_driver()
-    
+
     with driver.session() as session:
         # Create constraints to ensure uniqueness
         session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (p:Person) REQUIRE p.id IS UNIQUE")
         session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (m:Movie) REQUIRE m.id IS UNIQUE")
-    
+
     driver.close()
     print("Database initialized with constraints")
 
 # Helper function to create relationships
 def create_relationship(start_id, end_id, start_label, end_label, rel_type, properties=None):
     driver = get_driver()
-    
+
     props_str = ""
     if properties:
         props_list = [f"{k}: ${k}" for k in properties.keys()]
         props_str = "{" + ", ".join(props_list) + "}"
-    
+
     with driver.session() as session:
         query = f"""
         MATCH (a:{start_label} {{id: $start_id}})
@@ -407,34 +407,34 @@ def create_relationship(start_id, end_id, start_label, end_label, rel_type, prop
         MERGE (a)-[r:{rel_type} {props_str}]->(b)
         RETURN a.name, b.title
         """
-        
+
         params = {"start_id": start_id, "end_id": end_id}
         if properties:
             params.update(properties)
-        
+
         result = session.run(query, params)
         data = result.single()
         if data:
             print(f"Created relationship: {data[0]} {rel_type} {data[1]}")
-    
+
     driver.close()
 
 # Populate the database with sample data
 def populate_database():
     # Create some movies
     movies = [
-        Movie(id="m1", title="The Matrix", year=1999, 
+        Movie(id="m1", title="The Matrix", year=1999,
               genre=["Sci-Fi", "Action"], rating=8.7),
-        Movie(id="m2", title="Inception", year=2010, 
+        Movie(id="m2", title="Inception", year=2010,
               genre=["Sci-Fi", "Action", "Thriller"], rating=8.8),
-        Movie(id="m3", title="The Shawshank Redemption", year=1994, 
+        Movie(id="m3", title="The Shawshank Redemption", year=1994,
               genre=["Drama"], rating=9.3),
-        Movie(id="m4", title="Pulp Fiction", year=1994, 
+        Movie(id="m4", title="Pulp Fiction", year=1994,
               genre=["Crime", "Drama"], rating=8.9),
-        Movie(id="m5", title="The Dark Knight", year=2008, 
+        Movie(id="m5", title="The Dark Knight", year=2008,
               genre=["Action", "Crime", "Drama"], rating=9.0),
     ]
-    
+
     # Create some actors
     actors = [
         Actor(id="a1", name="Keanu Reeves", age=57, roles=["Neo", "John Wick"]),
@@ -445,7 +445,7 @@ def populate_database():
         Actor(id="a6", name="Samuel L. Jackson", age=72, roles=["Jules Winnfield"]),
         Actor(id="a7", name="Christian Bale", age=47, roles=["Bruce Wayne"]),
     ]
-    
+
     # Create some directors
     directors = [
         Director(id="d1", name="Lana Wachowski", age=56, movies_directed=5),
@@ -453,7 +453,7 @@ def populate_database():
         Director(id="d3", name="Frank Darabont", age=62, movies_directed=4),
         Director(id="d4", name="Quentin Tarantino", age=58, movies_directed=9),
     ]
-    
+
     # Store movies in Neo4j
     print("Storing movies...")
     for movie in movies:
@@ -464,13 +464,13 @@ def populate_database():
             label="Movie",
             merge_on="id"
         )
-    
+
     # Store actors in Neo4j
     print("\nStoring actors...")
     for actor in actors:
         # Convert to dict and add label
         actor_dict = actor.model_dump()
-        
+
         # Store using Neo4jAdapter
         Neo4jAdapter.to_obj(
             actor,
@@ -479,7 +479,7 @@ def populate_database():
             label="Actor",  # Use Actor label
             merge_on="id"
         )
-    
+
     # Store directors in Neo4j
     print("\nStoring directors...")
     for director in directors:
@@ -490,35 +490,35 @@ def populate_database():
             label="Director",  # Use Director label
             merge_on="id"
         )
-    
+
     # Create relationships
     print("\nCreating relationships...")
-    
+
     # Matrix relationships
     create_relationship("a1", "m1", "Actor", "Movie", "ACTED_IN", {"role": "Neo"})
     create_relationship("d1", "m1", "Director", "Movie", "DIRECTED")
-    
+
     # Inception relationships
     create_relationship("a2", "m2", "Actor", "Movie", "ACTED_IN", {"role": "Dom Cobb"})
     create_relationship("d2", "m2", "Director", "Movie", "DIRECTED")
-    
+
     # Shawshank Redemption relationships
     create_relationship("a3", "m3", "Actor", "Movie", "ACTED_IN", {"role": "Ellis Boyd 'Red' Redding"})
     create_relationship("a4", "m3", "Actor", "Movie", "ACTED_IN", {"role": "Andy Dufresne"})
     create_relationship("d3", "m3", "Director", "Movie", "DIRECTED")
-    
+
     # Pulp Fiction relationships
     create_relationship("a5", "m4", "Actor", "Movie", "ACTED_IN", {"role": "Vincent Vega"})
     create_relationship("a6", "m4", "Actor", "Movie", "ACTED_IN", {"role": "Jules Winnfield"})
     create_relationship("d4", "m4", "Director", "Movie", "DIRECTED")
-    
+
     # Dark Knight relationships
     create_relationship("a7", "m5", "Actor", "Movie", "ACTED_IN", {"role": "Bruce Wayne"})
     create_relationship("d2", "m5", "Director", "Movie", "DIRECTED")
-    
+
     # Create user ratings
     create_user_ratings()
-    
+
     print("Database populated with sample data")
 
 # Create some users and their ratings
@@ -529,7 +529,7 @@ def create_user_ratings():
         Person(id="u2", name="User Two", age=35),
         Person(id="u3", name="User Three", age=45),
     ]
-    
+
     # Store users
     print("\nStoring users...")
     for user in users:
@@ -540,22 +540,22 @@ def create_user_ratings():
             label="User",
             merge_on="id"
         )
-    
+
     # Create rating relationships
     driver = get_driver()
-    
+
     with driver.session() as session:
         # Get all movie IDs
         result = session.run("MATCH (m:Movie) RETURN m.id AS id")
         movie_ids = [record["id"] for record in result]
-        
+
         # For each user, create some random ratings
         for user_id in ["u1", "u2", "u3"]:
             for movie_id in movie_ids:
                 # Randomly decide if user rated this movie
                 if random.random() > 0.3:  # 70% chance of rating
                     rating = round(random.uniform(1, 5) * 2) / 2  # Rating from 1 to 5, in 0.5 steps
-                    
+
                     session.run(
                         """
                         MATCH (u:User {id: $user_id})
@@ -568,7 +568,7 @@ def create_user_ratings():
                         rating=rating
                     )
                     print(f"User {user_id} rated movie {movie_id} with {rating}")
-    
+
     driver.close()
 
 # Function to get movie recommendations for a user
@@ -580,9 +580,9 @@ def get_movie_recommendations(user_id):
     3. Movies in genres they like
     """
     driver = get_driver()
-    
+
     recommendations = []
-    
+
     with driver.session() as session:
         # Get movies the user hasn't rated,
         # but are highly rated by users with similar tastes
@@ -601,12 +601,12 @@ def get_movie_recommendations(user_id):
             """,
             user_id=user_id
         )
-        
+
         for record in result:
             movie_data = dict(record["rec"].items())
             movie = Movie(**movie_data)
             recommendations.append(movie)
-    
+
     driver.close()
     return recommendations
 
@@ -614,9 +614,9 @@ def get_movie_recommendations(user_id):
 def get_movies_by_director(director_name):
     """Get all movies directed by a specific director"""
     driver = get_driver()
-    
+
     movies_list = []
-    
+
     with driver.session() as session:
         result = session.run(
             """
@@ -625,12 +625,12 @@ def get_movies_by_director(director_name):
             """,
             director_name=director_name
         )
-        
+
         for record in result:
             movie_data = dict(record["m"].items())
             movie = Movie(**movie_data)
             movies_list.append(movie)
-    
+
     driver.close()
     return movies_list
 
@@ -638,9 +638,9 @@ def get_movies_by_director(director_name):
 def get_co_actors(actor_name):
     """Get all actors who acted in the same movie as the specified actor"""
     driver = get_driver()
-    
+
     co_actors = []
-    
+
     with driver.session() as session:
         result = session.run(
             """
@@ -650,12 +650,12 @@ def get_co_actors(actor_name):
             """,
             actor_name=actor_name
         )
-        
+
         for record in result:
             actor_data = dict(record["co"].items())
             actor = Actor(**actor_data)
             co_actors.append(actor)
-    
+
     driver.close()
     return co_actors
 
@@ -664,19 +664,19 @@ def main():
     # Initialize and populate the database
     initialize_database()
     populate_database()
-    
+
     # Get movie recommendations for User One
     print("\nMovie recommendations for User One:")
     recommendations = get_movie_recommendations("u1")
     for movie in recommendations:
         print(f"  - {movie.title} ({movie.year}) - Rating: {movie.rating}")
-    
+
     # Get movies directed by Christopher Nolan
     print("\nMovies directed by Christopher Nolan:")
     nolan_movies = get_movies_by_director("Christopher Nolan")
     for movie in nolan_movies:
         print(f"  - {movie.title} ({movie.year}) - Rating: {movie.rating}")
-    
+
     # Get actors who worked with Keanu Reeves
     print("\nActors who worked with Keanu Reeves:")
     keanu_co_actors = get_co_actors("Keanu Reeves")
@@ -705,7 +705,7 @@ class Person(BaseModel):
 
 def neo4j_error_handling():
     print("Testing error handling for Neo4j operations...")
-    
+
     # 1. Connection error - wrong authentication
     try:
         Neo4jAdapter.from_obj(
@@ -718,7 +718,7 @@ def neo4j_error_handling():
         )
     except ConnectionError as e:
         print(f"Authentication error handled: {e}")
-    
+
     # 2. Connection error - wrong host
     try:
         Neo4jAdapter.from_obj(
@@ -731,7 +731,7 @@ def neo4j_error_handling():
         )
     except ConnectionError as e:
         print(f"Host connection error handled: {e}")
-    
+
     # 3. Query error - Cypher syntax error
     try:
         # Create a valid connection but inject a syntax error
@@ -747,7 +747,7 @@ def neo4j_error_handling():
         )
     except QueryError as e:
         print(f"Cypher syntax error handled: {e}")
-    
+
     # 4. Resource error - nonexistent label
     try:
         # This assumes the database is empty or this label doesn't exist
@@ -800,7 +800,7 @@ def adaptable_mixin_demo():
         Product(id="prod2", name="Smartphone", price=899.99, category="Electronics", tags=["mobile", "portable"]),
         Product(id="prod3", name="Headphones", price=199.99, category="Audio", tags=["audio", "portable"])
     ]
-    
+
     # Store products using the mixin
     print("Storing products using Adaptable mixin...")
     for product in products:
@@ -812,7 +812,7 @@ def adaptable_mixin_demo():
             merge_on="id"
         )
         print(f"Stored {product.name}: {result}")
-    
+
     # Retrieve products by category
     print("\nRetrieving electronics products...")
     electronics = Product.adapt_from(
@@ -825,7 +825,7 @@ def adaptable_mixin_demo():
         obj_key="neo4j",
         many=True
     )
-    
+
     print(f"Found {len(electronics)} electronics products:")
     for product in electronics:
         print(f"  - {product.name}: ${product.price}")
@@ -880,19 +880,19 @@ def get_driver():
 # Initialize the database with schema and constraints
 def initialize_database():
     driver = get_driver()
-    
+
     with driver.session() as session:
         # Create constraints for uniqueness
         session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE")
         session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (p:Post) REQUIRE p.id IS UNIQUE")
-    
+
     driver.close()
     print("Database initialized with constraints")
 
 # Create relationships between users (follows) and between users and posts
 def create_relationships(users, posts):
     driver = get_driver()
-    
+
     with driver.session() as session:
         # Connect users with their posts
         print("\nConnecting users with their posts...")
@@ -907,11 +907,11 @@ def create_relationships(users, posts):
                 post_id=post.id
             )
             print(f"Connected user {post.user_id} with post {post.id}")
-        
+
         # Create random follow relationships between users
         print("\nCreating follow relationships...")
         user_ids = [user.id for user in users]
-        
+
         for user_id in user_ids:
             # Each user follows a random subset of other users
             for other_id in user_ids:
@@ -926,7 +926,7 @@ def create_relationships(users, posts):
                         other_id=other_id
                     )
                     print(f"User {user_id} follows User {other_id}")
-        
+
         # Create some likes on posts
         print("\nCreating likes on posts...")
         for user_id in user_ids:
@@ -942,7 +942,7 @@ def create_relationships(users, posts):
                         user_id=user_id,
                         post_id=post.id
                     )
-                    
+
                     # Also update the likes count on the post
                     session.run(
                         """
@@ -951,9 +951,9 @@ def create_relationships(users, posts):
                         """,
                         post_id=post.id
                     )
-                    
+
                     print(f"User {user_id} likes Post {post.id}")
-    
+
     driver.close()
 
 # Populate the database with users and posts
@@ -1001,7 +1001,7 @@ def populate_database():
             joined_date=datetime(2022, 5, 1).isoformat()
         ),
     ]
-    
+
     # Create some posts
     posts = [
         Post(
@@ -1047,7 +1047,7 @@ def populate_database():
             user_id="u5"
         ),
     ]
-    
+
     # Store users in Neo4j
     print("Storing users...")
     for user in users:
@@ -1058,7 +1058,7 @@ def populate_database():
             label="User",
             merge_on="id"
         )
-    
+
     # Store posts in Neo4j
     print("\nStoring posts...")
     for post in posts:
@@ -1069,19 +1069,19 @@ def populate_database():
             label="Post",
             merge_on="id"
         )
-    
+
     # Create relationships
     create_relationships(users, posts)
-    
+
     print("Database populated with sample data")
 
 # Function to get a user's feed (posts from users they follow)
 def get_user_feed(user_id):
     """Get posts from users that this user follows"""
     driver = get_driver()
-    
+
     feed_posts = []
-    
+
     with driver.session() as session:
         result = session.run(
             """
@@ -1092,13 +1092,13 @@ def get_user_feed(user_id):
             """,
             user_id=user_id
         )
-        
+
         for record in result:
             post_data = dict(record["p"].items())
             post = Post(**post_data)
             author = record["author"]
             feed_posts.append((post, author))
-    
+
     driver.close()
     return feed_posts
 
@@ -1106,16 +1106,16 @@ def get_user_feed(user_id):
 def get_follow_recommendations(user_id):
     """Recommend users to follow based on mutual connections"""
     driver = get_driver()
-    
+
     recommended_users = []
-    
+
     with driver.session() as session:
         # Find users who are followed by people the user follows,
         # but the user doesn't follow yet
         result = session.run(
             """
             MATCH (user:User {id: $user_id})-[:FOLLOWS]->(mutual:User)-[:FOLLOWS]->(recommended:User)
-            WHERE NOT (user)-[:FOLLOWS]->(recommended) 
+            WHERE NOT (user)-[:FOLLOWS]->(recommended)
             AND user.id <> recommended.id
             WITH recommended, count(mutual) AS mutualCount
             ORDER BY mutualCount DESC
@@ -1124,12 +1124,12 @@ def get_follow_recommendations(user_id):
             """,
             user_id=user_id
         )
-        
+
         for record in result:
             user_data = dict(record["recommended"].items())
             user = User(**user_data)
             recommended_users.append(user)
-    
+
     driver.close()
     return recommended_users
 
@@ -1137,9 +1137,9 @@ def get_follow_recommendations(user_id):
 def get_popular_posts():
     """Get posts with the most likes"""
     driver = get_driver()
-    
+
     popular_posts = []
-    
+
     with driver.session() as session:
         result = session.run(
             """
@@ -1151,13 +1151,13 @@ def get_popular_posts():
             RETURN p, author.username AS author
             """
         )
-        
+
         for record in result:
             post_data = dict(record["p"].items())
             post = Post(**post_data)
             author = record["author"]
             popular_posts.append((post, author))
-    
+
     driver.close()
     return popular_posts
 
@@ -1166,20 +1166,20 @@ def main():
     # Initialize and populate the database
     initialize_database()
     populate_database()
-    
+
     # Get user feed for Alice
     print("\nAlice's feed (posts from people she follows):")
     feed = get_user_feed("u1")
     for post, author in feed:
         print(f"@{author}: {post.content}")
         print(f"  Likes: {post.likes} | Posted: {post.created_at}")
-    
+
     # Get recommended users for Bob to follow
     print("\nRecommended users for Bob to follow:")
     recommendations = get_follow_recommendations("u2")
     for user in recommendations:
         print(f"  - {user.full_name} (@{user.username}) from {user.location}")
-    
+
     # Get popular posts
     print("\nPopular posts across the network:")
     popular = get_popular_posts()

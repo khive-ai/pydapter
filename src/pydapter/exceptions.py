@@ -2,7 +2,7 @@
 pydapter.exceptions - Custom exception hierarchy for pydapter.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 PYDAPTER_PYTHON_ERRORS = (KeyError, ImportError, AttributeError, ValueError)
 
@@ -80,7 +80,7 @@ class ConfigurationError(AdapterError):
     """Exception raised when adapter configuration is invalid."""
 
     def __init__(
-        self, message: str, config: Optional[Dict[str, Any]] = None, **context: Any
+        self, message: str, config: Optional[dict[str, Any]] = None, **context: Any
     ):
         super().__init__(message, **context)
         self.config = config

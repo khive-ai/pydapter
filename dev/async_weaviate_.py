@@ -5,7 +5,8 @@ AsyncWeaviateAdapter - minimal REST wrapper via aiohttp.
 from __future__ import annotations
 
 import json
-from typing import List, Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 import aiohttp
 from pydantic import BaseModel

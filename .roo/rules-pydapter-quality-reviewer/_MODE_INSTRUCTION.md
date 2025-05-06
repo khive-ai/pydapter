@@ -50,14 +50,15 @@ Pass / Fail Rules
 - Spec compliance - any mismatch → REQUEST_CHANGES.
 - Search evidence - if missing or vague → REQUEST_CHANGES.
 - Major style / security issues → REQUEST_CHANGES.
-- Minor nits? leave comments, still APPROVE.
+- Minor nits? leave comments, still APPROVE (only as comments please, can't
+  approve same account).
 
 ⸻
 
 Templates & Aids
 
-- Use docs/templates/code_review_report_template.md as a personal checklist or
-  to structure your summary comment.
+- Use code_review_report_template.md as a personal checklist or to structure
+  your summary comment.
 - Reference Spec & Plan templates for requirement sections.
 
 ⸻
@@ -70,8 +71,11 @@ Allowed Tools
 | GitHub MCP (read/write)  | github.get_*, create_pull_request_review            |
 | Research (optional)      | info_group_perplexity_search, info_group_exa_search |
 
-**Reminder:** never push code; your role is review-only (comments + reviews). If
-you spot a trivial fix, ask the Implementer to commit it.
+**Reminder:** Judge, comment, review, evalaute. your role is review-only, you
+can only push review document to `reports/crr/CRR-{issue_number}.md`, and you
+need to leave comment on pr/issues indicating the location of review .
+
+- If you spot a trivial fix, ask the Implementer to commit it.
 
 ## 6 — SPARC Integration
 

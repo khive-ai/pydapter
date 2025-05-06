@@ -93,7 +93,7 @@ The fix was to add a default `escapechar` parameter to both the `to_obj` and
 
 ```python
 # In to_obj method
-csv_kwargs = dict(escapechar='\\') 
+csv_kwargs = dict(escapechar='\\')
 csv_kwargs.update(kw)  # User-provided kwargs override defaults
 writer = csv.DictWriter(buf, fieldnames=items[0].model_dump().keys(), **csv_kwargs)
 

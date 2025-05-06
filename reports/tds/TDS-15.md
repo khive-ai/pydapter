@@ -104,7 +104,7 @@ sequenceDiagram
     participant Fixture as Test Fixtures
     participant Adapter as Adapter Implementation
     participant Registry as AdapterRegistry
-    
+
     Test->>Fixture: Request test data
     Fixture->>Test: Return model instance
     Test->>Adapter: Call to_obj method
@@ -125,18 +125,18 @@ sequenceDiagram
 ```python
 class AdapterTestBase:
     """Base class for all adapter tests."""
-    
+
     @pytest.fixture
     def sample_data(self):
         """Return sample data for testing."""
         raise NotImplementedError
-    
+
     def test_adapter_protocol_compliance(self, adapter_cls):
         """Verify adapter implements the Adapter protocol."""
         assert isinstance(adapter_cls, Adapter)
         assert hasattr(adapter_cls, "obj_key")
         assert isinstance(adapter_cls.obj_key, str)
-    
+
     def test_adapter_round_trip(self, sample_data, adapter_cls):
         """Test round-trip conversion through the adapter."""
         raise NotImplementedError
@@ -147,18 +147,18 @@ class AdapterTestBase:
 ```python
 class AsyncAdapterTestBase:
     """Base class for all async adapter tests."""
-    
+
     @pytest.fixture
     def sample_data(self):
         """Return sample data for testing."""
         raise NotImplementedError
-    
+
     def test_adapter_protocol_compliance(self, adapter_cls):
         """Verify adapter implements the AsyncAdapter protocol."""
         assert isinstance(adapter_cls, AsyncAdapter)
         assert hasattr(adapter_cls, "obj_key")
         assert isinstance(adapter_cls.obj_key, str)
-    
+
     @pytest.mark.asyncio
     async def test_adapter_round_trip(self, sample_data, adapter_cls):
         """Test round-trip conversion through the async adapter."""
@@ -170,33 +170,33 @@ class AsyncAdapterTestBase:
 ```python
 class PropertyTestBase:
     """Base class for property-based tests."""
-    
+
     def make_model_strategy(self):
         """Create a Hypothesis strategy for generating test models."""
         from hypothesis import strategies as st
         from pydantic import BaseModel
-        
+
         return st.builds(
             self.model_factory,
             id=st.integers(),
             name=st.text(min_size=1, max_size=50),
             value=st.floats(allow_nan=False, allow_infinity=False)
         )
-    
+
     def setup_hypothesis_profiles(self):
         """Set up different Hypothesis profiles for testing."""
         from hypothesis import settings, Verbosity, Phase
-        
+
         # CI profile - more examples, no deadline
         settings.register_profile(
-            "ci", 
+            "ci",
             max_examples=100,
             deadline=None
         )
-        
+
         # Dev profile - fewer examples, verbose output, no deadline
         settings.register_profile(
-            "dev", 
+            "dev",
             max_examples=10,
             verbosity=Verbosity.verbose,
             phases=[Phase.generate, Phase.target],
@@ -211,7 +211,7 @@ def validate_schema(adapter_cls, expected_schema):
     """Validate that an adapter's schema matches the expected schema."""
     actual_schema = adapter_cls.get_schema()
     assert actual_schema == expected_schema
-    
+
 def check_error_handling(func, error_inputs, expected_exception):
     """Test that a function raises the expected exception for specific inputs."""
     for error_input in error_inputs:
@@ -245,41 +245,41 @@ class AsyncSampleModel(AsyncAdaptable, BaseModel):
 def model_factory():
     """Factory for creating test models with adapters registered."""
     from pydantic import BaseModel
-    
+
     def create_model(**kw):
         class TestModel(Adaptable, BaseModel):
             id: int
             name: str
             value: float
-        
+
         # Register standard adapters
         TestModel.register_adapter(JsonAdapter)
         TestModel.register_adapter(CsvAdapter)
         TestModel.register_adapter(TomlAdapter)
-        
+
         return TestModel(**kw)
-    
+
     return create_model
 
 @pytest.fixture
 def async_model_factory():
     """Factory for creating async test models with adapters registered."""
     from pydantic import BaseModel
-    
+
     def create_model(**kw):
         class AsyncTestModel(AsyncAdaptable, BaseModel):
             id: int
             name: str
             value: float
             embedding: list[float] = [0.1, 0.2, 0.3, 0.4, 0.5]
-        
+
         # Register async adapters
         AsyncTestModel.register_async_adapter(AsyncPostgresAdapter)
         AsyncTestModel.register_async_adapter(AsyncMongoAdapter)
         AsyncTestModel.register_async_adapter(AsyncQdrantAdapter)
-        
+
         return AsyncTestModel(**kw)
-    
+
     return create_model
 ```
 
@@ -289,36 +289,36 @@ def async_model_factory():
 @pytest.fixture
 def invalid_adapters():
     """Collection of invalid adapter implementations for testing error handling."""
-    
+
     class MissingKeyAdapter:
         """Adapter missing the required obj_key attribute."""
-        
+
         @classmethod
         def from_obj(cls, subj_cls, obj, /, *, many=False, **kw):
             return subj_cls()
-        
+
         @classmethod
         def to_obj(cls, subj, /, *, many=False, **kw):
             return {}
-    
+
     class MissingMethodAdapter:
         """Adapter missing required methods."""
         obj_key = "invalid"
-        
+
         # Missing from_obj and to_obj methods
-    
+
     class InvalidReturnAdapter:
         """Adapter with invalid return types."""
         obj_key = "invalid_return"
-        
+
         @classmethod
         def from_obj(cls, subj_cls, obj, /, *, many=False, **kw):
             return None  # Invalid return type
-        
+
         @classmethod
         def to_obj(cls, subj, /, *, many=False, **kw):
             return None  # Invalid return type
-    
+
     return {
         "missing_key": MissingKeyAdapter,
         "missing_method": MissingMethodAdapter,
@@ -365,11 +365,11 @@ Error handling tests will cover:
 def test_adapter_registry_error_handling(invalid_adapters):
     """Test error handling in AdapterRegistry."""
     registry = AdapterRegistry()
-    
+
     # Test invalid adapter (missing obj_key)
     with pytest.raises(AttributeError, match="Adapter must define 'obj_key'"):
         registry.register(invalid_adapters["missing_key"])
-    
+
     # Test retrieval of unregistered adapter
     with pytest.raises(KeyError, match="No adapter registered for 'nonexistent'"):
         registry.get("nonexistent")
@@ -407,7 +407,7 @@ For database-dependent testing, the design includes:
 def mock_postgres():
     """Mock PostgreSQL interface for testing when containers are unavailable."""
     from unittest.mock import AsyncMock
-    
+
     mock = AsyncMock()
     mock.connect = AsyncMock()
     mock.execute = AsyncMock(return_value=[{"id": 1, "name": "test", "value": 42.5}])
@@ -608,19 +608,19 @@ def test_json_adapter_roundtrip(id, name, value, model_factory):
 async def test_async_postgres_adapter(async_model_factory, postgres_fixture):
     """Test AsyncPostgresAdapter with actual PostgreSQL database."""
     model = async_model_factory(id=1, name="test", value=42.5)
-    
+
     # Store in database
     await model.adapt_to_async(
         obj_key="async_pg",
         dsn=postgres_fixture,
         table="test_table"
     )
-    
+
     # Retrieve from database
     retrieved = await model.__class__.adapt_from_async(
         {"dsn": postgres_fixture, "table": "test_table", "selectors": {"id": 1}},
         obj_key="async_pg"
     )
-    
+
     assert retrieved == model
 ```

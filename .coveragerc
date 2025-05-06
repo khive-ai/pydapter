@@ -1,6 +1,6 @@
 [run]
 source = src/pydapter
-omit = 
+omit =
     tests/*
     .github/khive_modes.json
 

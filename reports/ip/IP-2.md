@@ -173,11 +173,11 @@ gantt
 def test_csv_adapter_single_object(sample):
     # Arrange
     adapter = CsvAdapter()
-    
+
     # Act
     csv_str = adapter.to_obj(sample, many=False)
     restored = adapter.from_obj(sample.__class__, csv_str, many=False)
-    
+
     # Assert
     assert restored == sample
 ```

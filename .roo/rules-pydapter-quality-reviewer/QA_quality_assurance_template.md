@@ -1,9 +1,9 @@
 ---
-title: "QA Summary Template"
+title: "Quality Assurance Template"
 by: "pydapter-tester"
 created: "2025-04-12"
-updated: "2025-04-12"
-version: "1.1"
+updated: "2025-05-05"
+version: "1.2"
 description: "Template for creating quality assurance summaries after testing pydapter components"
 ---
 

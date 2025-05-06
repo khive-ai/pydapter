@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import io
 from pathlib import Path
-from typing import Dict, List, Optional, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -124,7 +124,7 @@ class CsvAdapter(Adapter[T]):
     @classmethod
     def to_obj(
         cls,
-        subj: T | List[T],
+        subj: T | list[T],
         /,
         *,
         many: bool = True,

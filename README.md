@@ -204,15 +204,15 @@ class Document(BaseModel):
     title: str
     content: str
     embedding: List[float] = []
-    
+
     def generate_embedding(self):
         self.embedding = model.encode(self.content).tolist()
         return self
 
 # Create and store a document
 doc = Document(
-    id="doc1", 
-    title="Vector Databases", 
+    id="doc1",
+    title="Vector Databases",
     content="Vector databases store high-dimensional vectors for similarity search."
 ).generate_embedding()
 
@@ -299,10 +299,10 @@ async def main():
         obj_key="async_pg",
         many=True
     )
-    
+
     # Create a user
     user = User(id=42, name="Bob", email="bob@example.com")
-    
+
     # Store in database asynchronously
     result = await user.adapt_to_async(
         obj_key="async_pg",
@@ -350,12 +350,12 @@ T = TypeVar("T", bound=BaseModel)
 
 class MyCustomAdapter(Adapter[T]):
     obj_key = "my_format"
-    
+
     @classmethod
     def from_obj(cls, subj_cls: type[T], obj: Any, /, *, many=False, **kw):
         # Convert from your format to Pydantic models
         ...
-        
+
     @classmethod
     def to_obj(cls, subj: T | List[T], /, *, many=False, **kw):
         # Convert from Pydantic models to your format

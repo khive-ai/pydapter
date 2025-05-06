@@ -4,7 +4,8 @@ Generic SQL adapter using SQLAlchemy Core (requires `sqlalchemy>=2.0`).
 
 from __future__ import annotations
 
-from typing import Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 import sqlalchemy as sa
 from pydantic import BaseModel, ValidationError

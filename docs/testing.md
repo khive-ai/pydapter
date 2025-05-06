@@ -25,13 +25,13 @@ def test_postgres_adapter_to_obj(mocker):
     # Mock SQLAlchemy engine and connection
     mock_engine = mocker.patch("sqlalchemy.create_engine")
     mock_conn = mock_engine.return_value.begin.return_value.__enter__.return_value
-    
+
     # Create test model
     test_model = TestModel(id=1, name="test", value=42.0)
-    
+
     # Test adapter
     PostgresAdapter.to_obj(test_model, engine_url="postgresql://test", table="test_table")
-    
+
     # Verify SQL execution was called with correct parameters
     mock_conn.execute.assert_called_once()
 ```
@@ -60,7 +60,7 @@ Integration tests use pytest fixtures to create and manage database containers:
 def pg_url():
     """PostgreSQL container fixture for tests."""
     from testcontainers.postgres import PostgresContainer
-    
+
     with PostgresContainer("postgres:16-alpine") as pg:
         url = pg.get_connection_url()
         yield url
@@ -76,20 +76,20 @@ def test_postgres_single_record(pg_url, sync_model_factory, postgres_table):
     """Test PostgreSQL adapter with a single record."""
     # Create test instance
     test_model = sync_model_factory(id=42, name="test_postgres", value=12.34)
-    
+
     # Register adapter
     test_model.__class__.register_adapter(PostgresAdapter)
-    
+
     # Store in database
     test_model.adapt_to(obj_key="postgres", engine_url=pg_url, table="test_table")
-    
+
     # Retrieve from database
     retrieved = test_model.__class__.adapt_from(
         {"engine_url": pg_url, "table": "test_table", "selectors": {"id": 42}},
         obj_key="postgres",
         many=False,
     )
-    
+
     # Verify data integrity
     assert retrieved.id == test_model.id
     assert retrieved.name == test_model.name
@@ -171,20 +171,20 @@ def test_new_adapter_integration(container_url, model_factory, cleanup_fixture):
     """Test new adapter with a real database."""
     # Create test instance
     test_model = model_factory(id=1, name="test", value=42.0)
-    
+
     # Register adapter
     test_model.__class__.register_adapter(NewAdapter)
-    
+
     # Store in database
     test_model.adapt_to(obj_key="new_adapter", url=container_url, ...)
-    
+
     # Retrieve from database
     retrieved = test_model.__class__.adapt_from(
         {"url": container_url, ...},
         obj_key="new_adapter",
         many=False,
     )
-    
+
     # Verify data integrity
     assert retrieved.id == test_model.id
     assert retrieved.name == test_model.name
