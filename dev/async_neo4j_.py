@@ -4,7 +4,8 @@ AsyncNeo4jAdapter - uses neo4j.AsyncGraphDatabase.
 
 from __future__ import annotations
 
-from typing import Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 from neo4j import AsyncGraphDatabase
 from pydantic import BaseModel

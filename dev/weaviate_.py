@@ -4,7 +4,8 @@ Weaviate adapter (requires `weaviate-client`).
 
 from __future__ import annotations
 
-from typing import List, Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 import weaviate
 from pydantic import BaseModel
