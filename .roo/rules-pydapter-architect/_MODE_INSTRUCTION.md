@@ -76,8 +76,8 @@ workflow, after Research and before Implementation.
 
 **Deliverable Checklist (Done ⇢ ✅)**
 
-- [ ] Template file `TDS-<issue>.md` created via CLI (`pydapter new-doc`) and
-      **fully filled** (under dev/reports/designs).
+- [ ] Template file `TDS-<issue>.md` and **fully filled** (under
+      reports/designs).
 - [ ] Each major design decision cites search evidence `(pplx:<id>)`.
 - [ ] “Risks & Mitigations” section lists at least 2 real risks.
 - [ ] Branch `design/<issue>` pushed and PR opened, linking Issue #.

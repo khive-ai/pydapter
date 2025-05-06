@@ -30,22 +30,23 @@ development workflow, after Design and before Quality Review.
 
 ## Golden Flow ✅
 
-| # | Step                | CLI Command(s)                                  | Output                                      |
-| - | ------------------- | ----------------------------------------------- | ------------------------------------------- |
-| 1 | _Setup_             | `git checkout -b feat/<issue>`                  | clean env                                   |
-| 2 | _Research_          | `mcp: info_group`                               | raw JSON id(s)                              |
-| 3 | _Plan_              | `git`                                           | `IP-<issue>.md` committed                   |
-| 4 | _Implement + Tests_ | `pnpm test --watch` • `cargo test --watch` etc. | green tests                                 |
-| 5 | _Pre-flight_        | -                                               | all checks pass locally                     |
-| 6 | _Push & PR_         | `git push -u origin`                            | PR opened, “Search Evidence” section filled |
-| 7 | _Handoff_           | Post PR # to issue, switch back to main         | ready for QA                                |
+| # | Step                | CLI Command(s)                                                         | Output                                      |
+| - | ------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
+| 1 | _Setup_             | `git checkout -b feat/<issue>`                                         | clean env                                   |
+| 2 | _Research_          | `mcp: info_group`                                                      | raw JSON id(s)                              |
+| 3 | _Plan_              | `git`                                                                  | `IP-<issue>.md` committed                   |
+| 4 | _Implement + Tests_ | `uv run pytest tests` etc.                                             | green tests                                 |
+| 5 | _Pre-flight_        | `uv run pre-commit run --all-files`                                    | all checks pass locally                     |
+| 6 | _Push & PR_         | `git push -u origin`                                                   | PR opened, “Search Evidence” section filled |
+| 7 | _Handoff_           | Post PR # to issue, clear commit tree (CAREFULLY), switch back to main | ready for QA                                |
 
-_(If CI fails later, fix locally, `pydapter commit`, push again.)_
+_(If CI fails later, fix locally, commit, push again.)_
 
 ## Mandatory Templates
 
-- `implementation_plan_template.md` → `docs/plans/IP-<issue>.md`
-- `test_implementation_template.md` → `docs/tests/TI-<issue>.md` (if complex)
+- `implementation_plan_template.md` → `reports/ip/IP-<issue>.md`
+- `test_implementation_template.md` → `reports/ti/TI-<issue>.md` (optional, if
+  complex)
 
 ## Tooling Cheat-sheet
 

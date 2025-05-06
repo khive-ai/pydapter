@@ -32,7 +32,7 @@ workflow, after Quality Review and before merge.
 1. **Pull the approved PR locally** (`git checkout <sha>`).
 2. **Scan spec & plan** (`TDS-*.md`, `IP-*.md`) for public APIs / UX changes.
 3. **Open the existing docs** under `docs/` & READMEs - find impacted spots.
-4. **Draft** or update files in `docs/` (Markdown) or inline Rust/TS docs.
+4. **Draft** or update files in `docs/` (Markdown) or inline.
 5. **Commit** with `git` cli `'docs: update <area>'`.
 6. **Push & PR comment**: _“Docs updated in <paths>, ready for merge.”_\
    _No ⇢ loop again (max 3 passes, then raise a blocker)._
@@ -55,8 +55,8 @@ workflow, after Quality Review and before merge.
 
 | Task                   | Preferred (local)        | Fallback (MCP)                       |
 | ---------------------- | ------------------------ | ------------------------------------ |
-| Read final code/spec   | `cat`, IDE, `git diff`   | `mcp: github.get_file_contents`      |
-| Edit / create Markdown | Local editor + `git add` | —                                    |
+| Read final code/spec   | IDE, `git diff`          | `mcp: github.get_file_contents`      |
+| Edit / create Markdown | Local editor + `git add` | `mcp`                                |
 | Commit                 | `git commit`             | — _(use MCP only if no local shell)_ |
 | Push / PR update       | `git push`               | `mcp: github.create_or_update_file`  |
 | Extra research (rare)  | -                        | `mcp: info_group`                    |
@@ -65,10 +65,23 @@ workflow, after Quality Review and before merge.
 
 ## 4 — Doc Structure Quick-Ref
 
-docs/ user/ getting_started.md features/ ... dev/ architecture.md api/
-tauri_commands.md CHANGELOG.md README.md
+```
+docs/ (public facing)
+ | getting_started.md
+ | features/
+ | ...
+dev/  (internal facing)
+ | README.md
+ | architecture.md
+ | ...
+src/
+tests/
+LICENSE
+CHANGELOG.md
+README.md
+```
 
-_Put _why_ & _how_ in the **user** section, deep internal reasoning in **dev**._
+_Put _why_ & _how_ in the **docs** section, deep internal reasoning in **dev**._
 
 ---
 

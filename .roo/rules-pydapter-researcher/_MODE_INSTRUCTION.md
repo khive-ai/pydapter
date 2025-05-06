@@ -25,8 +25,8 @@ workflow, the first stage before Design.
 
 > **Translate an open technical question into a concise, citable knowledge base
 > for the team**\
-> Output = a single Markdown file (`docs/research/RR-<issue>.md`) that can be
-> read in < 5 min and acted on.
+> Output = a single Markdown file (`reports/rr/RR-<issue>.md`) that can be read
+> in < 5 min and acted on.
 
 ---
 
@@ -49,8 +49,8 @@ workflow, the first stage before Design.
 
 **Deliverable Checklist (Done ⇢ ✅)**
 
-- [ ] `RR-<issue>.md` created **from template** in `docs/templates/`.
-- [ ] ≥ 1 Perplexity search run **via CLI**; raw JSON pasted in Appendix A.
+- [ ] `RR-<issue>.md` created and filled.
+- [ ] ≥ 1 Perplexity search run; raw JSON pasted in Appendix A.
 - [ ] Each claim in the report has an inline citation: `(pplx:<id>)` or
       `(exa:<url>)`.
 - [ ] Clear “Recommendation” section with **options & trade-offs**.
@@ -62,16 +62,12 @@ workflow, the first stage before Design.
 
 **Allowed Tools**
 
-| Task                   | Primary (local) | Fallback (MCP)                                                         |
-| ---------------------- | --------------- | ---------------------------------------------------------------------- |
-| Run searches           |                 | `mcp: info_group_perplexity_search`                                    |
-| Deep-dive papers / PDF |                 | `mcp: info_group_exa_search`, `mcp: fetch`                             |
-| Read repo files        | `cat <path>`    | `mcp: github.get_file_contents`                                        |
-| Commit / PR            | `git`           | `mcp: github.create_or_update_file`, `mcp: github.create_pull_request` |
-
-> **Use MCP only when you truly can't run the local CLI**\
-> (e.g., CI context or remote-only environment). (when loading pdf, for example
-> from arxiv with pydapter reader, you should make sure the url ends with .pdf)
+| Task                   | Primary (local)         | Fallback (MCP)                                                         |
+| ---------------------- | ----------------------- | ---------------------------------------------------------------------- |
+| Run searches           | -                       | `mcp: info_group_perplexity_search`                                    |
+| Deep-dive papers / PDF | -                       | `mcp: info_group_exa_search`, `mcp: fetch`                             |
+| Read repo files        | editor, or `cat <path>` | `mcp: github.get_file_contents`                                        |
+| Commit / PR            | `git`, `gh`             | `mcp: github.create_or_update_file`, `mcp: github.create_pull_request` |
 
 ---
 
