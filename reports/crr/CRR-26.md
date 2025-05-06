@@ -278,7 +278,7 @@ of the library.
 ```python
 class AdapterError(Exception):
     """Base class for all adapter-related errors."""
-    
+
     def __init__(self, message, **context):
         self.message = message
         self.context = context

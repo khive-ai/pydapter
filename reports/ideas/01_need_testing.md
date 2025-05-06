@@ -310,8 +310,8 @@ characteristics:
        "asyncmongo": ["motor>=3.1.0"],
        "vector": ["qdrant-client>=1.1.0"],
        "excel": ["openpyxl>=3.0.10", "xlsxwriter>=3.0.3"],
-       "all": ["pandas>=1.3.0", "sqlalchemy>=2.0.0", "asyncpg>=0.27.0", "psycopg>=3.1.8", 
-               "pymongo>=4.3.0", "motor>=3.1.0", "qdrant-client>=1.1.0", 
+       "all": ["pandas>=1.3.0", "sqlalchemy>=2.0.0", "asyncpg>=0.27.0", "psycopg>=3.1.8",
+               "pymongo>=4.3.0", "motor>=3.1.0", "qdrant-client>=1.1.0",
                "openpyxl>=3.0.10", "xlsxwriter>=3.0.3"],
    }
    ```
@@ -410,18 +410,18 @@ from pydapter.core import Adapter, AdapterRegistry, Adaptable
 def test_adapter_registry():
     """Test AdapterRegistry registration and retrieval."""
     registry = AdapterRegistry()
-    
+
     # Mock adapter class
     class MockAdapter:
         obj_key: ClassVar[str] = "mock"
-    
+
     # Register adapter
     registry.register(MockAdapter)
-    
+
     # Retrieve adapter
     adapter_cls = registry.get("mock")
     assert adapter_cls == MockAdapter
-    
+
     # Test error on non-existent adapter
     with pytest.raises(KeyError):
         registry.get("nonexistent")
@@ -432,27 +432,27 @@ def test_adaptable_mixin():
     class TestModel(BaseModel, Adaptable):
         name: str
         value: int
-    
+
     # Create a mock adapter
     class MockAdapter:
         obj_key = "mock"
-        
+
         @classmethod
         def from_obj(cls, subj_cls, obj, /, *, many=False, **kw):
             return subj_cls(name="from_mock", value=100)
-        
+
         @classmethod
         def to_obj(cls, subj, /, *, many=False, **kw):
             return "mock_output"
-    
+
     # Register adapter with the model class
     TestModel.register_adapter(MockAdapter)
-    
+
     # Test adapt_from
     obj = TestModel.adapt_from("anything", obj_key="mock")
     assert obj.name == "from_mock"
     assert obj.value == 100
-    
+
     # Test adapt_to
     obj = TestModel(name="test", value=42)
     result = obj.adapt_to(obj_key="mock")
@@ -475,26 +475,26 @@ pytest.importorskip("pytest_asyncio")
 async def test_async_adapter_registry():
     """Test AsyncAdapterRegistry registration and retrieval."""
     registry = AsyncAdapterRegistry()
-    
+
     # Mock async adapter
     class MockAsyncAdapter:
         obj_key = "mock_async"
-        
+
         @classmethod
         async def from_obj(cls, subj_cls, obj, /, *, many=False, **kw):
             pass
-            
+
         @classmethod
         async def to_obj(cls, subj, /, *, many=False, **kw):
             pass
-    
+
     # Register adapter
     registry.register(MockAsyncAdapter)
-    
+
     # Retrieve adapter
     adapter_cls = registry.get("mock_async")
     assert adapter_cls == MockAsyncAdapter
-    
+
     # Test error on non-existent adapter
     with pytest.raises(KeyError):
         registry.get("nonexistent")
@@ -506,27 +506,27 @@ async def test_async_adaptable_mixin():
     class TestModel(BaseModel, AsyncAdaptable):
         name: str
         value: int
-    
+
     # Create a mock async adapter
     class MockAsyncAdapter:
         obj_key = "mock_async"
-        
+
         @classmethod
         async def from_obj(cls, subj_cls, obj, /, *, many=False, **kw):
             return subj_cls(name="from_async", value=200)
-        
+
         @classmethod
         async def to_obj(cls, subj, /, *, many=False, **kw):
             return "async_mock_output"
-    
+
     # Register adapter with the model class
     TestModel.register_async_adapter(MockAsyncAdapter)
-    
+
     # Test adapt_from_async
     obj = await TestModel.adapt_from_async("anything", obj_key="mock_async")
     assert obj.name == "from_async"
     assert obj.value == 200
-    
+
     # Test adapt_to_async
     obj = TestModel(name="test", value=42)
     result = await obj.adapt_to_async(obj_key="mock_async")
@@ -561,13 +561,13 @@ def test_standard_adapter_roundtrip(sample_item, adapter_key, adapter_cls):
     """Test roundtrip serialization/deserialization for standard adapters."""
     # Register the adapter with the model class
     TestItem.register_adapter(adapter_cls)
-    
+
     # Convert to serialized form
     serialized = sample_item.adapt_to(obj_key=adapter_key)
-    
+
     # Convert back to model instance
     restored = TestItem.adapt_from(serialized, obj_key=adapter_key)
-    
+
     # Verify properties preserved
     assert restored.id == sample_item.id
     assert restored.name == sample_item.name
@@ -584,16 +584,16 @@ def test_standard_adapter_collection(sample_items, adapter_key, adapter_cls):
     """Test roundtrip for collections with standard adapters."""
     # Register the adapter with the model class
     TestItem.register_adapter(adapter_cls)
-    
+
     # Convert to serialized form
     serialized = adapter_cls.to_obj(sample_items, many=True)
-    
+
     # Convert back to model instances
     restored = adapter_cls.from_obj(TestItem, serialized, many=True)
-    
+
     # Verify collection size preserved
     assert len(restored) == len(sample_items)
-    
+
     # Verify each item's properties
     for orig, rest in zip(sample_items, restored):
         assert rest.id == orig.id
@@ -623,22 +623,22 @@ def test_pandas_adapter_roundtrip(sample_item, adapter_key, adapter_cls):
     # Skip Series tests for collections
     if adapter_key == "pd.Series" and isinstance(sample_item, list):
         pytest.skip("SeriesAdapter doesn't support collections")
-    
+
     # Register the adapter with the model class
     TestItem.register_adapter(adapter_cls)
-    
+
     # Convert to pandas object
     pd_obj = sample_item.adapt_to(obj_key=adapter_key)
-    
+
     # Verify type
     if adapter_key == "pd.DataFrame":
         assert isinstance(pd_obj, pd.DataFrame)
     else:
         assert isinstance(pd_obj, pd.Series)
-    
+
     # Convert back to model instance
     restored = TestItem.adapt_from(pd_obj, obj_key=adapter_key)
-    
+
     # Verify properties preserved
     assert restored.id == sample_item.id
     assert restored.name == sample_item.name
@@ -649,25 +649,25 @@ def test_excel_adapter(sample_items, tmp_path):
     # Skip if openpyxl/xlsxwriter not available
     pytest.importorskip("openpyxl")
     pytest.importorskip("xlsxwriter")
-    
+
     from pydapter.extras.excel_ import ExcelAdapter
-    
+
     # Register adapter
     TestItem.register_adapter(ExcelAdapter)
-    
+
     # Create a temporary path for the Excel file
     excel_path = os.path.join(tmp_path, "test.xlsx")
-    
+
     # Convert to Excel bytes
     excel_bytes = ExcelAdapter.to_obj(sample_items, many=True)
-    
+
     # Write to file
     with open(excel_path, "wb") as f:
         f.write(excel_bytes)
-    
+
     # Read back from file
     restored = ExcelAdapter.from_obj(TestItem, excel_path, many=True)
-    
+
     # Verify data
     assert len(restored) == len(sample_items)
     for orig, rest in zip(sample_items, restored):
@@ -717,20 +717,20 @@ def test_sql_adapter_sqlite(sample_item, tmp_path):
     db_path = os.path.join(tmp_path, "test.db")
     engine_url = f"sqlite:///{db_path}"
     engine = sa.create_engine(engine_url)
-    
+
     # Set up test table
     setup_test_table(engine)
-    
+
     # Register adapter
     TestItem.register_adapter(SQLAdapter)
-    
+
     # Write to database
     sample_item.adapt_to(
         obj_key="sql",
         engine_url=engine_url,
         table="test_items"
     )
-    
+
     # Read from database
     restored = TestItem.adapt_from(
         {
@@ -741,7 +741,7 @@ def test_sql_adapter_sqlite(sample_item, tmp_path):
         obj_key="sql",
         many=False
     )
-    
+
     # Verify data
     assert restored.id == sample_item.id
     assert restored.name == sample_item.name
@@ -752,16 +752,16 @@ def test_postgres_adapter(sample_items, pg_url, adapter_key):
     """Test PostgresAdapter with real Postgres container."""
     # Skip if psycopg is not available
     pytest.importorskip("psycopg")
-    
+
     from pydapter.extras.postgres_ import PostgresAdapter
-    
+
     # Create engine and table
     engine = sa.create_engine(pg_url)
     setup_test_table(engine)
-    
+
     # Register adapter
     TestItem.register_adapter(PostgresAdapter)
-    
+
     # Write to database
     PostgresAdapter.to_obj(
         sample_items,
@@ -769,7 +769,7 @@ def test_postgres_adapter(sample_items, pg_url, adapter_key):
         table="test_items",
         many=True
     )
-    
+
     # Read from database
     restored = PostgresAdapter.from_obj(
         TestItem,
@@ -779,10 +779,10 @@ def test_postgres_adapter(sample_items, pg_url, adapter_key):
         },
         many=True
     )
-    
+
     # Verify count
     assert len(restored) == len(sample_items)
-    
+
     # Verify each item
     for orig in sample_items:
         found = next((r for r in restored if r.id == orig.id), None)
@@ -806,7 +806,7 @@ def test_mongo_adapter(sample_items, mongo_url):
     """Test MongoAdapter with MongoDB container."""
     # Register adapter
     TestItem.register_adapter(MongoAdapter)
-    
+
     # Write to database
     MongoAdapter.to_obj(
         sample_items,
@@ -815,7 +815,7 @@ def test_mongo_adapter(sample_items, mongo_url):
         collection="items",
         many=True
     )
-    
+
     # Read from database
     restored = MongoAdapter.from_obj(
         TestItem,
@@ -826,10 +826,10 @@ def test_mongo_adapter(sample_items, mongo_url):
         },
         many=True
     )
-    
+
     # Verify count
     assert len(restored) == len(sample_items)
-    
+
     # Verify each item
     for orig in sample_items:
         found = next((r for r in restored if r.id == orig.id), None)
@@ -860,9 +860,9 @@ def vector_items():
     """Sample collection of items with vectors."""
     return [
         VectorItem(
-            id=i, 
-            name=f"vector-{i}", 
-            value=i * 1.5, 
+            id=i,
+            name=f"vector-{i}",
+            value=i * 1.5,
             tags=["test"],
             embedding=list(np.random.random(384))
         )
@@ -873,7 +873,7 @@ def test_qdrant_adapter(vector_items, qdrant_url):
     """Test QdrantAdapter with Qdrant container."""
     # Register adapter
     VectorItem.register_adapter(QdrantAdapter)
-    
+
     # Write to Qdrant
     QdrantAdapter.to_obj(
         vector_items,
@@ -882,7 +882,7 @@ def test_qdrant_adapter(vector_items, qdrant_url):
         vector_field="embedding",
         id_field="id"
     )
-    
+
     # Read from Qdrant using the first item's vector as query
     query_vector = vector_items[0].embedding
     restored = QdrantAdapter.from_obj(
@@ -895,10 +895,10 @@ def test_qdrant_adapter(vector_items, qdrant_url):
         },
         many=True
     )
-    
+
     # Verify results were returned
     assert len(restored) > 0
-    
+
     # Check that at least the query item was found
     found = any(r.id == vector_items[0].id for r in restored)
     assert found
@@ -929,9 +929,9 @@ async def test_async_postgres_adapter(sample_items, pg_url):
     """Test AsyncPostgresAdapter with Postgres container."""
     # Skip if asyncpg not available
     pytest.importorskip("asyncpg")
-    
+
     from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
-    
+
     # Set up table (using sync SQLAlchemy for simplicity)
     engine = sa.create_engine(pg_url)
     metadata = sa.MetaData()
@@ -945,10 +945,10 @@ async def test_async_postgres_adapter(sample_items, pg_url):
         sa.Column("created_at", sa.DateTime),
     )
     metadata.create_all(engine)
-    
+
     # Register adapter
     TestItem.register_async_adapter(AsyncPostgresAdapter)
-    
+
     # Write to database
     await AsyncPostgresAdapter.to_obj(
         sample_items,
@@ -956,7 +956,7 @@ async def test_async_postgres_adapter(sample_items, pg_url):
         table="async_test_items",
         many=True
     )
-    
+
     # Read from database
     restored = await AsyncPostgresAdapter.from_obj(
         TestItem,
@@ -966,10 +966,10 @@ async def test_async_postgres_adapter(sample_items, pg_url):
         },
         many=True
     )
-    
+
     # Verify count
     assert len(restored) == len(sample_items)
-    
+
     # Verify each item
     for orig in sample_items:
         found = next((r for r in restored if r.id == orig.id), None)
@@ -982,12 +982,12 @@ async def test_async_mongo_adapter(sample_items, mongo_url):
     """Test AsyncMongoAdapter with MongoDB container."""
     # Skip if motor not available
     pytest.importorskip("motor")
-    
+
     from pydapter.extras.async_mongo_ import AsyncMongoAdapter
-    
+
     # Register adapter
     TestItem.register_async_adapter(AsyncMongoAdapter)
-    
+
     # Write to database
     await AsyncMongoAdapter.to_obj(
         sample_items,
@@ -996,7 +996,7 @@ async def test_async_mongo_adapter(sample_items, mongo_url):
         collection="async_items",
         many=True
     )
-    
+
     # Read from database
     restored = await AsyncMongoAdapter.from_obj(
         TestItem,
@@ -1007,10 +1007,10 @@ async def test_async_mongo_adapter(sample_items, mongo_url):
         },
         many=True
     )
-    
+
     # Verify count
     assert len(restored) == len(sample_items)
-    
+
     # Verify each item
     for orig in sample_items:
         found = next((r for r in restored if r.id == orig.id), None)
@@ -1055,10 +1055,10 @@ def test_json_adapter_from_obj_benchmark(large_dataset, benchmark):
     """Benchmark JsonAdapter.from_obj performance."""
     # First convert to JSON
     json_data = JsonAdapter.to_obj(large_dataset, many=True)
-    
+
     # Benchmark deserialization
     result = benchmark(JsonAdapter.from_obj, TestItem, json_data, many=True)
-    
+
     # Verify result
     assert len(result) == len(large_dataset)
     assert all(isinstance(item, TestItem) for item in result)
@@ -1075,10 +1075,10 @@ def test_csv_adapter_from_obj_benchmark(large_dataset, benchmark):
     """Benchmark CsvAdapter.from_obj performance."""
     # First convert to CSV
     csv_data = CsvAdapter.to_obj(large_dataset, many=True)
-    
+
     # Benchmark deserialization
     result = benchmark(CsvAdapter.from_obj, TestItem, csv_data, many=True)
-    
+
     # Verify result
     assert len(result) == len(large_dataset)
     assert all(isinstance(item, TestItem) for item in result)
@@ -1149,7 +1149,7 @@ jobs:
 ```ini
 [run]
 source = pydapter
-omit = 
+omit =
     */tests/*
     */site-packages/*
 

@@ -250,11 +250,11 @@ def test_adapter_protocol_compliance(self):
     # Verify required attributes
     assert hasattr(Adapter, "obj_key")
     assert isinstance(Adapter.obj_key, str)
-    
+
     # Verify method signatures
     assert hasattr(Adapter, "from_obj")
     assert hasattr(Adapter, "to_obj")
-    
+
     # Verify the methods can be called as classmethods
     assert callable(Adapter.from_obj)
     assert callable(Adapter.to_obj)
@@ -271,13 +271,13 @@ def test_adapter_to_obj(self, mock_dependency, sample):
         # Configure the mock to return an adapter-specific format
         expected_result = {"id": 1, "name": "test", "value": 42.5}
         mock_to_obj.return_value = expected_result
-        
+
         # Test to_obj
         result = sample.adapt_to(obj_key="adapter_key")
-        
+
         # Verify the result
         assert result == expected_result
-        
+
         # Verify the mock was called with the correct arguments
         mock_to_obj.assert_called_once()
 ```
@@ -290,7 +290,7 @@ def test_adapter_connection_error(self, mock_dependency, sample):
     """Test handling of connection errors."""
     # Configure the mock to raise a connection error
     mock_dependency.connect.side_effect = Exception("Connection error")
-    
+
     # We need to patch the entire adapter's to_obj method to pass through the error
     with patch("pydapter.extras.adapter_module.Adapter.to_obj", side_effect=Exception("Connection error")):
         # Test to_obj with connection error
