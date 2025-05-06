@@ -1,0 +1,53 @@
+# .pre-commit-config.yaml
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # General file formatting and checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0 # Use a recent stable version
+    hooks:
+      - id: trailing-whitespace # Removes trailing whitespace
+      - id: end-of-file-fixer # Ensures files end with a single newline
+      - id: check-yaml # Checks yaml files for parseable syntax
+      - id: check-toml # Checks toml files for parseable syntax
+      - id: pretty-format-json # Formats JSON files consistently
+        args: [
+          "--autofix",
+          "--no-sort-keys",
+        ] # Autofix formatting, don't sort keys [3]
+
+  # Deno for Markdown formatting
+  - repo: https://github.com/nozaq/pre-commit-deno
+    rev: 0.1.0 # Specify the desired Deno hook version [1]
+    hooks:
+      - id: deno-fmt
+        # deno fmt automatically formats JS, TS, JSON, and Markdown [1].
+        # Limit this hook to only Markdown files to avoid conflict with other formatters.
+        files: \.(md|markdown)$
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  # Ruff for Python linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Use a recent version; v0.5.1+ automatically detects pyproject.toml [2]
+    rev: v0.5.1 # Or specify your desired Ruff version
+    hooks:
+      # Run the linter first, with autofix enabled.
+      # Place linter before formatter as recommended [4].
+      - id: ruff
+        args: [
+          --fix,
+          --exit-non-zero-on-fix,
+        ] # Apply fixes and report if changes were made
+      - id: ruff-format
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.2
+    hooks:
+      - id: pyupgrade
+        args: [--py39-plus]
