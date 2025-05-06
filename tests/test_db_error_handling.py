@@ -8,11 +8,7 @@ import pytest
 from pydantic import BaseModel
 
 from pydapter.core import Adaptable
-from pydapter.exceptions import (
-    ConnectionError,
-    QueryError,
-    ResourceError,
-)
+from pydapter.exceptions import ConnectionError, QueryError, ResourceError
 from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.mongo_ import MongoAdapter
 from pydapter.extras.neo4j_ import Neo4jAdapter
@@ -71,7 +67,6 @@ class TestSQLAdapterErrors:
 
     def test_table_not_found(self, monkeypatch):
         """Test handling of non-existent table."""
-        import sqlalchemy as sa
 
         class TestModel(Adaptable, BaseModel):
             id: int
@@ -103,7 +98,6 @@ class TestSQLAdapterErrors:
 
     def test_query_error(self, monkeypatch):
         """Test handling of query errors."""
-        import sqlalchemy as sa
 
         class TestModel(Adaptable, BaseModel):
             id: int
@@ -136,7 +130,6 @@ class TestSQLAdapterErrors:
 
     def test_empty_result_set(self, monkeypatch):
         """Test handling of empty result set."""
-        import sqlalchemy as sa
 
         class TestModel(Adaptable, BaseModel):
             id: int
@@ -286,7 +279,6 @@ class TestMongoAdapterErrors:
 
     def test_invalid_connection_string(self, monkeypatch):
         """Test handling of invalid connection string."""
-        import pymongo
 
         class TestModel(Adaptable, BaseModel):
             id: int
@@ -396,7 +388,6 @@ class TestMongoAdapterErrors:
 
     def test_empty_result_set(self, monkeypatch):
         """Test handling of empty result set."""
-        import pymongo
 
         class TestModel(Adaptable, BaseModel):
             id: int
@@ -641,7 +632,6 @@ class TestQdrantAdapterErrors:
 
     def test_connection_error(self, monkeypatch):
         """Test handling of connection errors."""
-        from qdrant_client.http.exceptions import UnexpectedResponse
 
         class TestModel(Adaptable, BaseModel):
             id: int
@@ -671,7 +661,6 @@ class TestQdrantAdapterErrors:
 
     def test_collection_not_found(self, monkeypatch):
         """Test handling of collection not found errors."""
-        from qdrant_client.http.exceptions import UnexpectedResponse
 
         class TestModel(Adaptable, BaseModel):
             id: int

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import List, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -77,7 +77,7 @@ class JsonAdapter(Adapter[T]):
 
     # ---------------- outgoing
     @classmethod
-    def to_obj(cls, subj: T | List[T], /, *, many=False, **kw) -> str:
+    def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> str:
         try:
             items = subj if isinstance(subj, list) else [subj]
 

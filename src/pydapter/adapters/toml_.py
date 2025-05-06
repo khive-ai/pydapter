@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, TypeVar
+from typing import TypeVar
 
 import toml
 from pydantic import BaseModel, ValidationError
@@ -75,7 +75,7 @@ class TomlAdapter(Adapter[T]):
             )
 
     @classmethod
-    def to_obj(cls, subj: T | List[T], /, *, many=False, **kw) -> str:
+    def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> str:
         try:
             items = subj if isinstance(subj, list) else [subj]
 

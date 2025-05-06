@@ -163,8 +163,6 @@ class TestExcelAdapterErrorHandling:
     @patch("pydapter.extras.excel_.pd")
     def test_excel_invalid_data(self, mock_pd, excel_sample):
         """Test handling of invalid data."""
-        # Setup mock to return invalid data
-        mock_df = MagicMock()
         # Configure the mock to raise a ValueError when accessed
         mock_pd.read_excel.side_effect = ValueError("Invalid data")
 

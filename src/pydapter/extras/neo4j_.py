@@ -5,7 +5,8 @@ Neo4j adapter (requires `neo4j`).
 from __future__ import annotations
 
 import re
-from typing import Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 import neo4j
 import neo4j.exceptions

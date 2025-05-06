@@ -40,13 +40,13 @@ class AsyncMongoAdapter(AsyncAdapter[T]):
                 raise ValidationError("Missing required parameter 'db'")
             if "collection" not in obj:
                 raise ValidationError("Missing required parameter 'collection'")
-                
+
             # Connect to database
             client = motor.motor_asyncio.AsyncIOMotorClient(obj["url"])
-            
+
             # Execute query
             docs = await client[obj["db"]][obj["collection"]].find(obj.get("filter", {})).to_list(length=None)
-            
+
             # Handle empty result set
             if not docs and not kw.get("many", True):
                 raise ResourceError(
@@ -54,10 +54,10 @@ class AsyncMongoAdapter(AsyncAdapter[T]):
                     resource=f"{obj['db']}.{obj['collection']}",
                     filter=obj.get("filter", {})
                 )
-                
+
             # Process results
             return [subj_cls(**doc) for doc in docs] if kw.get("many", True) else subj_cls(**docs[0])
-            
+
         except motor.errors.ConnectionFailure as e:
             raise ConnectionError(
                 f"MongoDB connection failed: {e}",

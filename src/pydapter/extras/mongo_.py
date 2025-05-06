@@ -4,7 +4,8 @@ MongoDB adapter (requires `pymongo`).
 
 from __future__ import annotations
 
-from typing import Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 import pymongo
 import pymongo.errors

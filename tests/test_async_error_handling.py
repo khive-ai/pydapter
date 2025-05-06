@@ -75,7 +75,6 @@ class TestAsyncSQLAdapterErrors:
     async def test_invalid_connection_string(self, monkeypatch):
         """Test handling of invalid connection string."""
         import sqlalchemy as sa
-        from sqlalchemy.ext.asyncio import create_async_engine
 
         class TestModel(AsyncAdaptable, BaseModel):
             id: int
@@ -104,7 +103,6 @@ class TestAsyncSQLAdapterErrors:
     @pytest.mark.asyncio
     async def test_table_not_found(self, monkeypatch):
         """Test handling of non-existent table."""
-        import sqlalchemy as sa
 
         class TestModel(AsyncAdaptable, BaseModel):
             id: int
@@ -138,7 +136,6 @@ class TestAsyncSQLAdapterErrors:
     @pytest.mark.asyncio
     async def test_query_error(self, monkeypatch):
         """Test handling of query errors."""
-        import sqlalchemy as sa
 
         class TestModel(AsyncAdaptable, BaseModel):
             id: int
@@ -173,7 +170,6 @@ class TestAsyncSQLAdapterErrors:
     @pytest.mark.asyncio
     async def test_empty_result_set(self, monkeypatch):
         """Test handling of empty result set."""
-        import sqlalchemy as sa
 
         class TestModel(AsyncAdaptable, BaseModel):
             id: int
@@ -366,7 +362,6 @@ class TestAsyncMongoAdapterErrors:
     @pytest.mark.asyncio
     async def test_invalid_connection_string(self, monkeypatch):
         """Test handling of invalid connection string."""
-        import pymongo
 
         class TestModel(AsyncAdaptable, BaseModel):
             id: int
@@ -400,7 +395,6 @@ class TestAsyncMongoAdapterErrors:
     @pytest.mark.asyncio
     async def test_authentication_failure(self, monkeypatch):
         """Test handling of authentication failures."""
-        import pymongo
 
         class TestModel(AsyncAdaptable, BaseModel):
             id: int
@@ -438,7 +432,6 @@ class TestAsyncMongoAdapterErrors:
     @pytest.mark.asyncio
     async def test_invalid_query(self, monkeypatch):
         """Test handling of invalid queries."""
-        import pymongo
 
         class TestModel(AsyncAdaptable, BaseModel):
             id: int
@@ -591,7 +584,6 @@ class TestAsyncQdrantAdapterErrors:
     @pytest.mark.asyncio
     async def test_connection_error(self, monkeypatch):
         """Test handling of connection errors."""
-        from qdrant_client.http.exceptions import UnexpectedResponse
 
         class TestModel(AsyncAdaptable, BaseModel):
             id: int
@@ -625,7 +617,6 @@ class TestAsyncQdrantAdapterErrors:
     @pytest.mark.asyncio
     async def test_collection_not_found(self, monkeypatch):
         """Test handling of collection not found errors."""
-        from qdrant_client.http.exceptions import UnexpectedResponse
 
         class TestModel(AsyncAdaptable, BaseModel):
             id: int

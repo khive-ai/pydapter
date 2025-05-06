@@ -4,7 +4,7 @@ DataFrame & Series adapters (require `pandas`).
 
 from __future__ import annotations
 
-from typing import List, TypeVar
+from typing import TypeVar
 
 import pandas as pd
 from pydantic import BaseModel
@@ -24,7 +24,7 @@ class DataFrameAdapter(Adapter[T]):
         return subj_cls.model_validate(obj.iloc[0].to_dict())
 
     @classmethod
-    def to_obj(cls, subj: T | List[T], /, *, many=True, **kw) -> pd.DataFrame:
+    def to_obj(cls, subj: T | list[T], /, *, many=True, **kw) -> pd.DataFrame:
         items = subj if isinstance(subj, list) else [subj]
         return pd.DataFrame([i.model_dump() for i in items])
 

@@ -4,7 +4,8 @@ Generic async SQL adapter - SQLAlchemy 2.x asyncio + asyncpg driver.
 
 from __future__ import annotations
 
-from typing import Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 import sqlalchemy as sa
 import sqlalchemy.exc as sa_exc
@@ -171,7 +172,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                         meta = sa.MetaData()
                         meta.bind = conn
                         tbl = cls._table(meta, table)
-                        result = await conn.execute(sa.insert(tbl), rows)
+                        await conn.execute(sa.insert(tbl), rows)
                         return {"inserted_count": len(rows)}
                 except TypeError:
                     # Handle case where eng.begin() is a coroutine in tests
@@ -183,7 +184,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                         meta = sa.MetaData()
                         meta.bind = conn
                         tbl = cls._table(meta, table)
-                        result = await conn.execute(sa.insert(tbl), rows)
+                        await conn.execute(sa.insert(tbl), rows)
                         return {"inserted_count": len(rows)}
                     else:
                         raise
