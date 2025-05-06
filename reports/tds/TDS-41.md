@@ -15,7 +15,10 @@ description: "Technical specification for pydapter's documentation contribution 
 
 ### 1.1 Purpose
 
-This specification outlines a comprehensive system for documentation contributions to the pydapter project, focusing on structure, style guidelines, workflow processes, and templates to ensure consistent, high-quality documentation.
+This specification outlines a comprehensive system for documentation
+contributions to the pydapter project, focusing on structure, style guidelines,
+workflow processes, and templates to ensure consistent, high-quality
+documentation.
 
 ### 1.2 Scope
 
@@ -35,7 +38,11 @@ Out of scope:
 
 ### 1.3 Background
 
-The research report (RR-41.md) identified the need for structured documentation contribution guidelines to ensure consistency across pydapter's documentation ecosystem while lowering the barrier to entry for new contributors. The report analyzed similar Python libraries like FastAPI, SQLAlchemy, and Pydantic to identify best practices for MkDocs-based documentation systems.
+The research report (RR-41.md) identified the need for structured documentation
+contribution guidelines to ensure consistency across pydapter's documentation
+ecosystem while lowering the barrier to entry for new contributors. The report
+analyzed similar Python libraries like FastAPI, SQLAlchemy, and Pydantic to
+identify best practices for MkDocs-based documentation systems.
 
 ### 1.4 Design Goals
 
@@ -49,7 +56,8 @@ The research report (RR-41.md) identified the need for structured documentation 
 
 1. Guidelines must work with the existing MkDocs-based documentation system
 2. Documentation processes must integrate with pydapter's GitHub-based workflow
-3. Guidelines should be approachable for contributors of varying experience levels
+3. Guidelines should be approachable for contributors of varying experience
+   levels
 4. Documentation validation must be feasible in CI/CD pipelines
 
 ## 2. Architecture
@@ -63,12 +71,12 @@ graph TD
     C --> D[Local Preview]
     D --> E[Validation]
     E --> F[PR Submission]
-    
+
     G[Documentation System] --> H[Structure Guidelines]
     G --> I[Style Guide]
     G --> J[Templates]
     G --> K[Workflow Guide]
-    
+
     H --> C
     I --> C
     J --> C
@@ -164,16 +172,19 @@ docs/
 **Purpose:** Standardize the workflow for documentation contributions
 
 **Request Model:**
+
 - Local setup requirements
 - Content editing guidelines
 - Preview instructions
 - Pull request submission process
 
 **Response Model:**
+
 - Documentation change integrated into the repository
 - Updated documentation site
 
 **Error Responses:**
+
 - Validation failures
 - Build errors
 - Missing required components
@@ -210,25 +221,25 @@ version: "1.0"
 ```python
 class DocumentType(Enum):
     """Types of documentation with their specific requirements."""
-    
+
     REFERENCE = {
         "required_sections": ["Overview", "Configuration", "Usage", "Examples"],
         "template": "reference_template.md",
         "audience": "Users seeking detailed information"
     }
-    
+
     TUTORIAL = {
         "required_sections": ["Prerequisites", "Steps", "Conclusion", "Next Steps"],
         "template": "tutorial_template.md",
         "audience": "New users learning the library"
     }
-    
+
     CONCEPT = {
         "required_sections": ["Introduction", "Details", "Use Cases", "Related Concepts"],
         "template": "concept_template.md",
         "audience": "Users seeking to understand deeper concepts"
     }
-    
+
     API = {
         "required_sections": ["Class/Function Signature", "Parameters", "Returns", "Examples"],
         "template": "api_template.md",
@@ -241,7 +252,7 @@ class DocumentType(Enum):
 ```python
 class StyleRule:
     """Representation of a style rule with examples."""
-    
+
     def __init__(self, category, rule, correct_example, incorrect_example):
         self.category = category
         self.rule = rule
@@ -300,7 +311,7 @@ sequenceDiagram
     participant User
     participant Repository
     participant Contributor
-    
+
     User->>Repository: Identify documentation issue
     User->>Repository: Create issue with "docs" label
     Repository-->>Contributor: Issue notification
@@ -322,6 +333,7 @@ Documentation contribution error handling covers:
 4. **Build failures**: Issues that prevent documentation from building
 
 Each error type will include:
+
 - Clear error descriptions
 - Instructions for resolution
 - Examples of correct implementations
@@ -329,7 +341,8 @@ Each error type will include:
 ### 5.3 Security Considerations
 
 1. **Content security**:
-   - Guidelines for avoiding inclusion of sensitive information (API keys, credentials)
+   - Guidelines for avoiding inclusion of sensitive information (API keys,
+     credentials)
    - Rules for external link validation and safety
    - Process for reviewing code examples for security issues
 
@@ -364,19 +377,19 @@ The documentation system interacts with:
 ```python
 class DocumentationCI:
     """Integration with CI system for documentation validation."""
-    
+
     def validate_markdown(self, files):
         """Validate Markdown syntax and style guide compliance."""
         # Implementation
-    
+
     def check_links(self, files):
         """Verify all links are valid and accessible."""
         # Implementation
-    
+
     def build_preview(self, branch):
         """Build a preview of the documentation from a branch."""
         # Implementation
-        
+
     def report_issues(self, validation_results):
         """Report any validation issues as check comments."""
         # Implementation
@@ -506,7 +519,7 @@ theme:
     - navigation.sections
     - content.code.copy
     - content.tabs.link
-    
+
 markdown_extensions:
   - admonition
   - pymdownx.highlight
@@ -536,20 +549,23 @@ plugins:
 
 ## 11. Open Questions
 
-1. Should we implement a documentation review checklist, similar to code reviews?
-2. How granular should our documentation templates be? Should we have different templates for different adapter types?
-3. Should we prioritize implementing documentation versioning in the initial phase or postpone to a later phase?
+1. Should we implement a documentation review checklist, similar to code
+   reviews?
+2. How granular should our documentation templates be? Should we have different
+   templates for different adapter types?
+3. Should we prioritize implementing documentation versioning in the initial
+   phase or postpone to a later phase?
 4. What metrics should we track to assess documentation quality and coverage?
 
 ## 12. Risks & Mitigations
 
-| Risk | Mitigation |
-| --- | --- |
-| Overly rigid guidelines discourage contributions | Balance clear standards with flexibility and provide examples rather than strict rules (pplx:5ba8ceeb-f75f-4960-a7b5-974b8cb25c64) |
-| Maintenance burden for guidelines themselves | Automate validation where possible and schedule regular reviews of guidelines (pplx:a072c5e5-d5f9-42f3-a541-8b6b5c77b977) |
-| Contributors not following guidelines | Create clear checklists, provide examples, and implement automated checks in CI pipeline (pplx:54664140-abd3-4299-9f75-555acf50071a) |
-| Documentation becoming outdated as code evolves | Implement regular documentation reviews tied to release cycles and leverage generated API docs where possible |
-| Learning curve for MkDocs and Markdown features | Provide a detailed setup guide with examples of advanced features and inline documentation for MkDocs-specific syntax |
+| Risk                                             | Mitigation                                                                                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Overly rigid guidelines discourage contributions | Balance clear standards with flexibility and provide examples rather than strict rules (pplx:5ba8ceeb-f75f-4960-a7b5-974b8cb25c64)   |
+| Maintenance burden for guidelines themselves     | Automate validation where possible and schedule regular reviews of guidelines (pplx:a072c5e5-d5f9-42f3-a541-8b6b5c77b977)            |
+| Contributors not following guidelines            | Create clear checklists, provide examples, and implement automated checks in CI pipeline (pplx:54664140-abd3-4299-9f75-555acf50071a) |
+| Documentation becoming outdated as code evolves  | Implement regular documentation reviews tied to release cycles and leverage generated API docs where possible                        |
+| Learning curve for MkDocs and Markdown features  | Provide a detailed setup guide with examples of advanced features and inline documentation for MkDocs-specific syntax                |
 
 ## 13. Appendices
 
@@ -557,28 +573,40 @@ plugins:
 
 #### Minimal Viable Guidelines
 
-A simpler approach would focus only on core style and structure requirements without comprehensive templates and validation. This would be faster to implement but might result in less consistent documentation.
+A simpler approach would focus only on core style and structure requirements
+without comprehensive templates and validation. This would be faster to
+implement but might result in less consistent documentation.
 
 #### Template-Driven Approach
 
-An alternative would be to rely heavily on templates with minimal explanatory guidelines. This approach would ensure structural consistency but might not address style and content quality.
+An alternative would be to rely heavily on templates with minimal explanatory
+guidelines. This approach would ensure structural consistency but might not
+address style and content quality.
 
 #### Tool-Driven Approach
 
-This approach would implement automated linting and formatting tools with minimal written guidelines. This would enforce technical correctness but might not address higher-level content organization and quality concerns.
+This approach would implement automated linting and formatting tools with
+minimal written guidelines. This would enforce technical correctness but might
+not address higher-level content organization and quality concerns.
 
 ### Appendix B: Research References
 
-1. FastAPI Documentation Guide (pplx:54664140-abd3-4299-9f75-555acf50071a) - Reference for well-structured documentation contribution process
-2. Pydantic Documentation Contribution Guidelines (pplx:5ba8ceeb-f75f-4960-a7b5-974b8cb25c64) - Example of MkDocs-based documentation practices
-3. SQLAlchemy Documentation Structure (pplx:d38b4ea1-1b27-4283-ab72-9c5771270e78) - Reference for detailed technical documentation
-4. MkDocs Best Practices (pplx:a072c5e5-d5f9-42f3-a541-8b6b5c77b977) - Guidelines specific to MkDocs-based documentation
+1. FastAPI Documentation Guide (pplx:54664140-abd3-4299-9f75-555acf50071a) -
+   Reference for well-structured documentation contribution process
+2. Pydantic Documentation Contribution Guidelines
+   (pplx:5ba8ceeb-f75f-4960-a7b5-974b8cb25c64) - Example of MkDocs-based
+   documentation practices
+3. SQLAlchemy Documentation Structure
+   (pplx:d38b4ea1-1b27-4283-ab72-9c5771270e78) - Reference for detailed
+   technical documentation
+4. MkDocs Best Practices (pplx:a072c5e5-d5f9-42f3-a541-8b6b5c77b977) -
+   Guidelines specific to MkDocs-based documentation
 
 ### Appendix C: Document Type Templates
 
 #### Adapter Reference Template
 
-```markdown
+````markdown
 # [Adapter Name] Adapter
 
 ## Overview
@@ -590,11 +618,12 @@ Brief description of the adapter and its purpose.
 ```bash
 pip install pydapter[adapter-name]
 ```
+````
 
 ## Configuration
 
 | Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
+| --------- | ---- | -------- | ------- | ----------- |
 | `param1`  | str  | Yes      | -       | Description |
 | `param2`  | int  | No       | 10      | Description |
 
@@ -623,8 +652,8 @@ Tips for optimizing performance...
 
 - [Link to related adapter 1]
 - [Link to related adapter 2]
-```
 
+````
 #### Tutorial Template
 
 ```markdown
@@ -645,7 +674,7 @@ Description and code example...
 
 ```python
 # Code for step 1
-```
+````
 
 ## Step 2: [Second Step]
 
