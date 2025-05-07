@@ -5,6 +5,7 @@ Qdrant vector-store adapter (requires `qdrant-client`).
 from __future__ import annotations
 
 from collections.abc import Sequence
+from functools import lru_cache
 from typing import TypeVar
 
 import grpc
@@ -16,7 +17,6 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from ..core import Adapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
-from ..shared.qdrant_shared import get_sync_client
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -26,9 +26,10 @@ class QdrantAdapter(Adapter[T]):
 
     # helper
     @staticmethod
+    @lru_cache(maxsize=None)  # <- single client per URL
     def _client(url: str | None) -> QdrantClient:
         try:
-            return get_sync_client(url)
+            return QdrantClient(url=url) if url else QdrantClient(":memory:")
         except UnexpectedResponse as e:
             raise ConnectionError(
                 f"Failed to connect to Qdrant: {e}", adapter="qdrant", url=url

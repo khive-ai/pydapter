@@ -5,6 +5,7 @@ AsyncQdrantAdapter - vector upsert / search using AsyncQdrantClient.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from functools import lru_cache
 from typing import TypeVar
 
 import grpc
@@ -16,7 +17,6 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from ..async_core import AsyncAdapter
 from ..exceptions import AdapterError, ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
-from ..shared.qdrant_shared import get_async_client
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -25,9 +25,10 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
     obj_key = "async_qdrant"
 
     @staticmethod
+    @lru_cache(maxsize=None)  # <- single client per URL
     def _client(url: str | None) -> AsyncQdrantClient:
         try:
-            return get_async_client(url)
+            return AsyncQdrantClient(url=url) if url else AsyncQdrantClient(":memory:")
         except UnexpectedResponse as e:
             raise ConnectionError(
                 f"Failed to connect to Qdrant: {e}", adapter="async_qdrant", url=url
