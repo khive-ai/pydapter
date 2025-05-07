@@ -16,6 +16,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from ..core import Adapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
+from ..shared.qdrant_shared import get_sync_client
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -24,11 +25,10 @@ class QdrantAdapter(Adapter[T]):
     obj_key = "qdrant"
 
     # helper
-    # helper
     @staticmethod
-    def _client(url: str | None):
+    def _client(url: str | None) -> QdrantClient:
         try:
-            return QdrantClient(url=url) if url else QdrantClient(":memory:")
+            return get_sync_client(url)
         except UnexpectedResponse as e:
             raise ConnectionError(
                 f"Failed to connect to Qdrant: {e}", adapter="qdrant", url=url

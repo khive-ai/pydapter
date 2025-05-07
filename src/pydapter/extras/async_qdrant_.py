@@ -16,6 +16,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from ..async_core import AsyncAdapter
 from ..exceptions import AdapterError, ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
+from ..shared.qdrant_shared import get_async_client
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -24,9 +25,9 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
     obj_key = "async_qdrant"
 
     @staticmethod
-    def _client(url: str | None):
+    def _client(url: str | None) -> AsyncQdrantClient:
         try:
-            return AsyncQdrantClient(url=url) if url else AsyncQdrantClient(":memory:")
+            return get_async_client(url)
         except UnexpectedResponse as e:
             raise ConnectionError(
                 f"Failed to connect to Qdrant: {e}", adapter="async_qdrant", url=url
