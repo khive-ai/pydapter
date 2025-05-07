@@ -21,12 +21,12 @@ class DataFrameAdapter(Adapter[T]):
     def from_obj(cls, subj_cls: type[T], obj: pd.DataFrame, /, *, many=True, **kw):
         if many:
             return [subj_cls.model_validate(r) for r in obj.to_dict(orient="records")]
-        return subj_cls.model_validate(obj.iloc[0].to_dict())
+        return subj_cls.model_validate(obj.iloc[0].to_dict(), **kw)
 
     @classmethod
     def to_obj(cls, subj: T | list[T], /, *, many=True, **kw) -> pd.DataFrame:
         items = subj if isinstance(subj, list) else [subj]
-        return pd.DataFrame([i.model_dump() for i in items])
+        return pd.DataFrame([i.model_dump() for i in items], **kw)
 
 
 class SeriesAdapter(Adapter[T]):
@@ -36,10 +36,10 @@ class SeriesAdapter(Adapter[T]):
     def from_obj(cls, subj_cls: type[T], obj: pd.Series, /, *, many=False, **kw):
         if many:
             raise ValueError("SeriesAdapter supports single records only.")
-        return subj_cls.model_validate(obj.to_dict())
+        return subj_cls.model_validate(obj.to_dict(), **kw)
 
     @classmethod
     def to_obj(cls, subj: T, /, *, many=False, **kw) -> pd.Series:
         if many:
             raise ValueError("SeriesAdapter supports single records only.")
-        return pd.Series(subj.model_dump())
+        return pd.Series(subj.model_dump(), **kw)
