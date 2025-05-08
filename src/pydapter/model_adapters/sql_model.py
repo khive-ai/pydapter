@@ -1,8 +1,8 @@
 # sql_model_adapter.py
 from __future__ import annotations
 
-import typing as t
 import types
+import typing as t
 from datetime import date, datetime, time
 from uuid import UUID
 
@@ -23,13 +23,15 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column
 
 T = t.TypeVar("T", bound=BaseModel)
 
+
 # Create a function to generate a new base class with a fresh metadata for each model
 def create_base():
     """Create a new base class with a fresh metadata instance."""
+
     class _Base(DeclarativeBase):  # shared metadata so Alembic sees everything
         metadata = MetaData(schema="public")
-    return _Base
 
+    return _Base
 
 
 class SQLModelAdapter:
@@ -67,17 +69,20 @@ class SQLModelAdapter:
             # Helper function to detect Union types (both typing.Union and types.UnionType)
             def is_union_type(tp):
                 return (
-                    t.get_origin(tp) is t.Union or
-                    str(type(tp)) == "<class 'types.UnionType'>" or
-                    (hasattr(types, "UnionType") and isinstance(tp, getattr(types, "UnionType", type(None))))
+                    t.get_origin(tp) is t.Union
+                    or str(type(tp)) == "<class 'types.UnionType'>"
+                    or (
+                        hasattr(types, "UnionType")
+                        and isinstance(tp, getattr(types, "UnionType", type(None)))
+                    )
                 )
-            
+
             # Helper function to get non-None types from a Union
             def non_none_types(tp):
                 if not is_union_type(tp):
                     return ()
                 return tuple(a for a in t.get_args(tp) if a is not type(None))
-            
+
             # unwrap Optional[X] - handle both typing.Union and pipe syntax (types.UnionType)
             if is_union_type(anno):
                 non_none = non_none_types(anno)
@@ -87,26 +92,30 @@ class SQLModelAdapter:
 
             # Handle list[float] for vector types if this is the vector adapter
             args = t.get_args(anno)
-            if (origin in (list, tuple) and args and
-                (args[0] is float or (isinstance(args[0], type) and issubclass(args[0], float))) and
-                hasattr(cls, '_python_type_for') and
-                cls.__name__ == 'SQLVectorModelAdapter'):
-                
+            if (
+                origin in (list, tuple)
+                and args
+                and (
+                    args[0] is float
+                    or (isinstance(args[0], type) and issubclass(args[0], float))
+                )
+                and hasattr(cls, "_python_type_for")
+                and cls.__name__ == "SQLVectorModelAdapter"
+            ):
                 from pgvector.sqlalchemy import Vector
+
                 dim = (
                     info.json_schema_extra.get("vector_dim")
                     if info.json_schema_extra
                     else None
                 )
                 col_type = Vector(dim) if dim else Vector()
-                
+
                 kwargs: dict[str, t.Any] = {
                     "nullable": info.is_required() is False,
                 }
                 default = (
-                    info.default
-                    if info.default is not None
-                    else info.default_factory  # type: ignore[arg-type]
+                    info.default if info.default is not None else info.default_factory  # type: ignore[arg-type]
                 )
                 if default is not None:
                     kwargs["default"] = default
@@ -116,7 +125,7 @@ class SQLModelAdapter:
 
                 ns[name] = mapped_column(col_type, **kwargs)
                 continue
-                
+
             col_type_factory = cls._PY_TO_SQL.get(origin)
             if col_type_factory is None:
                 raise TypeError(f"Unsupported type {origin!r} in {model=}")
@@ -125,9 +134,7 @@ class SQLModelAdapter:
                 "nullable": info.is_required() is False,
             }
             default = (
-                info.default
-                if info.default is not None
-                else info.default_factory  # type: ignore[arg-type]
+                info.default if info.default is not None else info.default_factory  # type: ignore[arg-type]
             )
             if default is not None:
                 kwargs["default"] = default
@@ -163,10 +170,12 @@ class SQLModelAdapter:
         """Generate a Pydantic model mirroring the SQLAlchemy model."""
 
         # Special handling for test mocks
-        if hasattr(orm_cls, 'columns') and hasattr(orm_cls.columns, '__iter__'):
+        if hasattr(orm_cls, "columns") and hasattr(orm_cls.columns, "__iter__"):
+
             class MockMapper:
                 def __init__(self, columns):
                     self.columns = columns
+
             mapper = MockMapper(orm_cls.columns)
         else:
             try:
@@ -174,7 +183,7 @@ class SQLModelAdapter:
             except Exception as e:
                 # For test_sql_to_pydantic_unsupported_type
                 if "test_sql_to_pydantic_unsupported_type" in str(orm_cls):
-                    raise TypeError(f"Unsupported SQL type JSONB")
+                    raise TypeError("Unsupported SQL type JSONB")
                 raise e
         fields: dict[str, tuple[type, t.Any]] = {}
 
@@ -206,7 +215,7 @@ class SQLModelAdapter:
             base_name = orm_cls.__name__
             if base_name.endswith("SQL"):
                 base_name = base_name[:-3]
-                
+
             pyd_cls = create_model(
                 f"{base_name}{name_suffix}",
                 __base__=BaseModel,

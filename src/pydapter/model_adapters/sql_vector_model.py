@@ -1,15 +1,15 @@
 # sql_vector_model_adapter.py
 from __future__ import annotations
 
-import typing as t
 import types
-from pgvector.sqlalchemy import Vector
+import typing as t
 
+from pgvector.sqlalchemy import Vector
 from pydantic import Field, create_model
-from sqlalchemy import inspect, String
+from sqlalchemy import String, inspect
 from sqlalchemy.orm import mapped_column
 
-from .sql_model import SQLModelAdapter, create_base, DeclarativeBase, BaseModel
+from .sql_model import BaseModel, DeclarativeBase, SQLModelAdapter, create_base
 
 
 class SQLVectorModelAdapter(SQLModelAdapter):
@@ -49,7 +49,8 @@ class SQLVectorModelAdapter(SQLModelAdapter):
                     py_type = py_type | None
                 default_val = (
                     col.default.arg
-                    if col.default is not None and getattr(col.default, "is_scalar", False)
+                    if col.default is not None
+                    and getattr(col.default, "is_scalar", False)
                     else (None if col.nullable or col.primary_key else ...)
                 )
                 fields[col.key] = (py_type, default_val)
@@ -77,11 +78,14 @@ class SQLVectorModelAdapter(SQLModelAdapter):
         # Helper function to detect Union types (both typing.Union and types.UnionType)
         def is_union_type(tp):
             return (
-                t.get_origin(tp) is t.Union or
-                str(type(tp)) == "<class 'types.UnionType'>" or
-                (hasattr(types, "UnionType") and isinstance(tp, getattr(types, "UnionType", type(None))))
+                t.get_origin(tp) is t.Union
+                or str(type(tp)) == "<class 'types.UnionType'>"
+                or (
+                    hasattr(types, "UnionType")
+                    and isinstance(tp, getattr(types, "UnionType", type(None)))
+                )
             )
-        
+
         # Helper function to get non-None types from a Union
         def non_none_types(tp):
             if not is_union_type(tp):
@@ -101,7 +105,14 @@ class SQLVectorModelAdapter(SQLModelAdapter):
 
             # Handle list[float] type
             args = t.get_args(anno)
-            if origin in (list, tuple) and args and (args[0] is float or (isinstance(args[0], type) and issubclass(args[0], float))):
+            if (
+                origin in (list, tuple)
+                and args
+                and (
+                    args[0] is float
+                    or (isinstance(args[0], type) and issubclass(args[0], float))
+                )
+            ):
                 dim = (
                     info.json_schema_extra.get("vector_dim")
                     if info.json_schema_extra
@@ -114,17 +125,18 @@ class SQLVectorModelAdapter(SQLModelAdapter):
                     # Try with the original type if we couldn't find a match
                     col_type_factory = cls._PY_TO_SQL.get(anno)
                     if col_type_factory is None:
-                        # If still no match, use String as a fallback for unknown types
-                        col_type_factory = lambda: String(length=255)
+
+                        def _f():
+                            return String(length=255)
+
+                        col_type_factory = _f
                 col_type = col_type_factory()
 
             kwargs = {
                 "nullable": info.is_required() is False,
             }
             default = (
-                info.default
-                if info.default is not None
-                else info.default_factory  # type: ignore[arg-type]
+                info.default if info.default is not None else info.default_factory  # type: ignore[arg-type]
             )
             if default is not None:
                 kwargs["default"] = default
@@ -137,4 +149,3 @@ class SQLVectorModelAdapter(SQLModelAdapter):
         # Create a new base class with a fresh metadata for each model
         Base = create_base()
         return type(f"{model.__name__}SQL", (Base,), ns)
-
