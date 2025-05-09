@@ -95,7 +95,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
                     extra["relationship"]["back_populates"] = rel.back_populates
 
                 fields[name] = (
-                    t.Annotated[py_type, Field(json_schema_extra=extra)],  # type: ignore
+                    Annotated[py_type, Field(json_schema_extra=extra)],  # type: ignore
                     default_val,
                 )
 
