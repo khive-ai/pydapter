@@ -6,7 +6,7 @@ from sqlalchemy import inspect
 try:
     from pgvector.sqlalchemy import Vector
 
-    from pydapter.model_adapters.sql_vector_model import SQLVectorModelAdapter
+    from pydapter.model_adapters.pg_vector_model import PGVectorModelAdapter as SQLVectorModelAdapter
 
     VECTOR_AVAILABLE = True
 except ImportError:
