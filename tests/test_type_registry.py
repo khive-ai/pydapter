@@ -1,5 +1,4 @@
-import pytest
-from sqlalchemy import Boolean, Float, Integer, String
+from sqlalchemy import Integer, String
 
 from pydapter.model_adapters.type_registry import TypeRegistry
 

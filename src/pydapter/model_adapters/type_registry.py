@@ -4,7 +4,7 @@ Type registry for mapping between Python and SQL types.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, TypeVar
+from typing import Any, Callable, TypeVar
 
 T = TypeVar("T")
 
@@ -12,18 +12,18 @@ T = TypeVar("T")
 class TypeRegistry:
     """Registry for type mappings between Python and SQL types."""
 
-    _PY_TO_SQL: Dict[type, Callable[[], Any]] = {}
-    _SQL_TO_PY: Dict[type, type] = {}
-    _PY_TO_SQL_CONVERTERS: Dict[type, Callable[[Any], Any]] = {}
-    _SQL_TO_PY_CONVERTERS: Dict[type, Callable[[Any], Any]] = {}
+    _PY_TO_SQL: dict[type, Callable[[], Any]] = {}
+    _SQL_TO_PY: dict[type, type] = {}
+    _PY_TO_SQL_CONVERTERS: dict[type, Callable[[Any], Any]] = {}
+    _SQL_TO_PY_CONVERTERS: dict[type, Callable[[Any], Any]] = {}
 
     @classmethod
     def register(
         cls,
         python_type: type,
         sql_type_factory: Callable[[], Any],
-        python_to_sql: Optional[Callable[[Any], Any]] = None,
-        sql_to_python: Optional[Callable[[Any], Any]] = None,
+        python_to_sql: Callable[[Any], Any] | None = None,
+        sql_to_python: Callable[[Any], Any] | None = None,
     ) -> None:
         """
         Register a type mapping between Python and SQL types.
@@ -44,7 +44,7 @@ class TypeRegistry:
             cls._SQL_TO_PY_CONVERTERS[type(sql_type)] = sql_to_python
 
     @classmethod
-    def get_sql_type(cls, python_type: type) -> Optional[Callable[[], Any]]:
+    def get_sql_type(cls, python_type: type) -> Callable[[], Any] | None:
         """
         Get the SQL type factory for a Python type.
 
@@ -71,7 +71,7 @@ class TypeRegistry:
         return None
 
     @classmethod
-    def get_python_type(cls, sql_type: Any) -> Optional[type]:
+    def get_python_type(cls, sql_type: Any) -> type | None:
         """
         Get the Python type for an SQL type.
 
