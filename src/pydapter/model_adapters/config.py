@@ -1,7 +1,7 @@
 # config.py
 from __future__ import annotations
 
-from typing import Any, Dict, Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -10,7 +10,7 @@ class VectorIndexConfig(BaseModel):
     """Configuration for vector indexing."""
 
     index_type: Literal["hnsw", "ivfflat", "exact"] = "hnsw"
-    params: Dict[str, Any] = Field(default_factory=dict)
+    params: dict[str, Any] = Field(default_factory=dict)
 
     # HNSW parameters
     m: int = 16  # HNSW parameter: max number of connections per node
@@ -28,7 +28,7 @@ class VectorIndexConfig(BaseModel):
             raise ValueError(f"Unsupported index type: {v}")
         return v
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         """
         Get the parameters for the specified index type.
 

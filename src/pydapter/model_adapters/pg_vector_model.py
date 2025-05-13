@@ -1,7 +1,7 @@
 # pg_vector_model.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast, Annotated
+from typing import Annotated, Any, Optional, cast
 
 from pgvector.sqlalchemy import Vector
 from pydantic import BaseModel, Field, create_model
@@ -69,7 +69,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
                 # Handle relationship types
                 if rel.uselist:
                     # One-to-many or many-to-many
-                    py_type = List[target_name]  # type: ignore
+                    py_type = list[target_name]  # type: ignore
                     default_val = Field(default_factory=list)
                 else:
                     # One-to-one or many-to-one
@@ -115,8 +115,8 @@ class PGVectorModelAdapter(SQLModelAdapter):
 
     @classmethod
     def validate_vector_dimensions(
-        cls, vector: Optional[List[float]], expected_dim: Optional[int]
-    ) -> Optional[List[float]]:
+        cls, vector: list[float] | None, expected_dim: int | None
+    ) -> list[float] | None:
         """
         Validate that the vector has the expected dimensions.
 
@@ -155,7 +155,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
         model: type[DeclarativeBase],
         field: str,
         index_type: str = "hnsw",
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> Index:
         """
         Create an appropriate index for vector search.
@@ -204,7 +204,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
         session: Session,
         model: type[DeclarativeBase],
         field: str,
-        vector: List[float],
+        vector: list[float],
         limit: int = 10,
         metric: str = "l2",
     ) -> Any:
@@ -253,7 +253,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
         cls,
         session: Session,
         model: type[DeclarativeBase],
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         batch_size: int = 1000,
     ) -> None:
         """

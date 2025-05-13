@@ -2,17 +2,7 @@
 from __future__ import annotations
 
 import ipaddress
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    get_args,
-    get_origin,
-)
+from typing import Any, Callable, get_args, get_origin
 
 from pydantic import BaseModel
 from sqlalchemy import Column, String
@@ -120,8 +110,8 @@ class PostgresModelAdapter(SQLModelAdapter):
         cls,
         field_name: str,
         field_info: Any,
-        nested_model: Optional[Type[BaseModel]] = None,
-    ) -> Tuple[Column, Optional[Callable]]:
+        nested_model: type[BaseModel] | None = None,
+    ) -> tuple[Column, Callable | None]:
         """
         Handle JSONB fields, potentially with nested Pydantic models.
 
@@ -230,8 +220,8 @@ class PostgresModelAdapter(SQLModelAdapter):
             ns["__table_args__"] = {"schema": schema}
 
         # Track relationships to add after all columns are defined
-        relationships: Dict[str, Dict[str, Any]] = {}
-        foreign_keys: Dict[str, Column] = {}
+        relationships: dict[str, dict[str, Any]] = {}
+        foreign_keys: dict[str, Column] = {}
 
         for name, info in model.model_fields.items():
             anno = info.annotation
@@ -315,7 +305,7 @@ class PostgresModelAdapter(SQLModelAdapter):
                     item_type = get_args(anno)[0] if get_args(anno) else str
 
                     # Handle nested arrays
-                    if dimensions > 1 and get_origin(item_type) in (list, List):
+                    if dimensions > 1 and get_origin(item_type) in (list, list):
                         item_type = get_args(item_type)[0]
 
                     is_nullable = cls.is_optional(anno) or not info.is_required()
@@ -327,7 +317,7 @@ class PostgresModelAdapter(SQLModelAdapter):
                     continue
 
             # Handle list[X] as ARRAY by default
-            if origin in (list, List) and get_args(anno):
+            if origin in (list, list) and get_args(anno):
                 item_type = get_args(anno)[0]
                 is_nullable = cls.is_optional(anno) or not info.is_required()
                 default = info.default if info.default is not None else None
