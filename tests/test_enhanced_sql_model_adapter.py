@@ -1,9 +1,8 @@
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 from pydantic import BaseModel, Field
-from sqlalchemy import ForeignKey, Integer, String, inspect
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy import Integer, inspect
 
 from pydapter.exceptions import TypeConversionError
 from pydapter.model_adapters.sql_model import SQLModelAdapter
@@ -94,7 +93,7 @@ def test_one_to_many_relationship():
     class Author(BaseModel):
         id: Optional[int] = None
         name: str
-        books: List["Book"] = Field(
+        books: list["Book"] = Field(
             default_factory=list,
             json_schema_extra={
                 "relationship": {"type": "one_to_many", "back_populates": "author"}

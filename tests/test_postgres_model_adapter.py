@@ -84,11 +84,11 @@ def test_jsonb_with_nested_models():
     assert isinstance(address_col.type, JSONB)
 
     # Test round-trip conversion
-    UserSchemaRT = adapter.sql_model_to_pydantic(UserSQL)
+    adapter.sql_model_to_pydantic(UserSQL)
 
     # Create a model instance
     address = AddressModel(street="123 Main St", city="Anytown", zip_code="12345")
-    user = UserWithNestedSchema(id=1, name="John Doe", address=address)
+    _ = UserWithNestedSchema(id=1, name="John Doe", address=address)
 
     # Convert to SQLAlchemy instance
     user_sql = UserSQL(id=1, name="John Doe", address=address.model_dump())
