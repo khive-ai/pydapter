@@ -9,7 +9,10 @@
 
 ## Overview
 
-pydapter provides a lightweight, flexible way to adapt Pydantic models to various data sources and sinks. It enables seamless data transfer between different formats and storage systems while maintaining the type safety and validation that Pydantic provides.
+pydapter provides a lightweight, flexible way to adapt Pydantic models to
+various data sources and sinks. It enables seamless data transfer between
+different formats and storage systems while maintaining the type safety and
+validation that Pydantic provides.
 
 ## Features
 
@@ -72,4 +75,5 @@ adapter.write_one(new_user)
 
 - Check out the [Getting Started](getting_started.md) guide
 - Learn about [Error Handling](error_handling.md)
-- Explore specific adapters like [PostgreSQL](postgres_adapter.md), [Neo4j](neo4j_adapter.md), or [Qdrant](qdrant_adapter.md)
+- Explore specific adapters like [PostgreSQL](postgres_adapter.md),
+  [Neo4j](neo4j_adapter.md), or [Qdrant](qdrant_adapter.md)
