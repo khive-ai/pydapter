@@ -64,8 +64,8 @@ def neo4j_container():
     """Neo4j container fixture for tests."""
     from testcontainers.neo4j import Neo4jContainer
 
-    # Set Neo4j auth using environment variables
-    with Neo4jContainer("neo4j:5.9").with_env("NEO4J_AUTH", "neo4j/password") as neo4j:
+    # Set Neo4j auth using username and password parameters
+    with Neo4jContainer("neo4j:5.9", username="neo4j", password="password") as neo4j:
         yield neo4j
 
 
