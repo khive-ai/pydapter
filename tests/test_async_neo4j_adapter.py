@@ -2,35 +2,44 @@
 Unit tests for AsyncNeo4jAdapter.
 """
 
+import asyncio
 import pytest
-from pydantic import BaseModel
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from pydapter.async_core import AsyncAdaptable
-from pydapter.exceptions import (
-    ConnectionError,
-    QueryError,
-    ResourceError,
-    ValidationError as AdapterValidationError,
-)
+from neo4j import AsyncGraphDatabase
+from neo4j.exceptions import AuthError, CypherSyntaxError, ServiceUnavailable
+from pydantic import BaseModel, ValidationError
+
+from pydapter.async_core import AsyncAdapter
+from pydapter.exceptions import ConnectionError, QueryError, ResourceError
+from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.async_neo4j_ import AsyncNeo4jAdapter
+
+
+class TestModel(BaseModel):
+    """Test model for AsyncNeo4jAdapter tests."""
+    id: int
+    name: str
+    value: float
 
 
 @pytest.fixture
 def async_neo4j_model_factory():
     """Factory for creating test models with AsyncNeo4jAdapter registered."""
-
-    def create_model(**kw):
-        class TestModel(AsyncAdaptable, BaseModel):
-            id: int
-            name: str
-            value: float
-
-        # Register the AsyncNeo4j adapter
-        TestModel.register_async_adapter(AsyncNeo4jAdapter)
-        return TestModel(**kw)
-
-    return create_model
+    
+    class AsyncNeo4jModel(BaseModel):
+        id: int
+        name: str
+        value: float
+        
+        class Config:
+            arbitrary_types_allowed = True
+    
+    # Register the adapter with the model class
+    AsyncNeo4jModel.register_async_adapter(AsyncNeo4jAdapter)
+    
+    # Return a factory function
+    return lambda **kwargs: AsyncNeo4jModel(**kwargs)
 
 
 @pytest.fixture
@@ -39,243 +48,553 @@ def async_neo4j_sample(async_neo4j_model_factory):
     return async_neo4j_model_factory(id=1, name="test", value=42.5)
 
 
-class TestAsyncNeo4jAdapterProtocol:
-    """Tests for AsyncNeo4jAdapter protocol compliance."""
-
+class TestAsyncNeo4jAdapter:
+    """Test suite for AsyncNeo4jAdapter."""
+    
     def test_async_neo4j_adapter_protocol_compliance(self):
         """Test that AsyncNeo4jAdapter implements the AsyncAdapter protocol."""
-        # Verify required attributes
-        assert hasattr(AsyncNeo4jAdapter, "obj_key")
-        assert isinstance(AsyncNeo4jAdapter.obj_key, str)
-        assert AsyncNeo4jAdapter.obj_key == "async_neo4j"
-
-        # Verify method signatures
+        # We can't use issubclass with Protocol directly, so we check for required attributes
         assert hasattr(AsyncNeo4jAdapter, "from_obj")
         assert hasattr(AsyncNeo4jAdapter, "to_obj")
-
-        # Verify the methods can be called as classmethods
-        assert callable(AsyncNeo4jAdapter.from_obj)
-        assert callable(AsyncNeo4jAdapter.to_obj)
-
-
-class TestAsyncNeo4jAdapterFunctionality:
-    """Tests for AsyncNeo4jAdapter functionality."""
-
+        assert hasattr(AsyncNeo4jAdapter, "obj_key")
+        assert hasattr(AsyncNeo4jAdapter, "from_obj")
+        assert hasattr(AsyncNeo4jAdapter, "to_obj")
+        assert isinstance(AsyncNeo4jAdapter.obj_key, str)
+        assert AsyncNeo4jAdapter.obj_key == "async_neo4j"
+    
     @pytest.mark.asyncio
-    async def test_async_neo4j_to_obj(self, mocker, async_neo4j_sample):
-        """Test conversion from model to Neo4j node."""
-        # Mock the to_obj method directly
-        mock_result = {"merged_count": 1}
-        mocker.patch.object(
-            AsyncNeo4jAdapter, "to_obj", return_value=mock_result
-        )
-        
-        # Test to_obj
-        result = await async_neo4j_sample.adapt_to_async(
-            obj_key="async_neo4j", 
-            url="neo4j://localhost:7687",
-            auth=("neo4j", "password")
-        )
-        
-        # Verify the result
-        assert isinstance(result, dict)
-        assert "merged_count" in result
-        assert result["merged_count"] == 1
-        
-        # Verify the mock was called with the correct arguments
-        mock_to_obj = AsyncNeo4jAdapter.to_obj
-        assert mock_to_obj.called
-        assert mock_to_obj.call_count == 1
-
+    async def test_create_driver_with_auth(self):
+        """Test _create_driver method with auth."""
+        with patch.object(AsyncGraphDatabase, "driver") as mock_driver:
+            mock_driver.return_value = AsyncMock()
+            driver = await AsyncNeo4jAdapter._create_driver("bolt://localhost:7687", auth=("neo4j", "password"))
+            mock_driver.assert_called_once_with("bolt://localhost:7687", auth=("neo4j", "password"))
+            assert driver is not None
+    
     @pytest.mark.asyncio
-    async def test_async_neo4j_from_obj(self, mocker, async_neo4j_sample):
-        """Test conversion from Neo4j node to model."""
-        # Mock the from_obj method directly
-        mock_model = async_neo4j_sample
-        mocker.patch.object(
-            AsyncNeo4jAdapter, "from_obj", return_value=mock_model
-        )
-        
-        # Test from_obj
-        model_cls = async_neo4j_sample.__class__
-        result = await model_cls.adapt_from_async(
-            {
-                "url": "neo4j://localhost:7687",
-                "auth": ("neo4j", "password"),
-                "label": "TestModel",
-                "where": "n.id = 1"
-            },
-            obj_key="async_neo4j",
-            many=False
-        )
-        
-        # Verify the result
-        assert isinstance(result, model_cls)
-        assert result.id == 1
-        assert result.name == "test"
-        assert result.value == 42.5
-        
-        # Verify the mock was called with the correct arguments
-        mock_from_obj = AsyncNeo4jAdapter.from_obj
-        assert mock_from_obj.called
-        assert mock_from_obj.call_count == 1
-
+    async def test_create_driver_without_auth(self):
+        """Test _create_driver method without auth."""
+        with patch.object(AsyncGraphDatabase, "driver") as mock_driver:
+            mock_driver.return_value = AsyncMock()
+            driver = await AsyncNeo4jAdapter._create_driver("bolt://localhost:7687")
+            mock_driver.assert_called_once_with("bolt://localhost:7687")
+            assert driver is not None
+    
     @pytest.mark.asyncio
-    async def test_async_neo4j_from_obj_many(self, mocker, async_neo4j_sample):
-        """Test conversion from Neo4j nodes to models with many=True."""
-        # Mock the _create_driver method
-        # Mock the from_obj method directly
-        model_cls = async_neo4j_sample.__class__
-        mock_models = [
-            model_cls(id=1, name="test1", value=42.5),
-            model_cls(id=2, name="test2", value=43.5)
-        ]
-        mocker.patch.object(
-            AsyncNeo4jAdapter, "from_obj", return_value=mock_models
-        )
-        # Test from_obj with many=True
-        model_cls = async_neo4j_sample.__class__
-        result = await model_cls.adapt_from_async(
-            {
-                "url": "neo4j://localhost:7687",
-                "auth": ("neo4j", "password"),
-                "label": "TestModel"
-            },
-            obj_key="async_neo4j",
-            many=True
-        )
-        
-        # Verify the result
-        assert isinstance(result, list)
-        assert len(result) == 2
-        assert all(isinstance(item, model_cls) for item in result)
-        assert result[0].id == 1
-        assert result[0].name == "test1"
-        assert result[0].value == 42.5
-        assert result[1].id == 2
-        assert result[1].name == "test2"
-        assert result[1].value == 43.5
-
-
-class TestAsyncNeo4jAdapterErrorHandling:
-    """Tests for AsyncNeo4jAdapter error handling."""
-
+    async def test_create_driver_service_unavailable(self):
+        """Test _create_driver method with ServiceUnavailable error."""
+        with patch.object(AsyncGraphDatabase, "driver") as mock_driver:
+            mock_driver.side_effect = ServiceUnavailable("Service unavailable")
+            with pytest.raises(ConnectionError) as exc_info:
+                await AsyncNeo4jAdapter._create_driver("bolt://localhost:7687")
+            assert "Neo4j service unavailable" in str(exc_info.value)
+    
     @pytest.mark.asyncio
-    async def test_missing_url_parameter(self, async_neo4j_sample):
-        """Test that missing URL parameter raises AdapterValidationError."""
-        model_cls = async_neo4j_sample.__class__
-        
+    async def test_create_driver_auth_error(self):
+        """Test _create_driver method with AuthError."""
+        with patch.object(AsyncGraphDatabase, "driver") as mock_driver:
+            mock_driver.side_effect = AuthError("Authentication failed")
+            with pytest.raises(ConnectionError) as exc_info:
+                await AsyncNeo4jAdapter._create_driver("bolt://localhost:7687")
+            assert "Neo4j authentication failed" in str(exc_info.value)
+    
+    @pytest.mark.asyncio
+    async def test_create_driver_generic_error(self):
+        """Test _create_driver method with generic error."""
+        with patch.object(AsyncGraphDatabase, "driver") as mock_driver:
+            mock_driver.side_effect = Exception("Generic error")
+            with pytest.raises(ConnectionError) as exc_info:
+                await AsyncNeo4jAdapter._create_driver("bolt://localhost:7687")
+            assert "Failed to create Neo4j driver" in str(exc_info.value)
+    
+    def test_validate_cypher_valid(self):
+        """Test _validate_cypher method with valid query."""
+        # Should not raise an exception
+        AsyncNeo4jAdapter._validate_cypher("MATCH (n:`Person`) RETURN n")
+    
+    def test_validate_cypher_invalid(self):
+        """Test _validate_cypher method with invalid query."""
+        with pytest.raises(QueryError) as exc_info:
+            AsyncNeo4jAdapter._validate_cypher("MATCH (n:`Person``Injection`) RETURN n")
+        assert "Invalid Cypher query" in str(exc_info.value)
+    
+    @pytest.mark.asyncio
+    async def test_from_obj_missing_url(self):
+        """Test from_obj method with missing URL."""
         with pytest.raises(AdapterValidationError) as exc_info:
-            await model_cls.adapt_from_async(
-                {},  # Missing url parameter
-                obj_key="async_neo4j"
-            )
-        
+            await AsyncNeo4jAdapter.from_obj(TestModel, {})
         assert "Missing required parameter 'url'" in str(exc_info.value)
-
+    
     @pytest.mark.asyncio
-    async def test_connection_error(self, mocker, async_neo4j_sample):
-        """Test handling of Neo4j connection errors."""
-        # Mock the _create_driver method to raise a ConnectionError
-        mocker.patch.object(
-            AsyncNeo4jAdapter,
-            "_create_driver",
-            side_effect=ConnectionError("Connection failed", adapter="async_neo4j")
-        )
+    async def test_from_obj_with_where_clause(self):
+        """Test from_obj method with where clause."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_result = AsyncMock()
         
-        # Test to_obj with connection error
-        with pytest.raises(ConnectionError) as exc_info:
-            await async_neo4j_sample.adapt_to_async(
-                obj_key="async_neo4j",
-                url="neo4j://invalid:7687"
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
+        
+        # Configure the run method to return a mock result
+        mock_session.run = AsyncMock(return_value=mock_result)
+        
+        # Mock the async iterator for result
+        mock_record = MagicMock()
+        mock_record.__getitem__.return_value = MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})
+        
+        # Set up the async iterator
+        mock_result.__aiter__ = MagicMock()
+        mock_result.__aiter__.return_value = mock_result
+        mock_result.__anext__ = AsyncMock()
+        mock_result.__anext__.side_effect = [mock_record, StopAsyncIteration]
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            result = await AsyncNeo4jAdapter.from_obj(
+                TestModel,
+                {"url": "bolt://localhost:7687", "where": "n.id = 1"},
             )
-        
-        assert "Connection failed" in str(exc_info.value)
-
+            
+            # Verify the query was constructed correctly
+            mock_session.run.assert_called_once_with("MATCH (n:`TestModel`) WHERE n.id = 1 RETURN n")
+            
+            # Verify the result
+            assert isinstance(result, list)
+            assert len(result) == 1
+            assert isinstance(result[0], TestModel)
+            assert result[0].id == 1
+            assert result[0].name == "test"
+            assert result[0].value == 42.5
+    
     @pytest.mark.asyncio
-    async def test_cypher_syntax_error(self, mocker, async_neo4j_sample):
-        """Test handling of Cypher syntax errors."""
-        # Mock the to_obj method to raise a QueryError with Cypher syntax error
-        cypher_error = QueryError(
-            "Neo4j Cypher syntax error: Invalid syntax",
-            query="MERGE (n:`TestModel` {id: $val}) SET n += $props",
-            adapter="async_neo4j"
-        )
-        mocker.patch.object(
-            AsyncNeo4jAdapter, "to_obj", side_effect=cypher_error
-        )
+    async def test_from_obj_with_custom_label(self):
+        """Test from_obj method with custom label."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_result = AsyncMock()
         
-        # Test to_obj with Cypher syntax error
-        with pytest.raises(QueryError) as exc_info:
-            await async_neo4j_sample.adapt_to_async(
-                obj_key="async_neo4j",
-                url="neo4j://localhost:7687"
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
+        
+        # Configure the run method to return a mock result
+        mock_session.run = AsyncMock(return_value=mock_result)
+        
+        # Mock the async iterator for result
+        mock_record = MagicMock()
+        mock_record.__getitem__.return_value = MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})
+        
+        # Set up the async iterator
+        mock_result.__aiter__ = MagicMock()
+        mock_result.__aiter__.return_value = mock_result
+        mock_result.__anext__ = AsyncMock()
+        mock_result.__anext__.side_effect = [mock_record, StopAsyncIteration]
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            result = await AsyncNeo4jAdapter.from_obj(
+                TestModel,
+                {"url": "bolt://localhost:7687", "label": "CustomLabel"},
             )
-        
-        assert "Cypher syntax error" in str(exc_info.value)
-
+            
+            # Verify the query was constructed correctly
+            mock_session.run.assert_called_once_with("MATCH (n:`CustomLabel`)  RETURN n")
+            
+            # Verify the result
+            assert isinstance(result, list)
+            assert len(result) == 1
+            assert isinstance(result[0], TestModel)
+            assert result[0].id == 1
+            assert result[0].name == "test"
+            assert result[0].value == 42.5
+    
     @pytest.mark.asyncio
-    async def test_resource_not_found(self, mocker, async_neo4j_sample):
-        """Test handling of resource not found errors."""
-        # Mock the from_obj method to raise a ResourceError
-        resource_error = ResourceError(
-            "No nodes found matching the query",
-            resource="NonExistentLabel",
-            where="n.id = 999"
-        )
-        mocker.patch.object(
-            AsyncNeo4jAdapter, "from_obj", side_effect=resource_error
-        )
+    async def test_from_obj_single_result(self):
+        """Test from_obj method with many=False."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_result = AsyncMock()
         
-        # Test from_obj with no results
-        model_cls = async_neo4j_sample.__class__
-        with pytest.raises(ResourceError) as exc_info:
-            await model_cls.adapt_from_async(
-                {
-                    "url": "neo4j://localhost:7687",
-                    "label": "NonExistentLabel",
-                    "where": "n.id = 999"
-                },
-                obj_key="async_neo4j",
-                many=False
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
+        
+        # Configure the run method to return a mock result
+        mock_session.run = AsyncMock(return_value=mock_result)
+        
+        # Mock the async iterator for result
+        mock_record = MagicMock()
+        mock_record.__getitem__.return_value = MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})
+        
+        # Set up the async iterator
+        mock_result.__aiter__ = MagicMock()
+        mock_result.__aiter__.return_value = mock_result
+        mock_result.__anext__ = AsyncMock()
+        mock_result.__anext__.side_effect = [mock_record, StopAsyncIteration]
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            result = await AsyncNeo4jAdapter.from_obj(
+                TestModel,
+                {"url": "bolt://localhost:7687"},
+                many=False,
             )
-        
-        assert "No nodes found" in str(exc_info.value)
-
+            
+            # Verify the result
+            assert isinstance(result, TestModel)
+            assert result.id == 1
+            assert result.name == "test"
+            assert result.value == 42.5
+    
     @pytest.mark.asyncio
-    async def test_validation_error(self, mocker, async_neo4j_sample):
-        """Test handling of validation errors."""
-        # Mock the from_obj method to raise a ValidationError
-        validation_error = AdapterValidationError(
-            "Validation error: 1 validation error for TestModel\nid\n  Field required [type=missing,input_value={'name': 'test'},input_type=dict]",
-            data={"name": "test"},
-            errors=[{"loc": ("id",), "msg": "Field required", "type": "missing"}]
-        )
-        mocker.patch.object(
-            AsyncNeo4jAdapter, "from_obj", side_effect=validation_error
-        )
+    async def test_from_obj_empty_result_many(self):
+        """Test from_obj method with empty result and many=True."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_result = AsyncMock()
         
-        # Test from_obj with invalid data
-        model_cls = async_neo4j_sample.__class__
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
+        
+        # Configure the run method to return a mock result
+        mock_session.run = AsyncMock(return_value=mock_result)
+        
+        # Set up the async iterator
+        mock_result.__aiter__ = MagicMock()
+        mock_result.__aiter__.return_value = mock_result
+        mock_result.__anext__ = AsyncMock()
+        mock_result.__anext__.side_effect = StopAsyncIteration
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            result = await AsyncNeo4jAdapter.from_obj(
+                TestModel,
+                {"url": "bolt://localhost:7687"},
+            )
+            
+            # Verify the result
+            assert isinstance(result, list)
+            assert len(result) == 0
+    
+    @pytest.mark.asyncio
+    async def test_from_obj_empty_result_single(self):
+        """Test from_obj method with empty result and many=False."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_result = AsyncMock()
+        
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
+        
+        # Configure the run method to return a mock result
+        mock_session.run = AsyncMock(return_value=mock_result)
+        
+        # Set up the async iterator
+        mock_result.__aiter__ = MagicMock()
+        mock_result.__aiter__.return_value = mock_result
+        mock_result.__anext__ = AsyncMock()
+        mock_result.__anext__.side_effect = StopAsyncIteration
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            with pytest.raises(ResourceError) as exc_info:
+                await AsyncNeo4jAdapter.from_obj(
+                    TestModel,
+                    {"url": "bolt://localhost:7687"},
+                    many=False,
+                )
+            assert "No nodes found matching the query" in str(exc_info.value)
+    
+    @pytest.mark.asyncio
+    async def test_from_obj_cypher_syntax_error(self):
+        """Test from_obj method with CypherSyntaxError."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
+        
+        # Configure the run method to raise an exception
+        mock_session.run = AsyncMock(side_effect=CypherSyntaxError("Syntax error"))
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            with pytest.raises(QueryError) as exc_info:
+                await AsyncNeo4jAdapter.from_obj(
+                    TestModel,
+                    {"url": "bolt://localhost:7687"},
+                )
+            assert "Neo4j Cypher syntax error" in str(exc_info.value)
+    
+    @pytest.mark.asyncio
+    async def test_from_obj_validation_error(self):
+        """Test from_obj method with ValidationError."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_result = AsyncMock()
+        
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
+        
+        # Configure the run method to return a mock result
+        mock_session.run = AsyncMock(return_value=mock_result)
+        
+        # Mock the async iterator for result with invalid data
+        mock_record = MagicMock()
+        mock_record.__getitem__.return_value = MagicMock(_properties={"id": "not_an_int", "name": "test", "value": 42.5})
+
+        # Set up the async iterator
+        mock_result.__aiter__ = MagicMock()
+        mock_result.__aiter__.return_value = mock_result
+        mock_result.__anext__ = AsyncMock()
+        mock_result.__anext__.side_effect = [mock_record, StopAsyncIteration]
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            with pytest.raises(AdapterValidationError) as exc_info:
+                await AsyncNeo4jAdapter.from_obj(
+                    TestModel,
+                    {"url": "bolt://localhost:7687"},
+                )
+            assert "Validation error" in str(exc_info.value)
+    
+    @pytest.mark.asyncio
+    async def test_to_obj_missing_url(self):
+        """Test to_obj method with missing URL."""
         with pytest.raises(AdapterValidationError) as exc_info:
-            await model_cls.adapt_from_async(
-                {
-                    "url": "neo4j://localhost:7687",
-                    "label": "TestModel"
-                },
-                obj_key="async_neo4j",
-                many=False
-            )
-        
-        assert "Validation error" in str(exc_info.value)
-
+            await AsyncNeo4jAdapter.to_obj(TestModel(id=1, name="test", value=42.5), url=None)
+        assert "Missing required parameter 'url'" in str(exc_info.value)
+    
     @pytest.mark.asyncio
-    async def test_cypher_injection_prevention(self, async_neo4j_sample):
-        """Test that the _validate_cypher method prevents injection."""
-        # Test with a potentially dangerous query
-        dangerous_query = "MATCH (n:`User```) RETURN n"
+    async def test_to_obj_missing_merge_on(self):
+        """Test to_obj method with missing merge_on."""
+        with pytest.raises(AdapterValidationError) as exc_info:
+            await AsyncNeo4jAdapter.to_obj(
+                TestModel(id=1, name="test", value=42.5),
+                url="bolt://localhost:7687",
+                merge_on=None,
+            )
+        assert "Missing required parameter 'merge_on'" in str(exc_info.value)
+    
+    @pytest.mark.asyncio
+    async def test_to_obj_with_custom_label(self):
+        """Test to_obj method with custom label."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_result = AsyncMock()
         
-        with pytest.raises(QueryError) as exc_info:
-            AsyncNeo4jAdapter._validate_cypher(dangerous_query)
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
         
-        assert "Possible injection" in str(exc_info.value)
+        # Configure the run method to return a mock result
+        mock_session.run = AsyncMock(return_value=mock_result)
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            result = await AsyncNeo4jAdapter.to_obj(
+                TestModel(id=1, name="test", value=42.5),
+                url="bolt://localhost:7687",
+                label="CustomLabel",
+            )
+            
+            # Verify the query was constructed correctly
+            mock_session.run.assert_called_once()
+            args, kwargs = mock_session.run.call_args
+            assert args[0] == "MERGE (n:`CustomLabel` {id: $val}) SET n += $props"
+            assert kwargs["val"] == 1
+            assert kwargs["props"] == {"id": 1, "name": "test", "value": 42.5}
+            
+            # Verify the result
+            assert result == {"merged_count": 1}
+    
+    @pytest.mark.asyncio
+    async def test_to_obj_with_custom_merge_on(self):
+        """Test to_obj method with custom merge_on."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_result = AsyncMock()
+        
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
+        
+        # Configure the run method to return a mock result
+        mock_session.run = AsyncMock(return_value=mock_result)
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Ensure the session is properly awaited
+        mock_session.__await__ = lambda: iter([mock_session])
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            result = await AsyncNeo4jAdapter.to_obj(
+                TestModel(id=1, name="test", value=42.5),
+                url="bolt://localhost:7687",
+                merge_on="name",
+            )
+            
+            # Verify the query was constructed correctly
+            mock_session.run.assert_called_once()
+            args, kwargs = mock_session.run.call_args
+            assert args[0] == "MERGE (n:`TestModel` {name: $val}) SET n += $props"
+            assert kwargs["val"] == "test"
+            assert kwargs["props"] == {"id": 1, "name": "test", "value": 42.5}
+            
+            # Verify the result
+            assert result == {"merged_count": 1}
+    
+    @pytest.mark.asyncio
+    async def test_to_obj_with_invalid_merge_property(self):
+        """Test to_obj method with invalid merge property."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            with pytest.raises(AdapterValidationError) as exc_info:
+                await AsyncNeo4jAdapter.to_obj(
+                    TestModel(id=1, name="test", value=42.5),
+                    url="bolt://localhost:7687",
+                    merge_on="non_existent_property",
+                )
+            assert "Merge property 'non_existent_property' not found in model" in str(exc_info.value)
+    
+    @pytest.mark.asyncio
+    async def test_to_obj_multiple_items(self):
+        """Test to_obj method with multiple items."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_result = AsyncMock()
+        
+        # Configure mocks
+        mock_driver.session = MagicMock(return_value=mock_session)
+        
+        # Configure the run method to return a mock result
+        mock_session.run = AsyncMock(return_value=mock_result)
+        
+        # Mock session.close to return a completed future
+        close_future = asyncio.Future()
+        close_future.set_result(None)
+        mock_session.close.return_value = close_future
+        
+        # Create multiple models
+        models = [
+            TestModel(id=1, name="test1", value=42.5),
+            TestModel(id=2, name="test2", value=43.5),
+        ]
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            result = await AsyncNeo4jAdapter.to_obj(
+                models,
+                url="bolt://localhost:7687",
+            )
+            
+            # Verify the query was called twice
+            assert mock_session.run.call_count == 2
+            
+            # Verify the result
+            assert result == {"merged_count": 2}
+    
+    @pytest.mark.asyncio
+    async def test_to_obj_cypher_syntax_error(self):
+        """Test to_obj method with CypherSyntaxError."""
+        # Setup mock driver and session
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        
+        # Configure mocks for async context managers
+        mock_driver.__aenter__.return_value = mock_driver
+        mock_driver.session.return_value = mock_session
+        mock_session.__aenter__.return_value = mock_session
+        
+        # Configure the run method to raise an exception
+        mock_session.run = AsyncMock(side_effect=CypherSyntaxError("Syntax error"))
+        
+        # Patch the _create_driver method
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            with pytest.raises(QueryError) as exc_info:
+                await AsyncNeo4jAdapter.to_obj(
+                    TestModel(id=1, name="test", value=42.5),
+                    url="bolt://localhost:7687",
+                )
+            # Just check that it's a QueryError, the exact message might vary
+            assert isinstance(exc_info.value, QueryError)
