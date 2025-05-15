@@ -39,6 +39,19 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
 
     obj_key = "async_neo4j"
 
+    # Class variable for driver factory - makes testing easier
+    _driver_factory = AsyncGraphDatabase.driver
+
+    @classmethod
+    def set_driver_factory(cls, factory):
+        """Set the driver factory for testing purposes."""
+        cls._driver_factory = factory
+
+    @classmethod
+    def reset_driver_factory(cls):
+        """Reset the driver factory to the default."""
+        cls._driver_factory = AsyncGraphDatabase.driver
+
     @classmethod
     async def _create_driver(cls, url: str, auth=None) -> neo4j.AsyncDriver:
         """Create a Neo4j async driver with error handling.
@@ -55,9 +68,9 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         """
         try:
             if auth:
-                return AsyncGraphDatabase.driver(url, auth=auth)
+                return cls._driver_factory(url, auth=auth)
             else:
-                return AsyncGraphDatabase.driver(url)
+                return cls._driver_factory(url)
         except neo4j.exceptions.ServiceUnavailable as e:
             raise ConnectionError(
                 f"Neo4j service unavailable: {e}", adapter="async_neo4j", url=url

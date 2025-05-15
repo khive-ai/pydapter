@@ -33,48 +33,58 @@ def async_model_factory():
     return lambda **kwargs: AsyncTestModel(**kwargs)
 
 
+# Create a custom async iterator class that works with the mock
+class MockAsyncIterator:
+    def __init__(self, records):
+        self.records = records
+        self.index = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.index < len(self.records):
+            record = self.records[self.index]
+            self.index += 1
+            return record
+        raise StopAsyncIteration
+
+
 @pytest.fixture
 def mock_neo4j_driver():
     """Mock Neo4j driver for integration tests."""
+    # Create mock objects
     mock_driver = AsyncMock()
     mock_session = AsyncMock()
     mock_result = AsyncMock()
 
-    # Configure mocks for async context managers
+    # Configure session mock to handle async context manager
+    mock_session.__aenter__.return_value = mock_session
+    mock_session.__aexit__.return_value = None
+
+    # Configure driver to return session directly (not as a coroutine)
+    # This is important - session() should not be a coroutine in our mock
     mock_driver.session = MagicMock(return_value=mock_session)
 
-    # Configure the run method to return a mock result
-    run_future = asyncio.Future()
-    run_future.set_result(mock_result)
-    mock_session.run.return_value = run_future
-
-    # Set up the async iterator for result
-    mock_record = MagicMock()
-    mock_record.__getitem__.return_value = MagicMock(
-        _properties={"id": 44, "name": "test_async_neo4j", "value": 90.12}
-    )
-
-    async def mock_aiter():
-        yield mock_record
-
-    mock_result.__aiter__.return_value = mock_aiter()
+    # Configure the run method to return the mock result directly
+    mock_session.run = AsyncMock(return_value=mock_result)
 
     # Mock session.close to return a completed future
     close_future = asyncio.Future()
     close_future.set_result(None)
     mock_session.close.return_value = close_future
 
-    # Ensure the session is properly awaited
-    mock_session.__await__ = lambda: iter([mock_session])
+    # Create a factory function that returns our mock driver
+    def mock_driver_factory(*args, **kwargs):
+        return mock_driver
 
-    # Patch the AsyncGraphDatabase.driver method
-    with patch("neo4j.AsyncGraphDatabase.driver", return_value=mock_driver):
-        # Patch the AsyncNeo4jAdapter._create_driver method
-        with patch(
-            "pydapter.extras.async_neo4j_.AsyncNeo4jAdapter._create_driver",
-            return_value=mock_driver,
-        ):
-            return mock_driver, mock_session, mock_result
+    # Set our mock driver factory
+    AsyncNeo4jAdapter.set_driver_factory(mock_driver_factory)
+
+    yield mock_driver, mock_session, mock_result
+
+    # Reset the driver factory after the test
+    AsyncNeo4jAdapter.reset_driver_factory()
 
 
 class TestAsyncNeo4jIntegration:
@@ -107,6 +117,22 @@ class TestAsyncNeo4jIntegration:
             props={"id": 44, "name": "test_async_neo4j", "value": 90.12},
         )
 
+        # Create a mock record for this test
+        mock_record = MagicMock()
+        mock_record.__getitem__.return_value = MagicMock(
+            _properties={"id": 44, "name": "test_async_neo4j", "value": 90.12}
+        )
+
+        # Set up the mock iterator with our record
+        mock_iterator = MockAsyncIterator([mock_record])
+
+        # Define the aiter method that returns our iterator
+        def aiter_method(self):
+            return mock_iterator
+
+        # Set the aiter method on the mock result
+        mock_result.__aiter__ = aiter_method
+
         # Retrieve from Neo4j
         retrieved = await AsyncTestModel.adapt_from_async(
             {
@@ -119,7 +145,7 @@ class TestAsyncNeo4jIntegration:
             many=False,
         )
 
-        # Verify retrieved model
+        # Verify retrieved model matches the original
         assert retrieved.id == test_model.id
         assert retrieved.name == test_model.name
         assert retrieved.value == test_model.value
@@ -147,11 +173,6 @@ class TestAsyncNeo4jIntegration:
             )
             mock_records.append(mock_record)
 
-        # Update the mock_aiter function to yield multiple records
-        async def mock_batch_aiter():
-            for record in mock_records:
-                yield record
-
         # Save all models to Neo4j
         for model in models:
             result = await model.adapt_to_async(
@@ -162,8 +183,15 @@ class TestAsyncNeo4jIntegration:
             )
             assert result["merged_count"] == 1
 
-        # Set up the batch retrieval
-        mock_result.__aiter__.return_value = mock_batch_aiter()
+        # Set up the mock iterator with our batch records
+        mock_iterator = MockAsyncIterator(mock_records)
+
+        # Define the aiter method that returns our iterator
+        def aiter_method(self):
+            return mock_iterator
+
+        # Set the aiter method on the mock result
+        mock_result.__aiter__ = aiter_method
 
         # Retrieve all models from Neo4j
         retrieved = await model_cls.adapt_from_async(
@@ -214,13 +242,15 @@ class TestAsyncNeo4jIntegration:
         mock_driver, mock_session, mock_result = mock_neo4j_driver
         model_cls = async_model_factory(id=1, name="test1", value=1.1).__class__
 
-        # Set up empty result
-        async def mock_empty_aiter():
-            # Empty generator
-            if False:
-                yield
+        # Create an empty mock iterator
+        mock_iterator = MockAsyncIterator([])
 
-        mock_result.__aiter__.return_value = mock_empty_aiter()
+        # Define the aiter method that returns our empty iterator
+        def aiter_method(self):
+            return mock_iterator
+
+        # Set the aiter method on the mock result
+        mock_result.__aiter__ = aiter_method
 
         # Try to retrieve a non-existent node
         with pytest.raises(ResourceError) as exc_info:
@@ -271,10 +301,15 @@ class TestAsyncNeo4jIntegration:
             _properties={"id": 55, "name": "updated_name", "value": 200.0}
         )
 
-        async def mock_updated_aiter():
-            yield mock_record
+        # Set up the mock iterator with our updated record
+        mock_iterator = MockAsyncIterator([mock_record])
 
-        mock_result.__aiter__.return_value = mock_updated_aiter()
+        # Define the aiter method that returns our iterator
+        def aiter_method(self):
+            return mock_iterator
+
+        # Set the aiter method on the mock result
+        mock_result.__aiter__ = aiter_method
 
         # Retrieve from Neo4j
         retrieved = await AsyncTestModel.adapt_from_async(
@@ -325,11 +360,15 @@ class TestAsyncNeo4jIntegration:
             )
             filtered_records.append(mock_record)
 
-        async def mock_filtered_aiter():
-            for record in filtered_records:
-                yield record
+        # Set up the mock iterator with our filtered records
+        mock_iterator = MockAsyncIterator(filtered_records)
 
-        mock_result.__aiter__.return_value = mock_filtered_aiter()
+        # Define the aiter method that returns our iterator
+        def aiter_method(self):
+            return mock_iterator
+
+        # Set the aiter method on the mock result
+        mock_result.__aiter__ = aiter_method
 
         # Retrieve models with value > 115
         retrieved = await model_cls.adapt_from_async(
@@ -396,10 +435,15 @@ class TestAsyncNeo4jIntegration:
             _properties={"id": 77, "name": "unique_name", "value": 987.65}
         )
 
-        async def mock_updated_aiter():
-            yield mock_record
+        # Set up the mock iterator with our record
+        mock_iterator = MockAsyncIterator([mock_record])
 
-        mock_result.__aiter__.return_value = mock_updated_aiter()
+        # Define the aiter method that returns our iterator
+        def aiter_method(self):
+            return mock_iterator
+
+        # Set the aiter method on the mock result
+        mock_result.__aiter__ = aiter_method
 
         # Retrieve from Neo4j
         retrieved = await AsyncTestModel.adapt_from_async(
@@ -427,12 +471,15 @@ class TestAsyncNeo4jIntegration:
         model_cls = async_model_factory(id=1, name="test1", value=1.1).__class__
 
         # Set up empty result
-        async def mock_empty_aiter():
-            # Empty generator
-            if False:
-                yield
+        # Set up the mock iterator with an empty list of records
+        mock_iterator = MockAsyncIterator([])
 
-        mock_result.__aiter__.return_value = mock_empty_aiter()
+        # Define the aiter method that returns our empty iterator
+        def aiter_method(self):
+            return mock_iterator
+
+        # Set the aiter method on the mock result
+        mock_result.__aiter__ = aiter_method
 
         # Try to retrieve with a condition that won't match any nodes
         result = await model_cls.adapt_from_async(
