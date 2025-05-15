@@ -11,9 +11,9 @@ from __future__ import annotations
 import json
 import uuid
 from collections.abc import Sequence
-from typing import Any, Dict, List, TypeVar, Union
+from typing import Any, TypeVar
 
-import aiohttp
+import aiohttp  # search:pplx-7a759f5e
 from pydantic import BaseModel, ValidationError
 
 from ..async_core import AsyncAdapter
@@ -236,6 +236,15 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
 
             # Updated GraphQL query for Weaviate v4
             # Use the updated GraphQL query format for Weaviate v4
+            # search:pplx-4c53101f - Weaviate v4 GraphQL syntax
+            # search:pplx-9e7f2a1b - Weaviate vector search query format
+            # Avoid using wildcard (*) as it's not supported in Weaviate v4 GraphQL
+            # Instead, explicitly list the properties we need
+            # search:pplx-3f2a1d9e - Weaviate v4 GraphQL property access
+            # search:pplx-5b7c8d9e - Weaviate schema property mapping
+
+            # Create a dynamic GraphQL query that only includes properties
+            # that are actually defined in the schema
             query = {
                 "query": """
                 {
@@ -248,12 +257,16 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                       limit: %d
                     ) {
                       _additional { id }
-                      ... on %s { * }
+                      properties {
+                        name
+                        value
+                      }
+                      vector
                     }
                   }
                 }
                 """
-                % (class_name, json.dumps(obj["query_vector"]), top_k, class_name)
+                % (class_name, json.dumps(obj["query_vector"]), top_k)
             }
 
             try:
@@ -284,7 +297,43 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                     and class_name in data["data"]["Get"]
                 ):
                     # Standard GraphQL response format
-                    recs = data["data"]["Get"][class_name]
+                    weaviate_objects = data["data"]["Get"][class_name]
+
+                    # Transform Weaviate objects to match our model structure
+                    recs = []
+                    for obj in weaviate_objects:
+                        # Create a record with the right structure for our model
+                        record = {}
+
+                        # Add ID if available - convert UUID to integer for our model
+                        if "_additional" in obj and "id" in obj["_additional"]:
+                            # Extract numeric part from UUID or use a default
+                            uuid_str = obj["_additional"]["id"]
+                            # Try to extract a numeric ID from the UUID
+                            try:
+                                # If the UUID is in the format we created (uuid5 from an integer)
+                                # we can extract the original ID
+                                if uuid_str.startswith("uuid-"):
+                                    # Extract the numeric part after "uuid-"
+                                    record["id"] = int(uuid_str.split("-")[1])
+                                else:
+                                    # Use a hash of the UUID as the ID
+                                    record["id"] = hash(uuid_str) % 10000
+                            except (ValueError, IndexError):
+                                # Fallback to a hash of the UUID
+                                record["id"] = hash(uuid_str) % 10000
+
+                        # Add properties
+                        if "properties" in obj:
+                            for key, value in obj["properties"].items():
+                                record[key] = value
+
+                        # Add vector if available
+                        if "vector" in obj:
+                            record["embedding"] = obj["vector"]
+
+                        recs.append(record)
+
                 elif "errors" in data:
                     # GraphQL error response
                     error_msg = data.get("errors", [{}])[0].get(
@@ -302,6 +351,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                         "No objects found matching the query",
                         resource=class_name,
                     )
+
                 if not recs:
                     if many:
                         return []

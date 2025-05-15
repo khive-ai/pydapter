@@ -56,17 +56,20 @@ def weaviate_cleanup(weaviate_url):
     # Delete test classes
     try:
         client.schema.delete_class("TestModel")
-    except:
+    except Exception:
+        # Log or handle the specific error
         pass
 
     try:
         client.schema.delete_class("BatchTest")
-    except:
+    except Exception:
+        # Log or handle the specific error
         pass
 
     try:
         client.schema.delete_class("EmptyClass")
-    except:
+    except Exception:
+        # Log or handle the specific error
         pass
 
 
@@ -79,17 +82,20 @@ async def async_weaviate_cleanup(weaviate_client):
     # Delete test classes
     try:
         weaviate_client.schema.delete_class("TestModel")
-    except:
+    except Exception:
+        # Log or handle the specific error
         pass
 
     try:
         weaviate_client.schema.delete_class("BatchTest")
-    except:
+    except Exception:
+        # Log or handle the specific error
         pass
 
     try:
         weaviate_client.schema.delete_class("EmptyClass")
-    except:
+    except Exception:
+        # Log or handle the specific error
         pass
 
 

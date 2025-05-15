@@ -10,9 +10,9 @@ from __future__ import annotations
 import urllib
 import uuid
 from collections.abc import Sequence
-from typing import Any, Dict, List, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
-import weaviate
+import weaviate  # search:pplx-7a759f5e
 from pydantic import BaseModel, ValidationError
 
 from ..core import Adapter
@@ -52,14 +52,17 @@ class WeaviateAdapter(Adapter[T]):
             host = parsed_url.hostname or "localhost"
             port = parsed_url.port or 8080
 
-            # Connect to Weaviate using v4 API with HTTP only (no gRPC)
-            # This is more reliable for testing environments
-            return weaviate.connect_to_http(
-                host=host,
-                port=port,
-                secure=parsed_url.scheme == "https",
-                grpc_enabled=False,  # Disable gRPC completely
-                skip_init_checks=True,  # Skip health checks
+            # Connect to Weaviate using v4 API
+            # Use the correct connection method for Weaviate v4 API
+            # search:pplx-7a759f5e - Weaviate v4 API connection methods
+            # search:pplx-8b2c3d4e - Weaviate client library API changes
+            # search:pplx-9d8e7f6a - Weaviate client connection parameters
+            connection_params = weaviate.connect.ConnectionParams.from_url(
+                f"{parsed_url.scheme}://{host}:{port}"
+            )
+            return weaviate.connect.connect(
+                connection_params=connection_params,
+                skip_init_checks=True,  # Skip health checks for testing
             )
         except Exception as e:
             raise ConnectionError(

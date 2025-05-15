@@ -3,6 +3,7 @@ Unit tests for AsyncWeaviateAdapter.
 """
 
 import pytest
+from aiohttp import ClientError
 from pydantic import BaseModel
 
 from pydapter.async_core import AsyncAdaptable
@@ -116,7 +117,7 @@ class TestAsyncWeaviateAdapterFunctionality:
         assert call_args[0][1]["query_vector"] == [0.1, 0.2, 0.3, 0.4, 0.5]
         assert call_args[0][1]["url"] == "http://localhost:8080"
         assert call_args[0][1]["top_k"] == 1
-        assert call_args[1]["many"] == False
+        assert not call_args[1]["many"]
 
         # Verify result
         assert isinstance(result, TestModel)
@@ -164,7 +165,7 @@ class TestAsyncWeaviateAdapterFunctionality:
         assert call_args[0][1]["query_vector"] == [0.1, 0.2, 0.3, 0.4, 0.5]
         assert call_args[0][1]["url"] == "http://localhost:8080"
         assert call_args[0][1]["top_k"] == 5
-        assert call_args[1]["many"] == True
+        assert call_args[1]["many"]
 
         # Verify results
         assert isinstance(results, list)
@@ -371,3 +372,307 @@ class TestAsyncWeaviateAdapterErrorHandling:
             )
 
         assert "Vector field 'embedding' not found in model" in str(excinfo.value)
+
+
+class TestAsyncWeaviateAdapterImplementation:
+    """Test AsyncWeaviateAdapter actual implementation."""
+
+    @pytest.mark.asyncio
+    async def test_async_weaviate_to_obj_implementation(self, mocker):
+        """Test the actual implementation of to_obj method."""
+        # Create test instance
+        test_model = TestModel(id=1, name="test", value=42.5)
+
+        # Register adapter
+        test_model.__class__.register_async_adapter(AsyncWeaviateAdapter)
+
+        # Create a proper async context manager mock
+        mock_response = mocker.AsyncMock()
+        mock_response.status = 200
+        mock_response.text = mocker.AsyncMock(return_value="Success")
+
+        # Patch the aiohttp.ClientSession directly
+        mock_get = mocker.patch("aiohttp.ClientSession.get")
+        mock_get_cm = mocker.AsyncMock()
+        mock_get_cm.__aenter__.return_value = mock_response
+        mock_get.return_value = mock_get_cm
+
+        mock_post = mocker.patch("aiohttp.ClientSession.post")
+        mock_post_cm = mocker.AsyncMock()
+        mock_post_cm.__aenter__.return_value = mock_response
+        mock_post.return_value = mock_post_cm
+
+        # Test to_obj implementation
+        result = await AsyncWeaviateAdapter.to_obj(
+            test_model,
+            class_name="TestModel",
+            url="http://localhost:8080",
+            vector_field="embedding",
+        )
+
+        # Verify result
+        assert isinstance(result, dict)
+        assert "added_count" in result
+        assert result["added_count"] == 1
+
+        # Verify API calls were made
+        assert mock_get.called
+        assert mock_post.called
+
+    @pytest.mark.asyncio
+    async def test_async_weaviate_from_obj_implementation(self, mocker):
+        """Test the actual implementation of from_obj method."""
+        # Create test class
+        test_cls = TestModel
+
+        # Register adapter
+        test_cls.register_async_adapter(AsyncWeaviateAdapter)
+
+        # Create a proper async context manager mock
+        mock_response = mocker.AsyncMock()
+        mock_response.status = 200
+        mock_response.json = mocker.AsyncMock(
+            return_value={
+                "data": {
+                    "Get": {
+                        "TestModel": [
+                            {
+                                "_additional": {"id": "some-uuid"},
+                                "properties": {"name": "test", "value": 42.5},
+                                "vector": [0.1, 0.2, 0.3, 0.4, 0.5],
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+
+        # Patch the aiohttp.ClientSession.post directly
+        mock_post = mocker.patch("aiohttp.ClientSession.post")
+        mock_post_cm = mocker.AsyncMock()
+        mock_post_cm.__aenter__.return_value = mock_response
+        mock_post.return_value = mock_post_cm
+
+        # Test from_obj implementation
+        result = await AsyncWeaviateAdapter.from_obj(
+            test_cls,
+            {
+                "class_name": "TestModel",
+                "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
+                "url": "http://localhost:8080",
+                "top_k": 1,
+            },
+            many=False,
+        )
+
+        # Verify result
+        assert isinstance(result, TestModel)
+        # ID is generated from the UUID hash, so we can't assert an exact value
+        assert isinstance(result.id, int)
+        assert result.name == "test"
+        assert result.value == 42.5
+        assert result.embedding == [0.1, 0.2, 0.3, 0.4, 0.5]
+
+        # Verify API calls were made
+        assert mock_post.called
+
+    @pytest.mark.asyncio
+    async def test_async_weaviate_from_obj_many_implementation(self, mocker):
+        """Test the actual implementation of from_obj method with many=True."""
+        # Create test class
+        test_cls = TestModel
+
+        # Register adapter
+        test_cls.register_async_adapter(AsyncWeaviateAdapter)
+
+        # Create a proper async context manager mock
+        mock_response = mocker.AsyncMock()
+        mock_response.status = 200
+        mock_response.json = mocker.AsyncMock(
+            return_value={
+                "data": {
+                    "Get": {
+                        "TestModel": [
+                            {
+                                "_additional": {"id": "uuid-1"},
+                                "properties": {"name": "test1", "value": 42.5},
+                                "vector": [0.1, 0.2, 0.3, 0.4, 0.5],
+                            },
+                            {
+                                "_additional": {"id": "uuid-2"},
+                                "properties": {"name": "test2", "value": 43.5},
+                                "vector": [0.2, 0.3, 0.4, 0.5, 0.6],
+                            },
+                        ]
+                    }
+                }
+            }
+        )
+
+        # Patch the aiohttp.ClientSession.post directly
+        mock_post = mocker.patch("aiohttp.ClientSession.post")
+        mock_post_cm = mocker.AsyncMock()
+        mock_post_cm.__aenter__.return_value = mock_response
+        mock_post.return_value = mock_post_cm
+
+        # Test from_obj implementation with many=True
+        results = await AsyncWeaviateAdapter.from_obj(
+            test_cls,
+            {
+                "class_name": "TestModel",
+                "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
+                "url": "http://localhost:8080",
+                "top_k": 5,
+            },
+            many=True,
+        )
+
+        # Verify results
+        assert isinstance(results, list)
+        assert len(results) == 2
+        assert all(isinstance(r, TestModel) for r in results)
+        # IDs are generated from UUID hashes, so we can't assert exact values
+        assert isinstance(results[0].id, int)
+        assert results[0].name == "test1"
+        assert isinstance(results[1].id, int)
+        assert results[1].name == "test2"
+
+        # Verify API calls were made
+        assert mock_post.called
+
+    @pytest.mark.asyncio
+    async def test_async_weaviate_connection_error_implementation(self, mocker):
+        """Test connection error handling in to_obj implementation."""
+        # Create test instance
+        test_model = TestModel(id=1, name="test", value=42.5)
+
+        # Register adapter
+        test_model.__class__.register_async_adapter(AsyncWeaviateAdapter)
+
+        # Patch the aiohttp.ClientSession.get to raise an error
+        mock_get = mocker.patch("aiohttp.ClientSession.get")
+        mock_get.side_effect = ClientError("Connection failed")
+
+        # Test to_obj implementation with connection error
+        with pytest.raises(ConnectionError) as excinfo:
+            await AsyncWeaviateAdapter.to_obj(
+                test_model,
+                class_name="TestModel",
+                url="http://invalid-url",
+                vector_field="embedding",
+            )
+
+        # Verify error message
+        assert "Failed to connect to Weaviate" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_async_weaviate_query_error_implementation(self, mocker):
+        """Test query error handling in from_obj implementation."""
+        # Create test class
+        test_cls = TestModel
+
+        # Register adapter
+        test_cls.register_async_adapter(AsyncWeaviateAdapter)
+
+        # Create a proper async context manager mock
+        mock_response = mocker.AsyncMock()
+        mock_response.status = 400
+        mock_response.text = mocker.AsyncMock(return_value="Bad request")
+
+        # Patch the aiohttp.ClientSession.post directly
+        mock_post = mocker.patch("aiohttp.ClientSession.post")
+        mock_post_cm = mocker.AsyncMock()
+        mock_post_cm.__aenter__.return_value = mock_response
+        mock_post.return_value = mock_post_cm
+
+        # Test from_obj implementation with query error
+        with pytest.raises(QueryError) as excinfo:
+            await AsyncWeaviateAdapter.from_obj(
+                test_cls,
+                {
+                    "class_name": "TestModel",
+                    "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
+                    "url": "http://localhost:8080",
+                },
+                many=False,
+            )
+
+        # Verify error message
+        assert "Failed to execute Weaviate query" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_async_weaviate_graphql_error_implementation(self, mocker):
+        """Test GraphQL error handling in from_obj implementation."""
+        # Create test class
+        test_cls = TestModel
+
+        # Register adapter
+        test_cls.register_async_adapter(AsyncWeaviateAdapter)
+
+        # Create a proper async context manager mock
+        mock_response = mocker.AsyncMock()
+        mock_response.status = 200
+        mock_response.json = mocker.AsyncMock(
+            return_value={"errors": [{"message": "GraphQL syntax error"}]}
+        )
+
+        # Patch the aiohttp.ClientSession.post directly
+        mock_post = mocker.patch("aiohttp.ClientSession.post")
+        mock_post_cm = mocker.AsyncMock()
+        mock_post_cm.__aenter__.return_value = mock_response
+        mock_post.return_value = mock_post_cm
+
+        # Test from_obj implementation with GraphQL error
+        with pytest.raises(QueryError) as excinfo:
+            await AsyncWeaviateAdapter.from_obj(
+                test_cls,
+                {
+                    "class_name": "TestModel",
+                    "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
+                    "url": "http://localhost:8080",
+                },
+                many=False,
+            )
+
+        # Verify error message
+        assert "GraphQL error" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_async_weaviate_empty_result_implementation(self, mocker):
+        """Test empty result handling in from_obj implementation."""
+        # Create test class
+        test_cls = TestModel
+
+        # Register adapter
+        test_cls.register_async_adapter(AsyncWeaviateAdapter)
+
+        # Create a proper async context manager mock
+        mock_response = mocker.AsyncMock()
+        mock_response.status = 200
+        mock_response.json = mocker.AsyncMock(
+            return_value={"data": {"Get": {"TestModel": []}}}
+        )
+
+        # Patch the aiohttp.ClientSession.post directly
+        mock_post = mocker.patch("aiohttp.ClientSession.post")
+        mock_post_cm = mocker.AsyncMock()
+        mock_post_cm.__aenter__.return_value = mock_response
+        mock_post.return_value = mock_post_cm
+
+        # Test from_obj implementation with empty result and many=True
+        results = await AsyncWeaviateAdapter.from_obj(
+            test_cls,
+            {
+                "class_name": "TestModel",
+                "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
+                "url": "http://localhost:8080",
+            },
+            many=True,
+        )
+
+        # Verify empty list is returned
+        assert isinstance(results, list)
+        assert len(results) == 0
+
+        # Verify API calls were made
+        assert mock_post.called
