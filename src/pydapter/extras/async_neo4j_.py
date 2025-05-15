@@ -117,7 +117,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             ConnectionError: If connection to Neo4j fails
             QueryError: If query execution fails
             ResourceError: If no matching nodes are found
-            
+
         search:exa-v1w2x3y4 - Async pattern for Neo4j query execution
         search:pplx-z5a6b7c8 - Error handling in async Neo4j operations
         """
@@ -153,11 +153,11 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                         async for r in result:
                             rows.append(r["n"]._properties)
                     except neo4j.exceptions.CypherSyntaxError as e:
-                            raise QueryError(
-                                f"Neo4j Cypher syntax error: {e}",
-                                query=cypher,
-                                adapter="async_neo4j",
-                            ) from e
+                        raise QueryError(
+                            f"Neo4j Cypher syntax error: {e}",
+                            query=cypher,
+                            adapter="async_neo4j",
+                        ) from e
                     except neo4j.exceptions.ClientError as e:
                         if "not found" in str(e).lower():
                             raise ResourceError(
@@ -255,7 +255,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             AdapterValidationError: If required parameters are missing
             ConnectionError: If connection to Neo4j fails
             QueryError: If query execution fails
-            
+
         search:pplx-d9e0f1g2 - Neo4j MERGE operation best practices
         search:exa-h3i4j5k6 - Async batch operations with Neo4j
         """
@@ -293,7 +293,9 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                             )
 
                         # Prepare and validate Cypher query
-                        cypher = f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
+                        cypher = (
+                            f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
+                        )
                         cls._validate_cypher(cypher)
 
                         # Execute query
