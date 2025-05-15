@@ -134,7 +134,7 @@ class TestWeaviateAdapterFunctionality:
         # Verify query was constructed correctly
         mock_client.collections.get.assert_called_once_with("TestModel")
         mock_query.near_vector.assert_called_once()
-        mock_query.with_additional.assert_called_once_with(["id"])
+        mock_query.with_additional.assert_called_once_with("id")
         mock_query.do.assert_called_once()
 
         # Verify result
@@ -197,7 +197,7 @@ class TestWeaviateAdapterFunctionality:
         # Verify query was constructed correctly
         mock_client.collections.get.assert_called_once_with("TestModel")
         mock_query.near_vector.assert_called_once()
-        mock_query.with_additional.assert_called_once_with(["id"])
+        mock_query.with_additional.assert_called_once_with("id")
         mock_query.do.assert_called_once()
 
         # Verify results

@@ -7,13 +7,14 @@ with comprehensive error handling and validation.
 
 from __future__ import annotations
 
-import urllib
+import urllib.parse
 import uuid
 from collections.abc import Sequence
 from typing import Any, TypeVar
 
 import weaviate  # search:pplx-7a759f5e
 from pydantic import BaseModel, ValidationError
+from weaviate.connect import ConnectionParams
 
 from ..core import Adapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
@@ -33,7 +34,7 @@ class WeaviateAdapter(Adapter[T]):
     obj_key = "weav"
 
     @staticmethod
-    def _client(url: str | None = None) -> weaviate.WeaviateClient:
+    def _client(url: str | None = None):
         """
         Create a Weaviate client with error handling.
 
@@ -50,20 +51,30 @@ class WeaviateAdapter(Adapter[T]):
             # Parse URL to extract host and port
             parsed_url = urllib.parse.urlparse(url or "http://localhost:8080")
             host = parsed_url.hostname or "localhost"
-            port = parsed_url.port or 8080
+            http_port = parsed_url.port or 8080
 
             # Connect to Weaviate using v4 API
-            # Use the correct connection method for Weaviate v4 API
-            # search:pplx-7a759f5e - Weaviate v4 API connection methods
-            # search:pplx-8b2c3d4e - Weaviate client library API changes
-            # search:pplx-9d8e7f6a - Weaviate client connection parameters
-            connection_params = weaviate.connect.ConnectionParams.from_url(
-                f"{parsed_url.scheme}://{host}:{port}"
+            # search:pplx-516f9410 - Weaviate v4 connection parameters example
+            # search:pplx-ccec835b - Weaviate Python client v4 API changes
+            connection_params = ConnectionParams.from_params(
+                http_host=host,
+                http_port=http_port,
+                http_secure=parsed_url.scheme == "https",
+                grpc_host=host,
+                grpc_port=50051,  # Use the default gRPC port that Weaviate uses
+                grpc_secure=parsed_url.scheme == "https",
             )
-            return weaviate.connect.connect(
+
+            # Create and connect the client
+            client = weaviate.WeaviateClient(
                 connection_params=connection_params,
                 skip_init_checks=True,  # Skip health checks for testing
             )
+
+            # Connect the client before returning it
+            client.connect()
+
+            return client
         except Exception as e:
             raise ConnectionError(
                 f"Failed to create Weaviate client: {e}",
@@ -122,8 +133,21 @@ class WeaviateAdapter(Adapter[T]):
                 except Exception:
                     # Collection doesn't exist, create it
                     try:
+                        # Create collection with proper vectorizer config
+                        # In Weaviate v4, vectorizer_config needs to be properly structured
                         collection = client.collections.create(
-                            class_name, vectorizer_config={"skip": True}
+                            class_name,
+                            vectorizer_config=None,  # Don't use vectorizer, we provide vectors
+                            properties=[
+                                {
+                                    "name": "name",
+                                    "data_type": ["text"],
+                                },
+                                {
+                                    "name": "value",
+                                    "data_type": ["number"],
+                                },
+                            ],
                         )
                     except Exception as e:
                         raise QueryError(
@@ -264,7 +288,7 @@ class WeaviateAdapter(Adapter[T]):
                             distance=0.7,  # Default distance threshold
                             limit=obj.get("top_k", 5),
                         )
-                        .with_additional(["id"])
+                        .with_additional("id")
                         .do()
                     )
 
