@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.2 - 2025-05-14
+
+### Added
+
+- New adapter implementations:
+  - `AsyncNeo4jAdapter` - Asynchronous adapter for Neo4j graph database with
+    comprehensive error handling
+  - `WeaviateAdapter` - Synchronous adapter for Weaviate vector database with
+    vector search capabilities
+  - `AsyncWeaviateAdapter` - Asynchronous adapter for Weaviate vector database
+    using aiohttp for REST API calls
+
 ## 0.1.1 - 2025-05-04
 
 ### Added
