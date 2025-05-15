@@ -70,6 +70,36 @@ def neo4j_container():
 
 
 @pytest.fixture(scope="session")
+def weaviate_container():
+    """Weaviate container fixture for tests."""
+    from testcontainers.weaviate import WeaviateContainer
+
+    # Create Weaviate container
+    container = WeaviateContainer()
+    container.start()
+
+    yield container
+
+    container.stop()
+
+
+@pytest.fixture(scope="session")
+def weaviate_client(weaviate_container):
+    """Get Weaviate client."""
+    with weaviate_container.get_client() as client:
+        yield client
+
+
+@pytest.fixture(scope="session")
+def weaviate_url(weaviate_container):
+    """Get Weaviate connection URL."""
+    # Extract URL from container
+    host = weaviate_container.get_container_host_ip()
+    port = weaviate_container.get_exposed_port(8080)
+    return f"http://{host}:{port}"
+
+
+@pytest.fixture(scope="session")
 def neo4j_url(neo4j_container):
     """Get Neo4j connection URL."""
     return neo4j_container.get_connection_url()

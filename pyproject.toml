@@ -7,7 +7,7 @@ requires-python = ">=3.10"
 authors         = [{ name = "HaiyangLi", email = "quantocean.li@gmail.com" }]
 dependencies = [
     "pydantic>=2.6",
-    "toml>=0.10.2",
+    "toml>=0.10.0",
 ]
 
 [dependency-groups]
@@ -21,7 +21,7 @@ dev = [
     "pytest-cov>=4.1.0",
     "pytest-benchmark>=4.0.0",
     "pytest-mock>=3.14.0",
-    "testcontainers[mongodb,postgres,qdrant]>=3.7.0",
+    "testcontainers[mongodb,postgres,qdrant, weaviate]>=3.7.0",
     "pre-commit>=4.2.0",
     "ruff>=0.11.7",
     "hypothesis>=6.131.9",
@@ -31,6 +31,7 @@ dev = [
     "mkdocstrings[python]>=0.24.0",
     "pymdown-extensions>=10.7.0",
     "mkdocs-autorefs>=0.5.0",
+    "khive>=0.2.9",
 ]
 
 [project.optional-dependencies]
@@ -41,7 +42,7 @@ sql       = ["sqlalchemy>=2.0"]
 postgres  = ["sqlalchemy>=2.0", "psycopg[binary]>=3", "asyncpg>=0.29", "greenlet>=3.0.0", "psycopg2-binary>=2.9.10"]
 pgvector  = ["pgvector>=0.4.1"]
 mongo     = ["pymongo>=4.7"]
-weaviate  = ["weaviate-client>=4.4"]
+weaviate  = ["weaviate-client>=4.4", "weaviate>=0.1.2"]
 neo4j     = ["neo4j>=5.19"]
 motor     = ["motor>=3"]
 qdrant    = ["qdrant-client>=1.14"]
@@ -58,6 +59,7 @@ all = [
     "greenlet>=3.0.0",
     "pymongo>=4.7",
     "weaviate-client>=4.4",
+    "weaviate>=0.1.2",
     "neo4j>=5.19",
     "motor>=3",
     "qdrant-client>=1.14",
