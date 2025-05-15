@@ -13,6 +13,7 @@ from pydapter.extras.weaviate_ import WeaviateAdapter
 
 class TestModel(Adaptable, BaseModel):
     """Test model for WeaviateAdapter tests."""
+
     id: int
     name: str
     value: float
@@ -65,9 +66,7 @@ class TestWeaviateAdapterFunctionality:
 
         # Test to_obj
         test_model.adapt_to(
-            obj_key="weav",
-            class_name="TestModel",
-            url="http://localhost:8080"
+            obj_key="weav", class_name="TestModel", url="http://localhost:8080"
         )
 
         # Verify the client was created with the correct URL
@@ -75,13 +74,13 @@ class TestWeaviateAdapterFunctionality:
 
         # Verify collection was accessed or created
         mock_client.collections.get.assert_called_once_with("TestModel")
-        
+
         # Verify data insertion
         mock_collection.data.insert.assert_called_once()
-        
+
         # Verify the correct data was passed
         call_args = mock_collection.data.insert.call_args[1]
-        
+
         assert isinstance(call_args["vector"], list)
         assert len(call_args["vector"]) == 5
         assert "properties" in call_args
@@ -102,7 +101,7 @@ class TestWeaviateAdapterFunctionality:
         mock_collection.query = mock_query
         mock_query.near_vector.return_value = mock_query
         mock_query.with_additional.return_value = mock_query
-        
+
         # Mock query result
         mock_result = mocker.MagicMock()
         mock_obj = mocker.MagicMock()
@@ -110,11 +109,11 @@ class TestWeaviateAdapterFunctionality:
             "id": 1,
             "name": "test",
             "value": 42.5,
-            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5]
+            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5],
         }
         mock_result.objects = [mock_obj]
         mock_query.do.return_value = mock_result
-        
+
         mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
 
         # Test from_obj
@@ -123,10 +122,10 @@ class TestWeaviateAdapterFunctionality:
                 "class_name": "TestModel",
                 "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
                 "url": "http://localhost:8080",
-                "top_k": 1
+                "top_k": 1,
             },
             obj_key="weav",
-            many=False
+            many=False,
         )
 
         # Verify the client was created with the correct URL
@@ -161,7 +160,7 @@ class TestWeaviateAdapterFunctionality:
         mock_collection.query = mock_query
         mock_query.near_vector.return_value = mock_query
         mock_query.with_additional.return_value = mock_query
-        
+
         # Mock query result with multiple items
         mock_result = mocker.MagicMock()
         mock_obj1 = mocker.MagicMock()
@@ -169,18 +168,18 @@ class TestWeaviateAdapterFunctionality:
             "id": 1,
             "name": "test1",
             "value": 42.5,
-            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5]
+            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5],
         }
         mock_obj2 = mocker.MagicMock()
         mock_obj2.properties = {
             "id": 2,
             "name": "test2",
             "value": 43.5,
-            "embedding": [0.2, 0.3, 0.4, 0.5, 0.6]
+            "embedding": [0.2, 0.3, 0.4, 0.5, 0.6],
         }
         mock_result.objects = [mock_obj1, mock_obj2]
         mock_query.do.return_value = mock_result
-        
+
         mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
 
         # Test from_obj with many=True
@@ -189,10 +188,10 @@ class TestWeaviateAdapterFunctionality:
                 "class_name": "TestModel",
                 "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
                 "url": "http://localhost:8080",
-                "top_k": 5
+                "top_k": 5,
             },
             obj_key="weav",
-            many=True
+            many=True,
         )
 
         # Verify query was constructed correctly
@@ -227,9 +226,9 @@ class TestWeaviateAdapterErrorHandling:
             test_model.adapt_to(
                 obj_key="weav",
                 url="http://localhost:8080",
-                class_name=""  # Empty class_name
+                class_name="",  # Empty class_name
             )
-        
+
         assert "Missing required parameter 'class_name'" in str(excinfo.value)
 
     def test_connection_error(self, mocker):
@@ -242,19 +241,15 @@ class TestWeaviateAdapterErrorHandling:
 
         # Mock client creation to raise exception
         mocker.patch.object(
-            WeaviateAdapter, 
-            "_client", 
-            side_effect=Exception("Connection failed")
+            WeaviateAdapter, "_client", side_effect=Exception("Connection failed")
         )
 
         # Test to_obj with connection error
         with pytest.raises(ConnectionError) as excinfo:
             test_model.adapt_to(
-                obj_key="weav",
-                class_name="TestModel",
-                url="http://invalid-url"
+                obj_key="weav", class_name="TestModel", url="http://invalid-url"
             )
-        
+
         assert "Failed to connect to Weaviate" in str(excinfo.value)
 
     def test_query_error(self, mocker):
@@ -273,10 +268,10 @@ class TestWeaviateAdapterErrorHandling:
         mock_collection.query = mock_query
         mock_query.near_vector.return_value = mock_query
         mock_query.with_additional.return_value = mock_query
-        
+
         # Mock query execution to raise exception
         mock_query.do.side_effect = Exception("Query failed")
-        
+
         mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
 
         # Test from_obj with query error
@@ -286,9 +281,9 @@ class TestWeaviateAdapterErrorHandling:
                     "class_name": "TestModel",
                     "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
                 },
-                obj_key="weav"
+                obj_key="weav",
             )
-        
+
         assert "Failed to execute Weaviate query" in str(excinfo.value)
 
     def test_resource_not_found(self, mocker):
@@ -307,12 +302,12 @@ class TestWeaviateAdapterErrorHandling:
         mock_collection.query = mock_query
         mock_query.near_vector.return_value = mock_query
         mock_query.with_additional.return_value = mock_query
-        
+
         # Mock empty result
         mock_result = mocker.MagicMock()
         mock_result.objects = []
         mock_query.do.return_value = mock_result
-        
+
         mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
 
         # Test from_obj with empty result and many=False
@@ -323,9 +318,9 @@ class TestWeaviateAdapterErrorHandling:
                     "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
                 },
                 obj_key="weav",
-                many=False
+                many=False,
             )
-        
+
         assert "No objects found matching the query" in str(excinfo.value)
 
     def test_validation_error(self, mocker):
@@ -344,7 +339,7 @@ class TestWeaviateAdapterErrorHandling:
         mock_collection.query = mock_query
         mock_query.near_vector.return_value = mock_query
         mock_query.with_additional.return_value = mock_query
-        
+
         # Mock result with invalid data (missing required field)
         mock_result = mocker.MagicMock()
         mock_obj = mocker.MagicMock()
@@ -352,11 +347,11 @@ class TestWeaviateAdapterErrorHandling:
             "id": 1,
             # Missing "name" field
             "value": 42.5,
-            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5]
+            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5],
         }
         mock_result.objects = [mock_obj]
         mock_query.do.return_value = mock_result
-        
+
         mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
 
         # Test from_obj with validation error
@@ -367,19 +362,20 @@ class TestWeaviateAdapterErrorHandling:
                     "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
                 },
                 obj_key="weav",
-                many=False
+                many=False,
             )
-        
+
         assert "Validation error" in str(excinfo.value)
 
     def test_missing_vector_field(self, mocker):
         """Test handling of missing vector field."""
+
         # Create test instance without embedding field
         class TestModelNoVector(Adaptable, BaseModel):
             id: int
             name: str
             value: float
-        
+
         test_model = TestModelNoVector(id=1, name="test", value=42.5)
 
         # Register adapter
@@ -392,9 +388,7 @@ class TestWeaviateAdapterErrorHandling:
         # Test to_obj with missing vector field
         with pytest.raises(AdapterValidationError) as excinfo:
             test_model.adapt_to(
-                obj_key="weav",
-                class_name="TestModel",
-                url="http://localhost:8080"
+                obj_key="weav", class_name="TestModel", url="http://localhost:8080"
             )
-        
+
         assert "Vector field 'embedding' not found in model" in str(excinfo.value)

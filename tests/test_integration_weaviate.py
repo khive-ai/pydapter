@@ -5,8 +5,8 @@ Integration tests for WeaviateAdapter and AsyncWeaviateAdapter using TestContain
 import pytest
 
 from pydapter.exceptions import ResourceError
-from pydapter.extras.weaviate_ import WeaviateAdapter
 from pydapter.extras.async_weaviate_ import AsyncWeaviateAdapter
+from pydapter.extras.weaviate_ import WeaviateAdapter
 
 
 def is_docker_available():
@@ -30,8 +30,9 @@ pytestmark = [
 @pytest.fixture
 def weaviate_cleanup(weaviate_url):
     """Clean up Weaviate database after tests."""
-    import weaviate
     import urllib.parse
+
+    import weaviate
 
     yield
 
@@ -40,7 +41,7 @@ def weaviate_cleanup(weaviate_url):
     parsed_url = urllib.parse.urlparse(weaviate_url)
     host = parsed_url.hostname or "localhost"
     port = parsed_url.port or 8080
-    
+
     # Connect to Weaviate using v4 API
     client = weaviate.connect_to_custom(
         http_host=host,
@@ -49,20 +50,20 @@ def weaviate_cleanup(weaviate_url):
         grpc_host=host,
         grpc_port=50051,  # Default gRPC port
         grpc_secure=parsed_url.scheme == "https",
-        skip_init_checks=True  # Skip gRPC health check
+        skip_init_checks=True,  # Skip gRPC health check
     )
-    
+
     # Delete test classes
     try:
         client.schema.delete_class("TestModel")
     except:
         pass
-    
+
     try:
         client.schema.delete_class("BatchTest")
     except:
         pass
-    
+
     try:
         client.schema.delete_class("EmptyClass")
     except:
@@ -73,19 +74,19 @@ def weaviate_cleanup(weaviate_url):
 async def async_weaviate_cleanup(weaviate_client):
     """Clean up Weaviate database after async tests."""
     yield
-    
+
     # Cleanup after test using the client from the fixture
     # Delete test classes
     try:
         weaviate_client.schema.delete_class("TestModel")
     except:
         pass
-    
+
     try:
         weaviate_client.schema.delete_class("BatchTest")
     except:
         pass
-    
+
     try:
         weaviate_client.schema.delete_class("EmptyClass")
     except:
@@ -95,7 +96,9 @@ async def async_weaviate_cleanup(weaviate_client):
 class TestWeaviateIntegration:
     """Integration tests for WeaviateAdapter."""
 
-    def test_weaviate_single_object(self, weaviate_url, sync_vector_model_factory, weaviate_cleanup):
+    def test_weaviate_single_object(
+        self, weaviate_url, sync_vector_model_factory, weaviate_cleanup
+    ):
         """Test WeaviateAdapter with a single object."""
         # Create test instance
         test_model = sync_vector_model_factory(id=44, name="test_weaviate", value=90.12)
@@ -110,7 +113,7 @@ class TestWeaviateIntegration:
             class_name="TestModel",
             vector_field="embedding",
         )
-        
+
         # Retrieve from database
         retrieved = test_model.__class__.adapt_from(
             {
@@ -128,7 +131,9 @@ class TestWeaviateIntegration:
         assert retrieved.value == test_model.value
         assert retrieved.embedding == test_model.embedding
 
-    def test_weaviate_batch_operations(self, weaviate_url, sync_vector_model_factory, weaviate_cleanup):
+    def test_weaviate_batch_operations(
+        self, weaviate_url, sync_vector_model_factory, weaviate_cleanup
+    ):
         """Test batch operations with WeaviateAdapter."""
         model_cls = sync_vector_model_factory(id=1, name="test", value=1.0).__class__
 
@@ -171,7 +176,9 @@ class TestWeaviateIntegration:
             assert model.name == f"batch_{i}"
             assert model.value == i * 1.5
 
-    def test_weaviate_resource_not_found(self, weaviate_url, sync_vector_model_factory, weaviate_cleanup):
+    def test_weaviate_resource_not_found(
+        self, weaviate_url, sync_vector_model_factory, weaviate_cleanup
+    ):
         """Test handling of resource not found errors."""
         model_cls = sync_vector_model_factory(id=1, name="test", value=1.0).__class__
 
@@ -190,7 +197,9 @@ class TestWeaviateIntegration:
                 many=False,
             )
 
-    def test_weaviate_empty_result_many(self, weaviate_url, sync_vector_model_factory, weaviate_cleanup):
+    def test_weaviate_empty_result_many(
+        self, weaviate_url, sync_vector_model_factory, weaviate_cleanup
+    ):
         """Test handling of empty result sets with many=True."""
         # Create a model instance
         model = sync_vector_model_factory(id=1, name="test", value=1.0)
@@ -227,7 +236,9 @@ class TestAsyncWeaviateIntegration:
     """Integration tests for AsyncWeaviateAdapter."""
 
     @pytest.mark.asyncio
-    async def test_async_weaviate_single_object(self, weaviate_url, async_model_factory, async_weaviate_cleanup):
+    async def test_async_weaviate_single_object(
+        self, weaviate_url, async_model_factory, async_weaviate_cleanup
+    ):
         """Test AsyncWeaviateAdapter with a single object."""
         # Create test instance
         test_model = async_model_factory(id=44, name="test_async_weaviate", value=90.12)
@@ -242,7 +253,7 @@ class TestAsyncWeaviateIntegration:
             class_name="TestModel",
             vector_field="embedding",
         )
-        
+
         # Retrieve from database
         retrieved = await test_model.__class__.adapt_from_async(
             {
@@ -261,7 +272,9 @@ class TestAsyncWeaviateIntegration:
         assert retrieved.embedding == test_model.embedding
 
     @pytest.mark.asyncio
-    async def test_async_weaviate_batch_operations(self, weaviate_url, async_model_factory, async_weaviate_cleanup):
+    async def test_async_weaviate_batch_operations(
+        self, weaviate_url, async_model_factory, async_weaviate_cleanup
+    ):
         """Test batch operations with AsyncWeaviateAdapter."""
         model_cls = async_model_factory(id=1, name="test", value=1.0).__class__
 
@@ -305,7 +318,9 @@ class TestAsyncWeaviateIntegration:
             assert model.value == i * 1.5
 
     @pytest.mark.asyncio
-    async def test_async_weaviate_resource_not_found(self, weaviate_url, async_model_factory, async_weaviate_cleanup):
+    async def test_async_weaviate_resource_not_found(
+        self, weaviate_url, async_model_factory, async_weaviate_cleanup
+    ):
         """Test handling of resource not found errors."""
         model_cls = async_model_factory(id=1, name="test", value=1.0).__class__
 
@@ -325,7 +340,9 @@ class TestAsyncWeaviateIntegration:
             )
 
     @pytest.mark.asyncio
-    async def test_async_weaviate_empty_result_many(self, weaviate_url, async_model_factory, async_weaviate_cleanup):
+    async def test_async_weaviate_empty_result_many(
+        self, weaviate_url, async_model_factory, async_weaviate_cleanup
+    ):
         """Test handling of empty result sets with many=True."""
         # Create a model instance
         model = async_model_factory(id=1, name="test", value=1.0)

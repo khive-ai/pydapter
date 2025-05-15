@@ -2,9 +2,6 @@
 Unit tests for AsyncWeaviateAdapter.
 """
 
-import json
-
-import aiohttp
 import pytest
 from pydantic import BaseModel
 
@@ -16,6 +13,7 @@ from pydapter.extras.async_weaviate_ import AsyncWeaviateAdapter
 
 class TestModel(AsyncAdaptable, BaseModel):
     """Test model for AsyncWeaviateAdapter tests."""
+
     id: int
     name: str
     value: float
@@ -62,16 +60,12 @@ class TestAsyncWeaviateAdapterFunctionality:
 
         # Mock the to_obj method to return a successful result
         mocker.patch.object(
-            AsyncWeaviateAdapter,
-            "to_obj",
-            return_value={"added_count": 1}
+            AsyncWeaviateAdapter, "to_obj", return_value={"added_count": 1}
         )
 
         # Test to_obj
         result = await test_model.adapt_to_async(
-            obj_key="async_weav",
-            class_name="TestModel",
-            url="http://localhost:8080"
+            obj_key="async_weav", class_name="TestModel", url="http://localhost:8080"
         )
 
         # Verify the method was called with correct parameters
@@ -80,7 +74,7 @@ class TestAsyncWeaviateAdapterFunctionality:
         assert call_args[0][0] == test_model
         assert call_args[1]["class_name"] == "TestModel"
         assert call_args[1]["url"] == "http://localhost:8080"
-        
+
         # Verify result
         assert isinstance(result, dict)
         assert result["added_count"] == 1
@@ -99,9 +93,7 @@ class TestAsyncWeaviateAdapterFunctionality:
 
         # Mock the from_obj method to return the expected result
         mocker.patch.object(
-            AsyncWeaviateAdapter,
-            "from_obj",
-            return_value=expected_result
+            AsyncWeaviateAdapter, "from_obj", return_value=expected_result
         )
 
         # Test from_obj
@@ -110,10 +102,10 @@ class TestAsyncWeaviateAdapterFunctionality:
                 "class_name": "TestModel",
                 "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
                 "url": "http://localhost:8080",
-                "top_k": 1
+                "top_k": 1,
             },
             obj_key="async_weav",
-            many=False
+            many=False,
         )
 
         # Verify the method was called with correct parameters
@@ -125,7 +117,7 @@ class TestAsyncWeaviateAdapterFunctionality:
         assert call_args[0][1]["url"] == "http://localhost:8080"
         assert call_args[0][1]["top_k"] == 1
         assert call_args[1]["many"] == False
-        
+
         # Verify result
         assert isinstance(result, TestModel)
         assert result.id == 1
@@ -144,14 +136,12 @@ class TestAsyncWeaviateAdapterFunctionality:
         # Create expected results
         expected_results = [
             TestModel(id=1, name="test1", value=42.5),
-            TestModel(id=2, name="test2", value=43.5)
+            TestModel(id=2, name="test2", value=43.5),
         ]
 
         # Mock the from_obj method to return the expected results
         mocker.patch.object(
-            AsyncWeaviateAdapter,
-            "from_obj",
-            return_value=expected_results
+            AsyncWeaviateAdapter, "from_obj", return_value=expected_results
         )
 
         # Test from_obj with many=True
@@ -160,10 +150,10 @@ class TestAsyncWeaviateAdapterFunctionality:
                 "class_name": "TestModel",
                 "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
                 "url": "http://localhost:8080",
-                "top_k": 5
+                "top_k": 5,
             },
             obj_key="async_weav",
-            many=True
+            many=True,
         )
 
         # Verify the method was called with correct parameters
@@ -175,7 +165,7 @@ class TestAsyncWeaviateAdapterFunctionality:
         assert call_args[0][1]["url"] == "http://localhost:8080"
         assert call_args[0][1]["top_k"] == 5
         assert call_args[1]["many"] == True
-        
+
         # Verify results
         assert isinstance(results, list)
         assert len(results) == 2
@@ -203,9 +193,9 @@ class TestAsyncWeaviateAdapterErrorHandling:
             await test_model.adapt_to_async(
                 obj_key="async_weav",
                 url="http://localhost:8080",
-                class_name=""  # Empty class_name
+                class_name="",  # Empty class_name
             )
-        
+
         assert "Missing required parameter 'class_name'" in str(excinfo.value)
 
     @pytest.mark.asyncio
@@ -222,9 +212,9 @@ class TestAsyncWeaviateAdapterErrorHandling:
             await test_model.adapt_to_async(
                 obj_key="async_weav",
                 class_name="TestModel",
-                url=""  # Empty URL
+                url="",  # Empty URL
             )
-        
+
         assert "Missing required parameter 'url'" in str(excinfo.value)
 
     @pytest.mark.asyncio
@@ -240,17 +230,17 @@ class TestAsyncWeaviateAdapterErrorHandling:
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "to_obj",
-            side_effect=ConnectionError("Failed to connect to Weaviate: Connection failed", adapter="async_weav")
+            side_effect=ConnectionError(
+                "Failed to connect to Weaviate: Connection failed", adapter="async_weav"
+            ),
         )
 
         # Test to_obj with connection error
         with pytest.raises(ConnectionError) as excinfo:
             await test_model.adapt_to_async(
-                obj_key="async_weav",
-                class_name="TestModel",
-                url="http://invalid-url"
+                obj_key="async_weav", class_name="TestModel", url="http://invalid-url"
             )
-        
+
         assert "Failed to connect to Weaviate" in str(excinfo.value)
 
     @pytest.mark.asyncio
@@ -266,7 +256,9 @@ class TestAsyncWeaviateAdapterErrorHandling:
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "from_obj",
-            side_effect=QueryError("Error in Weaviate query: Bad request", adapter="async_weav")
+            side_effect=QueryError(
+                "Error in Weaviate query: Bad request", adapter="async_weav"
+            ),
         )
 
         # Test from_obj with query error
@@ -275,11 +267,11 @@ class TestAsyncWeaviateAdapterErrorHandling:
                 {
                     "class_name": "TestModel",
                     "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
-                    "url": "http://localhost:8080"
+                    "url": "http://localhost:8080",
                 },
-                obj_key="async_weav"
+                obj_key="async_weav",
             )
-        
+
         assert "Error in Weaviate query" in str(excinfo.value)
 
     @pytest.mark.asyncio
@@ -295,7 +287,9 @@ class TestAsyncWeaviateAdapterErrorHandling:
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "from_obj",
-            side_effect=ResourceError("No objects found matching the query", resource="TestModel")
+            side_effect=ResourceError(
+                "No objects found matching the query", resource="TestModel"
+            ),
         )
 
         # Test from_obj with empty result and many=False
@@ -304,12 +298,12 @@ class TestAsyncWeaviateAdapterErrorHandling:
                 {
                     "class_name": "TestModel",
                     "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
-                    "url": "http://localhost:8080"
+                    "url": "http://localhost:8080",
                 },
                 obj_key="async_weav",
-                many=False
+                many=False,
             )
-        
+
         assert "No objects found matching the query" in str(excinfo.value)
 
     @pytest.mark.asyncio
@@ -325,7 +319,9 @@ class TestAsyncWeaviateAdapterErrorHandling:
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "from_obj",
-            side_effect=AdapterValidationError("Validation error: missing required field 'name'")
+            side_effect=AdapterValidationError(
+                "Validation error: missing required field 'name'"
+            ),
         )
 
         # Test from_obj with validation error
@@ -334,23 +330,24 @@ class TestAsyncWeaviateAdapterErrorHandling:
                 {
                     "class_name": "TestModel",
                     "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
-                    "url": "http://localhost:8080"
+                    "url": "http://localhost:8080",
                 },
                 obj_key="async_weav",
-                many=False
+                many=False,
             )
-        
+
         assert "Validation error" in str(excinfo.value)
 
     @pytest.mark.asyncio
     async def test_missing_vector_field(self, mocker):
         """Test handling of missing vector field."""
+
         # Create test instance without embedding field
         class TestModelNoVector(AsyncAdaptable, BaseModel):
             id: int
             name: str
             value: float
-        
+
         test_model = TestModelNoVector(id=1, name="test", value=42.5)
 
         # Register adapter
@@ -360,7 +357,9 @@ class TestAsyncWeaviateAdapterErrorHandling:
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "to_obj",
-            side_effect=AdapterValidationError("Vector field 'embedding' not found in model")
+            side_effect=AdapterValidationError(
+                "Vector field 'embedding' not found in model"
+            ),
         )
 
         # Test to_obj with missing vector field
@@ -368,7 +367,7 @@ class TestAsyncWeaviateAdapterErrorHandling:
             await test_model.adapt_to_async(
                 obj_key="async_weav",
                 class_name="TestModel",
-                url="http://localhost:8080"
+                url="http://localhost:8080",
             )
-        
+
         assert "Vector field 'embedding' not found in model" in str(excinfo.value)
