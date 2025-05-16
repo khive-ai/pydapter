@@ -105,7 +105,8 @@ class TestMigrationsIntegration:
             ),
             "w",
         ) as f:
-            f.write(f"""
+            f.write(
+                f"""
 \"\"\"Create users table
 
 Revision ID: {revision1}
@@ -131,7 +132,8 @@ def upgrade():
 
 def downgrade():
     op.drop_table('users')
-""")
+"""
+            )
 
         # Upgrade to the initial revision
         adapter.upgrade()
@@ -160,7 +162,8 @@ def downgrade():
             ),
             "w",
         ) as f:
-            f.write(f"""
+            f.write(
+                f"""
 \"\"\"Add email column
 
 Revision ID: {revision2}
@@ -182,7 +185,8 @@ def upgrade():
 
 def downgrade():
     op.drop_column('users', 'email')
-""")
+"""
+            )
 
         # Upgrade to the second revision
         adapter.upgrade()
@@ -284,7 +288,8 @@ def downgrade():
             ),
             "w",
         ) as f:
-            f.write(f"""
+            f.write(
+                f"""
 \"\"\"Create users and products tables
 
 Revision ID: {revision1}
@@ -318,7 +323,8 @@ def upgrade():
 def downgrade():
     op.drop_table('products')
     op.drop_table('users')
-""")
+"""
+            )
 
         # Upgrade to the initial revision
         adapter.upgrade()
@@ -356,7 +362,8 @@ def downgrade():
             ),
             "w",
         ) as f:
-            f.write(f"""
+            f.write(
+                f"""
 \"\"\"Add email and description columns
 
 Revision ID: {revision2}
@@ -380,7 +387,8 @@ def upgrade():
 def downgrade():
     op.drop_column('products', 'description')
     op.drop_column('users', 'email')
-""")
+"""
+            )
 
         # Upgrade to the second revision
         adapter.upgrade()

@@ -29,7 +29,7 @@ class JsonAdapter(Adapter[T]):
                 except Exception as e:
                     raise ParseError(f"Failed to read JSON file: {e}", source=str(obj))
             else:
-                text = obj
+                text = obj.decode("utf-8") if isinstance(obj, bytes) else obj
             # Check for empty input
             if not text or (isinstance(text, str) and not text.strip()):
                 raise ParseError(

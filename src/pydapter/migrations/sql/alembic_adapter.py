@@ -77,7 +77,8 @@ class AlembicAdapter(SyncMigrationAdapter):
             # Create a temporary config file
             ini_path = os.path.join(directory, "alembic.ini")
             with open(ini_path, "w") as f:
-                f.write(f"""
+                f.write(
+                    f"""
 [alembic]
 script_location = {directory}
 sqlalchemy.url = {connection_string}
@@ -115,7 +116,8 @@ formatter = generic
 [formatter_generic]
 format = %(levelname)-5.5s [%(name)s] %(message)s
 datefmt = %H:%M:%S
-""")
+"""
+                )
 
             # Initialize Alembic in the specified directory
             adapter.alembic_cfg = config.Config(ini_path)

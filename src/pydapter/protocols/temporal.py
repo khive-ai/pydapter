@@ -4,12 +4,13 @@
 
 from datetime import datetime, timezone
 
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import Field, field_serializer, field_validator
 
+from .identifiable import Identifiable
 from .utils import convert_to_datetime
 
 
-class Temporal(BaseModel):
+class Temporal(Identifiable):
     """Allows for updating the last updated timestamp."""
 
     created_at: datetime = Field(

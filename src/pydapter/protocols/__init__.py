@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from typing_extensions import Protocol
 
     from .embedable import Embedable
-    from .event import Event, EventHandler
+    from .event import Event
     from .identifiable import Identifiable
     from .invokable import Invokable
     from .temporal import Temporal
@@ -20,7 +20,7 @@ else:
         from typing_extensions import Protocol
 
         from .embedable import Embedable
-        from .event import Event, EventHandler
+        from .event import Event
         from .identifiable import Identifiable
         from .invokable import Invokable
         from .temporal import Temporal
@@ -42,7 +42,6 @@ __all__ = [
     "Embedable",
     "Invokable",
     "Event",
-    "EventHandler",
     "Embedding",
     "ExecutionStatus",
     "Execution",

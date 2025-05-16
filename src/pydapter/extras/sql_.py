@@ -5,7 +5,7 @@ Generic SQL adapter using SQLAlchemy Core (requires `sqlalchemy>=2.0`).
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import sqlalchemy as sa
 from pydantic import BaseModel, ValidationError
@@ -27,7 +27,7 @@ class SQLAdapter(Adapter[T]):
     def _table(metadata: sa.MetaData, table: str, engine=None) -> sa.Table:
         try:
             # Use engine if provided, otherwise use metadata.bind
-            autoload_with = engine if engine is not None else metadata.bind
+            autoload_with = engine if engine is not None else metadata.bind  # type: ignore
             return sa.Table(table, metadata, autoload_with=autoload_with)
         except sq_exc.NoSuchTableError as e:
             raise ResourceError(f"Table '{table}' not found", resource=table) from e
@@ -135,7 +135,7 @@ class SQLAdapter(Adapter[T]):
         table: str,
         many=True,
         **kw,
-    ) -> None:
+    ) -> dict[str, Any]:  # type: ignore
         try:
             # Validate required parameters
             if not engine_url:
@@ -170,9 +170,9 @@ class SQLAdapter(Adapter[T]):
             # Prepare data
             items = subj if isinstance(subj, Sequence) else [subj]
             if not items:
-                return None  # Nothing to insert
+                return {"success": True, "count": 0}  # Nothing to insert
 
-            rows = [i.model_dump() for i in items]
+            rows = [i.model_dump() for i in items]  # type: ignore
 
             # Execute insert or update (upsert)
             try:

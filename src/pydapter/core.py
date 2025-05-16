@@ -13,7 +13,7 @@ from .exceptions import (
     ConfigurationError,
 )
 
-T = TypeVar("T")
+T = TypeVar("T", contravariant=True)
 
 
 # ------------------------------------------------------------------ Adapter

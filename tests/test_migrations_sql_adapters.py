@@ -171,7 +171,8 @@ class TestAlembicMigrationAdapter:
             ),
             "w",
         ) as f:
-            f.write(f"""
+            f.write(
+                f"""
 \"\"\"Create users table
 
 Revision ID: {revision}
@@ -197,7 +198,8 @@ def upgrade():
 
 def downgrade():
     op.drop_table('users')
-""")
+"""
+            )
 
         # Upgrade to the latest revision
         adapter.upgrade()
@@ -241,7 +243,8 @@ def downgrade():
             ),
             "w",
         ) as f:
-            f.write(f"""
+            f.write(
+                f"""
 \"\"\"Create users table
 
 Revision ID: {revision}
@@ -267,7 +270,8 @@ def upgrade():
 
 def downgrade():
     op.drop_table('users')
-""")
+"""
+            )
 
         # Upgrade to the latest revision
         adapter.upgrade()
@@ -418,7 +422,8 @@ def downgrade():
             ),
             "w",
         ) as f:
-            f.write(f"""
+            f.write(
+                f"""
 \"\"\"Create users table
 
 Revision ID: {revision1}
@@ -444,7 +449,8 @@ def upgrade():
 
 def downgrade():
     op.drop_table('users')
-""")
+"""
+            )
 
         # Upgrade to the latest revision
         adapter.upgrade()

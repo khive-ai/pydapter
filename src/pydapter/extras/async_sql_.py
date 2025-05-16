@@ -26,6 +26,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
     @staticmethod
     def _table(meta: sa.MetaData, name: str) -> sa.Table:
         try:
+            # In SQLAlchemy 2.x, we should use the connection directly
             return sa.Table(name, meta, autoload_with=meta.bind)
         except sa_exc.NoSuchTableError as e:
             raise ResourceError(f"Table '{name}' not found", resource=name) from e

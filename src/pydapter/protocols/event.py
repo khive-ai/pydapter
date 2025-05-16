@@ -5,20 +5,19 @@ from typing import Any
 
 from ..async_core import AsyncAdapter
 from .embedable import Embedable
-from .identifiable import Identifiable
 from .invokable import Invokable
 from .types import Embedding, Log
 from .utils import as_async_fn, validate_model_to_dict
 
 
-class Event(Identifiable, Embedable, Invokable):
+class Event(Invokable, Embedable):
     def __init__(
         self,
         event_invoke_function: Callable,
         event_invoke_args: list[Any],
         event_invoke_kwargs: dict[str, Any],
     ):
-        super().__init__()
+        super().__init__(response_obj=None)
         self._invoke_function = event_invoke_function
         self._invoke_args = event_invoke_args or []
         self._invoke_kwargs = event_invoke_kwargs or {}
@@ -35,21 +34,25 @@ class Event(Identifiable, Embedable, Invokable):
         if self.content is None:
             self.create_content()
 
-        event_dict = self.model_dump()
-        log_params = {"event_type": event_type or self.__class__.__name__}
-        for k, v in event_dict.items():
-            if k in Log.model_fields:
-                log_params[k] = v
-            if k == "execution":
-                execution = {k: v for k, v in v.items() if k in Log.model_fields}
-                log_params.update(execution)
+        # Create a Log object with keyword arguments
+        log = Log(
+            id=str(self.id),
+            created_at=self.created_at.isoformat(),
+            updated_at=self.updated_at.isoformat(),
+            event_type=event_type or self.__class__.__name__,
+            content=self.content,
+            embedding=self.embedding,
+            duration=self.execution.duration,
+            status=self.execution.status.value,
+            error=self.execution.error,
+        )
 
         if hash_content:
-            from khive.utils import sha256_of_dict
+            from .utils import sha256_of_dict
 
-            log_params["sha256"] = sha256_of_dict({"content": self.content})
+            log.sha256 = sha256_of_dict({"content": self.content})
 
-        return Log(**log_params)
+        return log
 
 
 def as_event(
@@ -69,17 +72,14 @@ def as_event(
             if len(args) > 2 and hasattr(args[0], "__class__"):
                 args = args[1:]
             request_obj = args[0] if request_obj is None else request_obj
-            event = Event(func, args, kwargs)
+            event = Event(func, list(args), kwargs)
             event.request = validate_model_to_dict(request_obj)
             await event.invoke()
-            if embed_content:
-                if embed_function is not None:
-                    async_embed = as_async_fn(embed_function)
-                    event.embedding = await async_embed(event.content)
-                else:
-                    event = await event.generate_embedding()
+            if embed_content and embed_function is not None:
+                async_embed = as_async_fn(embed_function)
+                event.embedding = await async_embed(event.content)
 
-            if adapt:
+            if adapt and adapter is not None:
                 await adapter.to_obj(event.to_log(event_type=event_type), **kw)
 
             return event

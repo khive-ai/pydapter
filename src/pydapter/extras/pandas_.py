@@ -39,7 +39,7 @@ class SeriesAdapter(Adapter[T]):
         return subj_cls.model_validate(obj.to_dict(), **kw)
 
     @classmethod
-    def to_obj(cls, subj: T, /, *, many=False, **kw) -> pd.Series:
-        if many:
+    def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> pd.Series:
+        if many or isinstance(subj, list):
             raise ValueError("SeriesAdapter supports single records only.")
         return pd.Series(subj.model_dump(), **kw)

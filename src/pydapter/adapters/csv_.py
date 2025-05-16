@@ -61,7 +61,32 @@ class CsvAdapter(Adapter[T]):
 
             # Parse CSV
             try:
-                reader = csv.DictReader(io.StringIO(text), **csv_kwargs)
+                # Extract specific parameters from csv_kwargs
+                delimiter = ","
+                quotechar = '"'
+                escapechar = "\\"
+                quoting = csv.QUOTE_MINIMAL
+
+                if "delimiter" in csv_kwargs:
+                    delimiter = str(csv_kwargs.pop("delimiter"))
+                if "quotechar" in csv_kwargs:
+                    quotechar = str(csv_kwargs.pop("quotechar"))
+                if "escapechar" in csv_kwargs:
+                    escapechar = str(csv_kwargs.pop("escapechar"))
+                if "quoting" in csv_kwargs:
+                    quoting_value = csv_kwargs.pop("quoting")
+                    if isinstance(quoting_value, int):
+                        quoting = quoting_value
+                    else:
+                        quoting = csv.QUOTE_MINIMAL
+
+                reader = csv.DictReader(
+                    io.StringIO(text),
+                    delimiter=delimiter,
+                    quotechar=quotechar,
+                    escapechar=escapechar,
+                    quoting=quoting,
+                )
                 rows = list(reader)
 
                 if not rows:
@@ -154,7 +179,33 @@ class CsvAdapter(Adapter[T]):
             # Get fieldnames from the first item
             fieldnames = list(items[0].model_dump().keys())
 
-            writer = csv.DictWriter(buf, fieldnames=fieldnames, **csv_kwargs)
+            # Extract specific parameters from csv_kwargs
+            delimiter = ","
+            quotechar = '"'
+            escapechar = "\\"
+            quoting = csv.QUOTE_MINIMAL
+
+            if "delimiter" in csv_kwargs:
+                delimiter = str(csv_kwargs.pop("delimiter"))
+            if "quotechar" in csv_kwargs:
+                quotechar = str(csv_kwargs.pop("quotechar"))
+            if "escapechar" in csv_kwargs:
+                escapechar = str(csv_kwargs.pop("escapechar"))
+            if "quoting" in csv_kwargs:
+                quoting_value = csv_kwargs.pop("quoting")
+                if isinstance(quoting_value, int):
+                    quoting = quoting_value
+                else:
+                    quoting = csv.QUOTE_MINIMAL
+
+            writer = csv.DictWriter(
+                buf,
+                fieldnames=fieldnames,
+                delimiter=delimiter,
+                quotechar=quotechar,
+                escapechar=escapechar,
+                quoting=quoting,
+            )
             writer.writeheader()
             writer.writerows([i.model_dump() for i in items])
             return buf.getvalue()
