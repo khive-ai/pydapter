@@ -296,7 +296,8 @@ except AdapterValidationError as e:
 
 ## Using Protocols
 
-Pydapter provides a set of standardized interfaces through the protocols module. These protocols allow you to add common capabilities to your models:
+Pydapter provides a set of standardized interfaces through the protocols module.
+These protocols allow you to add common capabilities to your models:
 
 ```python
 from pydapter.protocols import Identifiable, Temporal
@@ -319,11 +320,13 @@ user.update_timestamp()
 print(f"Updated at: {user.updated_at}")
 ```
 
-For more details, see the [Protocols documentation](protocols.md) and the [Using Protocols tutorial](tutorials/using_protocols.md).
+For more details, see the [Protocols documentation](protocols.md) and the
+[Using Protocols tutorial](tutorials/using_protocols.md).
 
 ## Using Migrations
 
-Pydapter provides tools for managing database schema changes through the migrations module:
+Pydapter provides tools for managing database schema changes through the
+migrations module:
 
 ```python
 from pydapter.migrations import AlembicAdapter
@@ -352,4 +355,5 @@ AlembicAdapter.upgrade(
 )
 ```
 
-For more details, see the [Migrations documentation](migrations.md) and the [Using Migrations tutorial](tutorials/using_migrations.md).
+For more details, see the [Migrations documentation](migrations.md) and the
+[Using Migrations tutorial](tutorials/using_migrations.md).

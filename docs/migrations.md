@@ -1,10 +1,14 @@
 # Migrations Module
 
-The Migrations module provides a framework for managing database schema changes in a controlled, versioned manner. It follows pydapter's adapter pattern philosophy, offering both synchronous and asynchronous interfaces for different database backends.
+The Migrations module provides a framework for managing database schema changes
+in a controlled, versioned manner. It follows pydapter's adapter pattern
+philosophy, offering both synchronous and asynchronous interfaces for different
+database backends.
 
 ## Installation
 
-The Migrations module is available as an optional dependency with different components:
+The Migrations module is available as an optional dependency with different
+components:
 
 ```bash
 # Core migrations functionality (minimal dependencies)
@@ -24,7 +28,8 @@ pip install pydapter[migrations-all]
 
 ### Migration Adapters
 
-Migration adapters implement the migration protocols and provide concrete functionality for specific database backends. The base module includes:
+Migration adapters implement the migration protocols and provide concrete
+functionality for specific database backends. The base module includes:
 
 - `BaseMigrationAdapter`: Abstract base class for all migration adapters
 - `SyncMigrationAdapter`: Base class for synchronous migration adapters
@@ -32,14 +37,17 @@ Migration adapters implement the migration protocols and provide concrete functi
 
 ### Migration Protocols
 
-The module defines protocols that specify the interface for migration operations:
+The module defines protocols that specify the interface for migration
+operations:
 
 - `MigrationProtocol`: Protocol for synchronous migration operations
 - `AsyncMigrationProtocol`: Protocol for asynchronous migration operations
 
 ### SQL Migrations with Alembic
 
-The SQL migrations implementation uses [Alembic](https://alembic.sqlalchemy.org/), a database migration tool for SQLAlchemy. It provides:
+The SQL migrations implementation uses
+[Alembic](https://alembic.sqlalchemy.org/), a database migration tool for
+SQLAlchemy. It provides:
 
 - `AlembicAdapter`: Synchronous Alembic-based migration adapter
 - `AsyncAlembicAdapter`: Asynchronous Alembic-based migration adapter
@@ -48,7 +56,8 @@ The SQL migrations implementation uses [Alembic](https://alembic.sqlalchemy.org/
 
 ### Initializing Migrations
 
-Before you can create and apply migrations, you need to initialize the migration environment:
+Before you can create and apply migrations, you need to initialize the migration
+environment:
 
 ```python
 from pydapter.migrations import AlembicAdapter
@@ -62,7 +71,8 @@ AlembicAdapter.init_migrations(
 )
 ```
 
-This creates the necessary directory structure and configuration files for Alembic.
+This creates the necessary directory structure and configuration files for
+Alembic.
 
 ### Creating Migrations
 
@@ -79,7 +89,8 @@ revision = AlembicAdapter.create_migration(
 print(f"Created migration: {revision}")
 ```
 
-The `autogenerate` parameter tells Alembic to compare your models with the current database schema and generate the necessary changes.
+The `autogenerate` parameter tells Alembic to compare your models with the
+current database schema and generate the necessary changes.
 
 ### Applying Migrations
 
@@ -130,7 +141,8 @@ for migration in history:
 
 ## Asynchronous Migrations
 
-For applications using asynchronous database connections, you can use the async migration adapter:
+For applications using asynchronous database connections, you can use the async
+migration adapter:
 
 ```python
 from pydapter.migrations import AsyncAlembicAdapter
@@ -193,7 +205,8 @@ except MigrationError as e:
 
 ### Custom Migration Scripts
 
-While auto-generated migrations work for many cases, you might need to write custom migration scripts for complex changes:
+While auto-generated migrations work for many cases, you might need to write
+custom migration scripts for complex changes:
 
 1. Create a migration without auto-generation:
 
@@ -241,7 +254,8 @@ def downgrade():
 
 ### Working with Multiple Databases
 
-If your application uses multiple databases, you can create separate migration directories for each:
+If your application uses multiple databases, you can create separate migration
+directories for each:
 
 ```python
 # Initialize migrations for the main database
@@ -279,7 +293,8 @@ AlembicAdapter.upgrade(
 
 ### Integration with SQLAlchemy Models
 
-The migrations module works best with SQLAlchemy models that follow the declarative base pattern:
+The migrations module works best with SQLAlchemy models that follow the
+declarative base pattern:
 
 ```python
 from sqlalchemy import Column, Integer, String, create_engine
@@ -290,7 +305,7 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
     email = Column(String, unique=True, nullable=False)
@@ -337,7 +352,8 @@ When deploying migrations to production:
 
 ## Extending the Migrations Framework
 
-You can extend the migrations framework by creating custom adapters for other database systems:
+You can extend the migrations framework by creating custom adapters for other
+database systems:
 
 ```python
 from pydapter.migrations.base import SyncMigrationAdapter
@@ -345,34 +361,34 @@ from typing import ClassVar, Optional, List, Dict, Any
 
 class CustomDatabaseAdapter(SyncMigrationAdapter):
     """Custom migration adapter for a specific database system."""
-    
+
     migration_key: ClassVar[str] = "custom_db"
-    
+
     @classmethod
     def init_migrations(cls, directory: str, **kwargs) -> None:
         # Implementation for initializing migrations
         pass
-        
+
     @classmethod
     def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
         # Implementation for creating migrations
         pass
-        
+
     @classmethod
     def upgrade(cls, revision: str = "head", **kwargs) -> None:
         # Implementation for upgrading
         pass
-        
+
     @classmethod
     def downgrade(cls, revision: str, **kwargs) -> None:
         # Implementation for downgrading
         pass
-        
+
     @classmethod
     def get_current_revision(cls, **kwargs) -> Optional[str]:
         # Implementation for getting current revision
         pass
-        
+
     @classmethod
     def get_migration_history(cls, **kwargs) -> List[Dict[str, Any]]:
         # Implementation for getting migration history
@@ -387,7 +403,8 @@ class CustomDatabaseAdapter(SyncMigrationAdapter):
    ```
    ImportError: The 'migrations-sql' feature requires the 'sqlalchemy' package.
    ```
-   Solution: Install the required dependencies with `pip install pydapter[migrations-sql]`
+   Solution: Install the required dependencies with
+   `pip install pydapter[migrations-sql]`
 
 2. **Alembic command not found**:
    ```
@@ -395,11 +412,11 @@ class CustomDatabaseAdapter(SyncMigrationAdapter):
    ```
    Solution: Install Alembic with `pip install alembic`
 
-3. **Autogeneration not detecting changes**:
-   Solution: Ensure your models are imported and accessible in the environment where migrations are created
+3. **Autogeneration not detecting changes**: Solution: Ensure your models are
+   imported and accessible in the environment where migrations are created
 
-4. **Conflicts between migrations**:
-   Solution: Ensure you're working with the latest revision before creating new migrations
+4. **Conflicts between migrations**: Solution: Ensure you're working with the
+   latest revision before creating new migrations
 
 ### Getting Help
 

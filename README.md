@@ -368,9 +368,29 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Run the CI script locally to ensure all tests pass (`python scripts/ci.py`)
+4. Commit your changes (`git commit -m 'Add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
+
+### Continuous Integration
+
+This project uses a comprehensive CI system that runs linting, type checking,
+unit tests, integration tests, and coverage reporting. The CI script can be run
+locally to ensure your changes pass all checks before submitting a PR:
+
+```bash
+# Run all checks
+python scripts/ci.py
+
+# Skip integration tests (which require Docker)
+python scripts/ci.py --skip-integration
+
+# Run only linting and formatting checks
+python scripts/ci.py --skip-unit --skip-integration --skip-type-check --skip-coverage
+```
+
+For more information, see [the CI documentation](docs/ci.md).
 
 ## License
 

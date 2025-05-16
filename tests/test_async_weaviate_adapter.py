@@ -2,6 +2,8 @@
 Unit tests for AsyncWeaviateAdapter.
 """
 
+import importlib.util
+
 import pytest
 from aiohttp import ClientError
 from pydantic import BaseModel
@@ -10,6 +12,26 @@ from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import ConnectionError, QueryError, ResourceError
 from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.async_weaviate_ import AsyncWeaviateAdapter
+
+
+# Define helper function directly in the test file
+def is_weaviate_available():
+    """
+    Check if weaviate is properly installed and can be imported.
+
+    Returns:
+        bool: True if weaviate is available, False otherwise.
+    """
+    if importlib.util.find_spec("weaviate") is None:
+        return False
+    return True
+
+
+# Create a pytest marker to skip tests if weaviate is not available
+weaviate_skip_marker = pytest.mark.skipif(
+    not is_weaviate_available(),
+    reason="Weaviate module not available or not properly installed",
+)
 
 
 class TestModel(AsyncAdaptable, BaseModel):
@@ -21,6 +43,7 @@ class TestModel(AsyncAdaptable, BaseModel):
     embedding: list[float] = [0.1, 0.2, 0.3, 0.4, 0.5]
 
 
+@weaviate_skip_marker
 class TestAsyncWeaviateAdapterProtocol:
     """Test AsyncWeaviateAdapter protocol compliance."""
 
@@ -47,6 +70,7 @@ class TestAsyncWeaviateAdapterProtocol:
         assert "many" in from_obj_params
 
 
+@weaviate_skip_marker
 class TestAsyncWeaviateAdapterFunctionality:
     """Test AsyncWeaviateAdapter functionality."""
 
@@ -177,6 +201,7 @@ class TestAsyncWeaviateAdapterFunctionality:
         assert results[1].name == "test2"
 
 
+@weaviate_skip_marker
 class TestAsyncWeaviateAdapterErrorHandling:
     """Test AsyncWeaviateAdapter error handling."""
 
@@ -374,6 +399,7 @@ class TestAsyncWeaviateAdapterErrorHandling:
         assert "Vector field 'embedding' not found in model" in str(excinfo.value)
 
 
+@weaviate_skip_marker
 class TestAsyncWeaviateAdapterImplementation:
     """Test AsyncWeaviateAdapter actual implementation."""
 

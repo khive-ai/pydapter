@@ -2,11 +2,33 @@
 Integration tests for WeaviateAdapter and AsyncWeaviateAdapter using TestContainers.
 """
 
+import importlib.util
+
 import pytest
 
 from pydapter.exceptions import ResourceError
 from pydapter.extras.async_weaviate_ import AsyncWeaviateAdapter
 from pydapter.extras.weaviate_ import WeaviateAdapter
+
+
+# Define helper function directly in the test file
+def is_weaviate_available():
+    """
+    Check if weaviate is properly installed and can be imported.
+
+    Returns:
+        bool: True if weaviate is available, False otherwise.
+    """
+    if importlib.util.find_spec("weaviate") is None:
+        return False
+    return True
+
+
+# Create a pytest marker to skip tests if weaviate is not available
+weaviate_skip_marker = pytest.mark.skipif(
+    not is_weaviate_available(),
+    reason="Weaviate module not available or not properly installed",
+)
 
 
 def is_docker_available():
@@ -37,26 +59,32 @@ def weaviate_cleanup(weaviate_url):
     """Clean up Weaviate database after tests."""
     import urllib.parse
 
-    import weaviate
+    # Use conditional import to avoid circular imports
+    try:
+        import weaviate
 
-    yield
+        yield
 
-    # Cleanup after test
-    # Parse URL to extract host and port
-    parsed_url = urllib.parse.urlparse(weaviate_url)
-    host = parsed_url.hostname or "localhost"
-    port = parsed_url.port or 8080
+        # Cleanup after test
+        # Parse URL to extract host and port
+        parsed_url = urllib.parse.urlparse(weaviate_url)
+        host = parsed_url.hostname or "localhost"
+        port = parsed_url.port or 8080
 
-    # Connect to Weaviate using v4 API
-    client = weaviate.connect_to_custom(
-        http_host=host,
-        http_port=port,
-        http_secure=parsed_url.scheme == "https",
-        grpc_host=host,
-        grpc_port=50051,  # Default gRPC port
-        grpc_secure=parsed_url.scheme == "https",
-        skip_init_checks=True,  # Skip gRPC health check
-    )
+        # Connect to Weaviate using v4 API
+        client = weaviate.connect_to_custom(
+            http_host=host,
+            http_port=port,
+            http_secure=parsed_url.scheme == "https",
+            grpc_host=host,
+            grpc_port=50051,  # Default gRPC port
+            grpc_secure=parsed_url.scheme == "https",
+            skip_init_checks=True,  # Skip gRPC health check
+        )
+    except (ImportError, AttributeError):
+        # If weaviate is not available, just yield
+        yield
+        return
 
     # Delete test classes - using the v4 API
     try:
@@ -81,6 +109,11 @@ def weaviate_cleanup(weaviate_url):
 @pytest.fixture
 async def async_weaviate_cleanup(weaviate_client):
     """Clean up Weaviate database after async tests."""
+    # Check if weaviate_client is None (which would happen if weaviate is not available)
+    if weaviate_client is None:
+        yield
+        return
+
     yield
 
     # Cleanup after test using the client from the fixture
@@ -104,6 +137,7 @@ async def async_weaviate_cleanup(weaviate_client):
         pass
 
 
+@weaviate_skip_marker
 class TestWeaviateIntegration:
     """Integration tests for WeaviateAdapter."""
 
@@ -286,6 +320,7 @@ class TestWeaviateIntegration:
         assert len(result) == 0
 
 
+@weaviate_skip_marker
 class TestAsyncWeaviateIntegration:
     """Integration tests for AsyncWeaviateAdapter."""
 

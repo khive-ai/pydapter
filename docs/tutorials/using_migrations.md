@@ -1,10 +1,13 @@
 # Tutorial: Managing Database Schema Evolution with Migrations
 
-This tutorial demonstrates how to use pydapter's migrations module to manage database schema changes in a SQLAlchemy-based application. We'll create a simple user management system and evolve its schema over time using migrations.
+This tutorial demonstrates how to use pydapter's migrations module to manage
+database schema changes in a SQLAlchemy-based application. We'll create a simple
+user management system and evolve its schema over time using migrations.
 
 ## Prerequisites
 
-Before starting, ensure you have installed pydapter with the migrations-sql extension:
+Before starting, ensure you have installed pydapter with the migrations-sql
+extension:
 
 ```bash
 pip install pydapter[migrations-sql]
@@ -37,7 +40,7 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
     email = Column(String(100), unique=True, nullable=False)
@@ -67,7 +70,8 @@ def get_db():
 
 ## Step 3: Initialize Migrations
 
-Now, let's initialize the migrations environment. Create a simple script in `main.py`:
+Now, let's initialize the migrations environment. Create a simple script in
+`main.py`:
 
 ```python
 # main.py
@@ -78,7 +82,7 @@ import models
 def init_migrations():
     """Initialize the migrations environment."""
     os.makedirs("migrations", exist_ok=True)
-    
+
     AlembicAdapter.init_migrations(
         directory="migrations",
         connection_string="sqlite:///./user_management.db",
@@ -96,7 +100,8 @@ Run this script to initialize the migrations environment:
 python main.py
 ```
 
-This will create the necessary directory structure and configuration files for Alembic in the `migrations` directory.
+This will create the necessary directory structure and configuration files for
+Alembic in the `migrations` directory.
 
 ## Step 4: Create the Initial Migration
 
@@ -125,7 +130,8 @@ Run the script again to create the initial migration:
 python main.py
 ```
 
-This will create a new migration file in the `migrations/versions/` directory with a unique revision ID.
+This will create a new migration file in the `migrations/versions/` directory
+with a unique revision ID.
 
 ## Step 5: Apply the Migration
 
@@ -154,7 +160,8 @@ Run the script to apply the migration:
 python main.py
 ```
 
-This will create the `users` table in the database according to our model definition.
+This will create the `users` table in the database according to our model
+definition.
 
 ## Step 6: Evolve the Schema
 
@@ -169,7 +176,7 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
     email = Column(String(100), unique=True, nullable=False)
@@ -234,7 +241,7 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
     email = Column(String(100), unique=True, nullable=False)
@@ -242,19 +249,19 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    
+
     # Add relationship to roles
     roles = relationship("UserRole", back_populates="user")
 
 
 class UserRole(Base):
     __tablename__ = "user_roles"
-    
+
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     role_name = Column(String(50), nullable=False)
     created_at = Column(DateTime, default=func.now())
-    
+
     # Add relationship to user
     user = relationship("User", back_populates="roles")
 ```
@@ -315,7 +322,7 @@ def check_migration_status():
         connection_string="sqlite:///./user_management.db"
     )
     print(f"Current migration revision: {current}")
-    
+
     history = AlembicAdapter.get_migration_history(
         directory="migrations",
         connection_string="sqlite:///./user_management.db"
@@ -341,7 +348,8 @@ python main.py
 
 ## Step 9: Downgrade to a Previous Version
 
-Sometimes you might need to revert to a previous version of your schema. Let's add functionality to downgrade:
+Sometimes you might need to revert to a previous version of your schema. Let's
+add functionality to downgrade:
 
 ```python
 # main.py (add this function)
@@ -375,7 +383,8 @@ python main.py
 
 ## Step 10: Create a Custom Migration
 
-Sometimes you need to create custom migrations that aren't just schema changes. Let's create a data migration:
+Sometimes you need to create custom migrations that aren't just schema changes.
+Let's create a data migration:
 
 ```python
 # main.py (add this function)
@@ -406,7 +415,8 @@ Run the script to create the custom migration:
 python main.py
 ```
 
-Now, edit the generated migration file in `migrations/versions/` to add custom SQL operations:
+Now, edit the generated migration file in `migrations/versions/` to add custom
+SQL operations:
 
 ```python
 """Add default admin user
@@ -431,7 +441,7 @@ def upgrade():
     INSERT INTO users (username, email, full_name, is_active)
     VALUES ('admin', 'admin@example.com', 'System Administrator', 1)
     """)
-    
+
     # Get the user ID
     conn = op.get_bind()
     result = conn.execute("SELECT id FROM users WHERE username = 'admin'").fetchone()
@@ -468,7 +478,8 @@ python main.py
 
 ## Step 11: Using Async Migrations
 
-If your application uses asynchronous database connections, you can use the async migration adapter. Let's modify our code to use async migrations:
+If your application uses asynchronous database connections, you can use the
+async migration adapter. Let's modify our code to use async migrations:
 
 ```python
 # database.py (updated for async)
@@ -480,9 +491,9 @@ DATABASE_URL = "sqlite+aiosqlite:///./user_management_async.db"
 
 engine = create_async_engine(DATABASE_URL)
 AsyncSessionLocal = sessionmaker(
-    class_=AsyncSession, 
-    autocommit=False, 
-    autoflush=False, 
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
     bind=engine
 )
 
@@ -501,7 +512,7 @@ import models
 async def init_migrations():
     """Initialize the migrations environment."""
     os.makedirs("migrations_async", exist_ok=True)
-    
+
     await AsyncAlembicAdapter.init_migrations(
         directory="migrations_async",
         connection_string="sqlite+aiosqlite:///./user_management_async.db",
@@ -545,7 +556,8 @@ python main_async.py
 
 ## Complete Example
 
-Here's a complete example of the main.py file that includes all the migration operations:
+Here's a complete example of the main.py file that includes all the migration
+operations:
 
 ```python
 # main.py
@@ -556,7 +568,7 @@ import models
 def init_migrations():
     """Initialize the migrations environment."""
     os.makedirs("migrations", exist_ok=True)
-    
+
     AlembicAdapter.init_migrations(
         directory="migrations",
         connection_string="sqlite:///./user_management.db",
@@ -610,7 +622,7 @@ def check_migration_status():
         connection_string="sqlite:///./user_management.db"
     )
     print(f"Current migration revision: {current}")
-    
+
     history = AlembicAdapter.get_migration_history(
         directory="migrations",
         connection_string="sqlite:///./user_management.db"
@@ -647,7 +659,7 @@ if __name__ == "__main__":
     # create_schema_update_migration()
     # create_roles_migration()
     # check_migration_status()
-    
+
     # Downgrade example
     # history = AlembicAdapter.get_migration_history(
     #     directory="migrations",
@@ -658,16 +670,17 @@ if __name__ == "__main__":
     #     downgrade_migration(previous_revision)
     # else:
     #     print("Not enough migrations to downgrade")
-    
+
     # create_custom_migration()
-    
+
     # Final upgrade to latest
     apply_migrations()
 ```
 
 ## Summary
 
-In this tutorial, we've demonstrated how to use pydapter's migrations module to manage database schema evolution. We've covered:
+In this tutorial, we've demonstrated how to use pydapter's migrations module to
+manage database schema evolution. We've covered:
 
 1. Setting up a migrations environment
 2. Creating and applying initial migrations
@@ -678,7 +691,9 @@ In this tutorial, we've demonstrated how to use pydapter's migrations module to 
 7. Creating custom data migrations
 8. Using async migrations
 
-The migrations module provides a powerful way to manage database schema changes in a controlled, versioned manner, making it easier to evolve your application's data model over time.
+The migrations module provides a powerful way to manage database schema changes
+in a controlled, versioned manner, making it easier to evolve your application's
+data model over time.
 
 ## Best Practices
 
@@ -689,6 +704,7 @@ Here are some best practices to follow when working with migrations:
 3. **Test migrations thoroughly in development before applying to production**
 4. **Include descriptive messages for each migration**
 5. **Use version control for your migration files**
-6. **Consider using separate migration environments for different deployment stages**
+6. **Consider using separate migration environments for different deployment
+   stages**
 7. **Document complex migrations with comments**
 8. **Include both upgrade and downgrade operations when possible**

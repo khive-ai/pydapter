@@ -69,6 +69,7 @@ nav:
   - Guides:
       - Error Handling: error_handling.md
       - Testing: testing.md
+      - Continuous Integration: ci.md
       - Migration Guide: migration_guide.md
   - Adapters:
       - PostgreSQL: postgres_adapter.md

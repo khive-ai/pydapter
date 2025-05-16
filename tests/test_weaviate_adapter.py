@@ -11,6 +11,29 @@ from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.weaviate_ import WeaviateAdapter
 
 
+# Define helper function directly in the test file
+def is_weaviate_available():
+    """
+    Check if weaviate is properly installed and can be imported.
+
+    Returns:
+        bool: True if weaviate is available, False otherwise.
+    """
+    try:
+        import weaviate  # noqa: F401
+
+        return True
+    except (ImportError, AttributeError):
+        return False
+
+
+# Create a pytest marker to skip tests if weaviate is not available
+weaviate_skip_marker = pytest.mark.skipif(
+    not is_weaviate_available(),
+    reason="Weaviate module not available or not properly installed",
+)
+
+
 class TestModel(Adaptable, BaseModel):
     """Test model for WeaviateAdapter tests."""
 
@@ -20,6 +43,7 @@ class TestModel(Adaptable, BaseModel):
     embedding: list[float] = [0.1, 0.2, 0.3, 0.4, 0.5]
 
 
+@weaviate_skip_marker
 class TestWeaviateAdapterProtocol:
     """Test WeaviateAdapter protocol compliance."""
 
@@ -46,6 +70,7 @@ class TestWeaviateAdapterProtocol:
         assert "many" in from_obj_params
 
 
+@weaviate_skip_marker
 class TestWeaviateAdapterFunctionality:
     """Test WeaviateAdapter functionality."""
 
@@ -210,6 +235,7 @@ class TestWeaviateAdapterFunctionality:
         assert results[1].name == "test2"
 
 
+@weaviate_skip_marker
 class TestWeaviateAdapterErrorHandling:
     """Test WeaviateAdapter error handling."""
 

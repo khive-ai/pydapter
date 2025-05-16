@@ -1,100 +1,131 @@
-# Contributing to pydapter
+# Contributing to Pydapter
 
-Thank you for your interest in contributing to pydapter! This document provides
-guidelines and instructions for contributing to this project.
+Thank you for your interest in contributing to Pydapter! This document provides
+guidelines and instructions for contributing to the project.
 
-## Code of Conduct
+## Development Environment Setup
 
-Please be respectful and considerate of others when contributing to this
-project.
+1. Fork the repository on GitHub
+2. Clone your fork locally:
+   ```bash
+   git clone https://github.com/your-username/pydapter.git
+   cd pydapter
+   ```
+3. Set up a development environment:
+   ```bash
+   # Using uv (recommended)
+   uv pip install -e ".[dev,all]"
 
-## How to Contribute
+   # Or using pip
+   pip install -e ".[dev,all]"
+   ```
+4. Install pre-commit hooks:
+   ```bash
+   pre-commit install
+   ```
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Development Workflow
 
-## Development Setup
+1. Create a new branch for your feature or bugfix:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Make your changes, following the project's coding standards
+
+3. Run the CI script locally to ensure all tests pass:
+   ```bash
+   python scripts/ci.py
+   ```
+
+4. Commit your changes using conventional commit messages:
+   ```bash
+   git commit -m "feat: add new feature"
+   ```
+
+5. Push your branch to your fork:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+6. Open a pull request on GitHub
+
+## Continuous Integration
+
+The project uses a comprehensive CI system that runs:
+
+- Linting checks (using ruff)
+- Code formatting checks (using ruff format)
+- Type checking (using mypy)
+- Unit tests (using pytest)
+- Integration tests (using pytest)
+- Coverage reporting
+
+You can run the CI script locally with various options:
 
 ```bash
-# Clone the repository
-git clone https://github.com/ohdearquant/pydapter.git
-cd pydapter
+# Run all checks
+python scripts/ci.py
 
-# Install development dependencies
-pip install -e ".[all,dev]"
+# Skip integration tests (which require Docker)
+python scripts/ci.py --skip-integration
 
-# Run tests
-pytest
+# Run only linting and formatting checks
+python scripts/ci.py --skip-unit --skip-integration --skip-type-check --skip-coverage
+
+# Run tests in parallel
+python scripts/ci.py --parallel 4
 ```
 
-## Automated Roles
+For more information, see [the CI documentation](ci.md).
 
-This project uses automated roles via the khive system. The role definitions are
-stored in `.github/khive_modes.json`. The khive-orchestrator opens tasks and
-PRs, and coordinates work between different specialized roles:
+## Code Style
 
-- **Orchestrator**: Coordinates tasks and manages the project workflow
-- **Architect**: Designs the technical architecture
-- **Researcher**: Conducts research and gathers information
-- **Implementer**: Implements code based on specifications
-- **Quality Reviewer**: Reviews code for quality and correctness
-- **Documenter**: Creates and maintains documentation
+This project follows these coding standards:
 
-## Pull Request Process
-
-1. Ensure your code follows the project's coding standards
-2. Update the README.md or documentation with details of changes if appropriate
-3. The PR will be merged once it receives approval from maintainers
+- Code formatting with [ruff format](https://docs.astral.sh/ruff/formatter/)
+- Linting with [ruff](https://docs.astral.sh/ruff/)
+- Type annotations for all functions and classes
+- Comprehensive docstrings in
+  [Google style](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
+- Test coverage for all new features
 
 ## Testing
 
-pydapter uses a comprehensive testing strategy that includes both unit tests and
-integration tests:
-
-### Unit Tests
-
-Unit tests use mocks to test adapter functionality in isolation. These tests are
-fast and don't require external dependencies.
-
-### Integration Tests
-
-Integration tests use [TestContainers](https://testcontainers.com/) to spin up
-real database instances in Docker containers. These tests verify that adapters
-work correctly with actual database systems:
-
-- **PostgreSQL** - Tests SQL adapter with a real PostgreSQL database
-- **MongoDB** - Tests document storage and retrieval
-- **Neo4j** - Tests graph database operations
-- **Qdrant** - Tests vector similarity search
-
-#### Running Integration Tests
-
-To run integration tests, you need Docker installed and running on your system:
+All new features and bug fixes should include tests. The project uses pytest for
+testing:
 
 ```bash
-# Install development dependencies with TestContainers support
-pip install -e ".[dev]"
+# Run all tests
+uv run pytest
 
-# Run all tests (unit + integration)
-pytest
+# Run specific tests
+uv run pytest tests/test_specific_file.py
 
-# Run only integration tests
-pytest tests/test_integration_*.py
-
-# Skip integration tests (if Docker is not available)
-pytest -k "not test_integration"
+# Run with coverage
+uv run pytest --cov=pydapter
 ```
 
-If Docker is not available, integration tests will be automatically skipped.
+## Documentation
 
-Please ensure that your contributions include appropriate tests and maintain or
-improve the current test coverage. For database adapters, consider adding both
-unit tests with mocks and integration tests with TestContainers.
+Documentation is written in Markdown and built with MkDocs. To preview the
+documentation locally:
+
+```bash
+uv run mkdocs serve
+```
+
+Then open http://127.0.0.1:8000/ in your browser.
+
+## Pull Request Process
+
+1. Ensure your code passes all CI checks
+2. Update documentation if necessary
+3. Add tests for new features
+4. Make sure your PR description clearly describes the changes and their purpose
+5. Wait for review and address any feedback
 
 ## License
 
-By contributing to pydapter, you agree that your contributions will be licensed
-under the project's license.
+By contributing to Pydapter, you agree that your contributions will be licensed
+under the project's MIT License.
