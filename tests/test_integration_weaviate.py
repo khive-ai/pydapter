@@ -19,9 +19,13 @@ def is_weaviate_available():
     Returns:
         bool: True if weaviate is available, False otherwise.
     """
-    if importlib.util.find_spec("weaviate") is None:
+    try:
+        # Use importlib.util to check if the module is available without importing it
+        if importlib.util.find_spec("weaviate") is None:
+            return False
+        return True
+    except (ImportError, AttributeError):
         return False
-    return True
 
 
 # Create a pytest marker to skip tests if weaviate is not available
@@ -57,13 +61,22 @@ skip_weaviate_integration = pytest.mark.skip(
 @pytest.fixture
 def weaviate_cleanup(weaviate_url):
     """Clean up Weaviate database after tests."""
+    import importlib.util
     import urllib.parse
 
-    # Use conditional import to avoid circular imports
+    # Check if weaviate is available without importing it
+    weaviate_spec = importlib.util.find_spec("weaviate")
+    if weaviate_spec is None:
+        # If weaviate is not available, just yield
+        yield
+        return
+
+    # Yield first to allow the test to run
+    yield
+
+    # After the test, import weaviate and clean up
     try:
         import weaviate
-
-        yield
 
         # Cleanup after test
         # Parse URL to extract host and port
@@ -82,8 +95,7 @@ def weaviate_cleanup(weaviate_url):
             skip_init_checks=True,  # Skip gRPC health check
         )
     except (ImportError, AttributeError):
-        # If weaviate is not available, just yield
-        yield
+        # If there's an error importing weaviate or connecting, just return
         return
 
     # Delete test classes - using the v4 API

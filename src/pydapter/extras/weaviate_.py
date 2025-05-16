@@ -12,13 +12,14 @@ import uuid
 from collections.abc import Sequence
 from typing import Any, TypeVar
 
-import weaviate  # search:pplx-7a759f5e
 from pydantic import BaseModel, ValidationError
-from weaviate.connect import ConnectionParams
 
 from ..core import Adapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
+
+# Defer weaviate imports to avoid circular imports
+
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -48,6 +49,15 @@ class WeaviateAdapter(Adapter[T]):
             ConnectionError: If connection to Weaviate fails
         """
         try:
+            # Import weaviate here to avoid circular imports
+            import importlib.util
+
+            if importlib.util.find_spec("weaviate") is None:
+                raise ImportError("Weaviate module not found")
+
+            import weaviate
+            from weaviate.connect import ConnectionParams
+
             # Parse URL to extract host and port
             parsed_url = urllib.parse.urlparse(url or "http://localhost:8080")
             host = parsed_url.hostname or "localhost"
@@ -75,6 +85,12 @@ class WeaviateAdapter(Adapter[T]):
             client.connect()
 
             return client
+        except ImportError as e:
+            raise ConnectionError(
+                f"Weaviate module not available: {e}",
+                adapter="weav",
+                url=url or "http://localhost:8080",
+            ) from e
         except Exception as e:
             raise ConnectionError(
                 f"Failed to create Weaviate client: {e}",

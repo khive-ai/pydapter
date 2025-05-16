@@ -15,13 +15,14 @@ from collections.abc import Sequence
 from typing import Any, TypeVar
 
 import aiohttp
-import weaviate
 from pydantic import BaseModel, ValidationError
-from weaviate.connect import ConnectionParams
 
 from ..async_core import AsyncAdapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
+
+# Defer weaviate imports to avoid circular imports
+
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -51,40 +52,55 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
         if not url:
             raise AdapterValidationError("Missing required parameter 'url'")
 
-        # Parse URL to extract host and port
-        parsed_url = urllib.parse.urlparse(url)
-        host = parsed_url.hostname or "localhost"
-        http_port = parsed_url.port or 8080
-
-        # Connect to Weaviate using v4 API
-        # search:pplx-516f9410 - Weaviate v4 connection parameters example
-        # search:pplx-ccec835b - Weaviate Python client v4 API changes
-        connection_params = ConnectionParams.from_params(
-            http_host=host,
-            http_port=http_port,
-            http_secure=parsed_url.scheme == "https",
-            grpc_host=host,
-            grpc_port=50051,  # Use the default gRPC port that Weaviate uses
-            grpc_secure=parsed_url.scheme == "https",
-        )
-
-        # Create and connect the client
-        client = weaviate.WeaviateClient(
-            connection_params=connection_params,
-            skip_init_checks=True,  # Skip health checks for testing
-        )
-
-        # Connect the client before returning it
         try:
+            # Import weaviate here to avoid circular imports
+            import importlib.util
+
+            if importlib.util.find_spec("weaviate") is None:
+                raise ImportError("Weaviate module not found")
+
+            import weaviate
+            from weaviate.connect import ConnectionParams
+
+            # Parse URL to extract host and port
+            parsed_url = urllib.parse.urlparse(url)
+            host = parsed_url.hostname or "localhost"
+            http_port = parsed_url.port or 8080
+
+            # Connect to Weaviate using v4 API
+            # search:pplx-516f9410 - Weaviate v4 connection parameters example
+            # search:pplx-ccec835b - Weaviate Python client v4 API changes
+            connection_params = ConnectionParams.from_params(
+                http_host=host,
+                http_port=http_port,
+                http_secure=parsed_url.scheme == "https",
+                grpc_host=host,
+                grpc_port=50051,  # Use the default gRPC port that Weaviate uses
+                grpc_secure=parsed_url.scheme == "https",
+            )
+
+            # Create and connect the client
+            client = weaviate.WeaviateClient(
+                connection_params=connection_params,
+                skip_init_checks=True,  # Skip health checks for testing
+            )
+
+            # Connect the client before returning it
             client.connect()
+
+            return client
+        except ImportError as e:
+            raise ConnectionError(
+                f"Weaviate module not available: {e}",
+                adapter="async_weav",
+                url=url,
+            ) from e
         except Exception as e:
             raise ConnectionError(
                 f"Failed to connect to Weaviate: {e}",
                 adapter="async_weav",
                 url=url,
             ) from e
-
-        return client
 
     # outgoing
     @classmethod
