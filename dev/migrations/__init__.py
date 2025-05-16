@@ -8,18 +8,25 @@ migration strategies) while maintaining pydapter's clean API design and supporti
 both synchronous and asynchronous operations.
 """
 
-from pydapter.migrations.protocols import MigrationProtocol, AsyncMigrationProtocol
-from pydapter.migrations.registry import MigrationRegistry, AsyncMigrationRegistry
-from pydapter.migrations.base import BaseMigrationAdapter, SyncMigrationAdapter, AsyncMigrationAdapter
+from pydapter.migrations.base import (
+    AsyncMigrationAdapter,
+    BaseMigrationAdapter,
+    SyncMigrationAdapter,
+)
 from pydapter.migrations.exceptions import (
+    MigrationCreationError,
+    MigrationDowngradeError,
     MigrationError,
     MigrationInitError,
-    MigrationCreationError,
-    MigrationUpgradeError,
-    MigrationDowngradeError,
     MigrationNotFoundError,
+    MigrationUpgradeError,
 )
-from pydapter.migrations.sql import AlembicMigrationAdapter, AsyncAlembicMigrationAdapter
+from pydapter.migrations.protocols import AsyncMigrationProtocol, MigrationProtocol
+from pydapter.migrations.registry import AsyncMigrationRegistry, MigrationRegistry
+from pydapter.migrations.sql import (
+    AlembicMigrationAdapter,
+    AsyncAlembicMigrationAdapter,
+)
 
 # Create global registries
 migration_registry = MigrationRegistry()
@@ -37,7 +44,9 @@ def init_migrations(migration_key: str, directory: str, **kwargs):
     return migration_registry.init_migrations(migration_key, directory, **kwargs)
 
 
-def create_migration(migration_key: str, message: str, autogenerate: bool = True, **kwargs):
+def create_migration(
+    migration_key: str, message: str, autogenerate: bool = True, **kwargs
+):
     """Create a migration for the specified adapter."""
     return migration_registry.create_migration(
         migration_key, message, autogenerate, **kwargs
@@ -72,10 +81,14 @@ def register_async_migration_adapter(adapter_cls):
 
 async def init_migrations_async(migration_key: str, directory: str, **kwargs):
     """Initialize migrations for the specified async adapter."""
-    return await async_migration_registry.init_migrations(migration_key, directory, **kwargs)
+    return await async_migration_registry.init_migrations(
+        migration_key, directory, **kwargs
+    )
 
 
-async def create_migration_async(migration_key: str, message: str, autogenerate: bool = True, **kwargs):
+async def create_migration_async(
+    migration_key: str, message: str, autogenerate: bool = True, **kwargs
+):
     """Create a migration for the specified async adapter."""
     return await async_migration_registry.create_migration(
         migration_key, message, autogenerate, **kwargs
@@ -115,18 +128,15 @@ __all__ = [
     # Protocols
     "MigrationProtocol",
     "AsyncMigrationProtocol",
-    
     # Registries
     "MigrationRegistry",
     "AsyncMigrationRegistry",
     "migration_registry",
     "async_migration_registry",
-    
     # Base Classes
     "BaseMigrationAdapter",
     "SyncMigrationAdapter",
     "AsyncMigrationAdapter",
-    
     # Exceptions
     "MigrationError",
     "MigrationInitError",
@@ -134,11 +144,9 @@ __all__ = [
     "MigrationUpgradeError",
     "MigrationDowngradeError",
     "MigrationNotFoundError",
-    
     # SQL Adapters
     "AlembicMigrationAdapter",
     "AsyncAlembicMigrationAdapter",
-    
     # Sync convenience functions
     "register_migration_adapter",
     "init_migrations",
@@ -147,7 +155,6 @@ __all__ = [
     "downgrade",
     "get_current_revision",
     "get_migration_history",
-    
     # Async convenience functions
     "register_async_migration_adapter",
     "init_migrations_async",
@@ -156,7 +163,6 @@ __all__ = [
     "downgrade_async",
     "get_current_revision_async",
     "get_migration_history_async",
-    
     # Aliases for async functions
     "async_init_migrations",
     "async_create_migration",

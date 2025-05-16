@@ -10,9 +10,8 @@ from typing import Any
 from pydantic import Field, PrivateAttr
 
 from .temporal import Temporal
-from .utils import as_async_fn, validate_model_to_dict
-
 from .types import Execution, ExecutionStatus
+from .utils import as_async_fn, validate_model_to_dict
 
 
 class Invokable(Temporal):

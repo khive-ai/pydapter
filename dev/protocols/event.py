@@ -5,12 +5,11 @@ from typing import Any
 
 from pydapter.async_core import AsyncAdapter
 
-from .utils import as_async_fn, validate_model_to_dict
-
 from .embedable import Embedable
 from .identifiable import Identifiable
 from .invokable import Invokable
 from .types import Embedding, Log
+from .utils import as_async_fn, validate_model_to_dict
 
 
 class Event(Identifiable, Embedable, Invokable):
@@ -65,7 +64,6 @@ def as_event(
     **kw,
 ):
     def decorator(func: Callable):
-
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Event:
             request_obj = kwargs.get(request_arg) if request_arg else None
