@@ -69,14 +69,23 @@ nav:
   - Guides:
       - Error Handling: error_handling.md
       - Testing: testing.md
+      - Migration Guide: migration_guide.md
   - Adapters:
       - PostgreSQL: postgres_adapter.md
       - Neo4j: neo4j_adapter.md
       - Qdrant: qdrant_adapter.md
+  - Optional Modules:
+      - Protocols: protocols.md
+      - Migrations: migrations.md
+  - Tutorials:
+      - Using Protocols: tutorials/using_protocols.md
+      - Using Migrations: tutorials/using_migrations.md
   - API Reference:
       - Core: api/core.md
       - Adapters: api/adapters.md
       - Extras: api/extras.md
+      - Protocols: api/protocols.md
+      - Migrations: api/migrations.md
   - Contributing: contributing.md
   - Changelog: changelog.md
 

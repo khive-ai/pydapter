@@ -3,7 +3,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
-from pydapter.async_core import AsyncAdapter
+from ..async_core import AsyncAdapter
 
 from .embedable import Embedable
 from .identifiable import Identifiable

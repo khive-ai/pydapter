@@ -19,6 +19,10 @@ uv pip install pandas  # For DataFrameAdapter and SeriesAdapter
 uv pip install xlsxwriter  # For ExcelAdapter
 uv pip install openpyxl  # Also needed for Excel support
 
+# Install optional modules
+uv pip install "pydapter[protocols]"      # For standardized model interfaces
+uv pip install "pydapter[migrations-sql]" # For database schema migrations
+
 # or install all adapters at once
 uv pip install "pydapter[all]"
 ```
@@ -289,3 +293,63 @@ except AdapterValidationError as e:
         for error in e.errors():
             print(f"  - {error['loc']}: {error['msg']}")
 ```
+
+## Using Protocols
+
+Pydapter provides a set of standardized interfaces through the protocols module. These protocols allow you to add common capabilities to your models:
+
+```python
+from pydapter.protocols import Identifiable, Temporal
+
+# Define a model with standardized interfaces
+class User(Identifiable, Temporal):
+    name: str
+    email: str
+
+# Create a user
+user = User(name="Alice", email="alice@example.com")
+
+# Access standardized properties
+print(f"User ID: {user.id}")  # Automatically generated UUID
+print(f"Created at: {user.created_at}")  # Automatically set timestamp
+
+# Update the timestamp
+user.name = "Alicia"
+user.update_timestamp()
+print(f"Updated at: {user.updated_at}")
+```
+
+For more details, see the [Protocols documentation](protocols.md) and the [Using Protocols tutorial](tutorials/using_protocols.md).
+
+## Using Migrations
+
+Pydapter provides tools for managing database schema changes through the migrations module:
+
+```python
+from pydapter.migrations import AlembicAdapter
+import mymodels  # Module containing your SQLAlchemy models
+
+# Initialize migrations
+AlembicAdapter.init_migrations(
+    directory="migrations",
+    connection_string="postgresql://user:pass@localhost/mydb",
+    models_module=mymodels
+)
+
+# Create a migration
+revision = AlembicAdapter.create_migration(
+    message="Create users table",
+    autogenerate=True,
+    directory="migrations",
+    connection_string="postgresql://user:pass@localhost/mydb"
+)
+
+# Apply migrations
+AlembicAdapter.upgrade(
+    revision="head",
+    directory="migrations",
+    connection_string="postgresql://user:pass@localhost/mydb"
+)
+```
+
+For more details, see the [Migrations documentation](migrations.md) and the [Using Migrations tutorial](tutorials/using_migrations.md).

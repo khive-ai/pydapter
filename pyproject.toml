@@ -48,6 +48,28 @@ motor     = ["motor>=3"]
 qdrant    = ["qdrant-client>=1.14"]
 aiohttp   = ["aiohttp>=3.11.10"]
 
+# New dependencies
+protocols = ["typing-extensions>=4.6.0"]
+
+migrations-core = []  # No additional dependencies beyond pydantic
+
+migrations-sql = [
+    "sqlalchemy>=2.0",
+    "alembic>=1.11.0",
+    "sqlalchemy[asyncio]>=2.0; python_version >= '3.7'",
+]
+
+# Combined dependencies
+migrations = [
+    "pydapter[migrations-core]",
+    "pydapter[migrations-sql]",
+]
+
+migrations-all = [
+    "pydapter[migrations]",
+    "pydapter[protocols]",
+]
+
 # ----------------------------------
 all = [
     "pandas>=2.2",
@@ -65,7 +87,11 @@ all = [
     "qdrant-client>=1.14",
     "aiohttp>=3.11.10",
     "openpyxl>=3.1.5",
-    "pgvector>=0.4.1"
+    "pgvector>=0.4.1",
+    # Add new dependencies
+    "typing-extensions>=4.6.0",
+    "alembic>=1.11.0",
+    "sqlalchemy[asyncio]>=2.0; python_version >= '3.7'",
 ]
 
 [tool.pytest.ini_options]

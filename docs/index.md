@@ -21,6 +21,8 @@ validation that Pydantic provides.
 - **Extensible**: Easy to add new adapters for different data sources
 - **Async Support**: Both synchronous and asynchronous interfaces
 - **Minimal Dependencies**: Core functionality has minimal requirements
+- **Protocols**: Optional standardized interfaces for models
+- **Migrations**: Optional database schema migration tools
 
 ## Installation
 
@@ -31,17 +33,21 @@ pip install pydapter
 With optional dependencies:
 
 ```bash
-# For PostgreSQL support
+# Database adapters
 pip install "pydapter[postgres]"
-
-# For MongoDB support
 pip install "pydapter[mongo]"
-
-# For Neo4j support
 pip install "pydapter[neo4j]"
 
-# For Excel support
+# File formats
 pip install "pydapter[excel]"
+
+# New modules
+pip install "pydapter[protocols]"      # Standardized model interfaces
+pip install "pydapter[migrations-sql]" # Database schema migrations with SQLAlchemy/Alembic
+
+# Combined packages
+pip install "pydapter[migrations]"     # All migration components
+pip install "pydapter[migrations-all]" # Migrations with protocols support
 
 # For all extras
 pip install "pydapter[all]"
@@ -77,3 +83,9 @@ adapter.write_one(new_user)
 - Learn about [Error Handling](error_handling.md)
 - Explore specific adapters like [PostgreSQL](postgres_adapter.md),
   [Neo4j](neo4j_adapter.md), or [Qdrant](qdrant_adapter.md)
+- Use [Protocols](protocols.md) to add standardized capabilities to your models
+- Manage database schema changes with [Migrations](migrations.md)
+- Follow our tutorials:
+  - [Using Protocols](tutorials/using_protocols.md)
+  - [Using Migrations](tutorials/using_migrations.md)
+- If you're transitioning from the dev/ directory, see the [Migration Guide](migration_guide.md)
