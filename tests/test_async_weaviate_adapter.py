@@ -22,9 +22,13 @@ def is_weaviate_available():
     Returns:
         bool: True if weaviate is available, False otherwise.
     """
-    if importlib.util.find_spec("weaviate") is None:
+    try:
+        # Use importlib.util to check if the module is available without importing it
+        if importlib.util.find_spec("weaviate") is None:
+            return False
+        return True
+    except (ImportError, AttributeError):
         return False
-    return True
 
 
 # Create a pytest marker to skip tests if weaviate is not available

@@ -21,8 +21,8 @@ CI environments.
 ## Prerequisites
 
 Before running the CI script, you need to ensure all dependencies are installed.
-The easiest way to do this is to use the `uv sync` command with the `--extra all`
-option:
+The easiest way to do this is to use the `uv sync` command with the
+`--extra all` option:
 
 ```bash
 # Install all dependencies including those needed for testing
@@ -99,8 +99,8 @@ python scripts/ci.py --skip-lint --skip-type-check --skip-integration --skip-cov
 
 ### Handling External Dependencies
 
-Some tests require external dependencies like databases (MongoDB, Neo4j, Qdrant, etc.).
-You can skip these tests using the `--skip-external-deps` option:
+Some tests require external dependencies like databases (MongoDB, Neo4j, Qdrant,
+etc.). You can skip these tests using the `--skip-external-deps` option:
 
 ```bash
 python scripts/ci.py --skip-external-deps
@@ -166,7 +166,8 @@ To add new checks to the CI script:
 3. Add the result to the `results` list
 4. Add any necessary command-line options to the `parse_args` function
 5. Update the `REQUIRED_DEPS` dictionary with any new dependencies
-6. If the check requires external dependencies, update the `EXTERNAL_DEPS_FILES` list
+6. If the check requires external dependencies, update the `EXTERNAL_DEPS_FILES`
+   list
 
 ## Troubleshooting
 
@@ -183,15 +184,17 @@ If you encounter issues with the CI script:
 
 ### Common Issues
 
-1. **Missing Dependencies**: The script will attempt to install missing dependencies
-   automatically, but if it fails, you'll need to install them manually.
+1. **Missing Dependencies**: The script will attempt to install missing
+   dependencies automatically, but if it fails, you'll need to install them
+   manually.
 
-2. **External Dependencies**: Tests that require external services like databases
-   will fail if those services are not available. Use `--skip-external-deps` to
-   skip these tests.
+2. **External Dependencies**: Tests that require external services like
+   databases will fail if those services are not available. Use
+   `--skip-external-deps` to skip these tests.
 
 3. **Type Checking Errors**: The type checking step may fail due to missing type
-   stubs for dependencies. You can install these with `uv pip install types-<package>`.
+   stubs for dependencies. You can install these with
+   `uv pip install types-<package>`.
 
-4. **Docker Not Running**: If you're running integration tests that use testcontainers,
-   make sure Docker is running on your system.
+4. **Docker Not Running**: If you're running integration tests that use
+   testcontainers, make sure Docker is running on your system.

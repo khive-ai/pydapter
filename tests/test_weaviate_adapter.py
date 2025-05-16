@@ -20,8 +20,11 @@ def is_weaviate_available():
         bool: True if weaviate is available, False otherwise.
     """
     try:
-        import weaviate  # noqa: F401
+        # Use importlib.util to check if the module is available without importing it
+        import importlib.util
 
+        if importlib.util.find_spec("weaviate") is None:
+            return False
         return True
     except (ImportError, AttributeError):
         return False
