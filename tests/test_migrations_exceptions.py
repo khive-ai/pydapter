@@ -5,12 +5,12 @@ Tests for migration exceptions in pydapter.migrations.exceptions.
 import pytest
 
 from pydapter.migrations.exceptions import (
+    MigrationCreationError,
+    MigrationDowngradeError,
     MigrationError,
     MigrationInitError,
-    MigrationCreationError,
-    MigrationUpgradeError,
-    MigrationDowngradeError,
     MigrationNotFoundError,
+    MigrationUpgradeError,
 )
 
 
@@ -102,7 +102,11 @@ class TestMigrationExceptions:
         cause = ValueError("Directory not found")
 
         # Create a MigrationInitError with the cause
-        error = MigrationInitError("Failed to initialize migrations", directory="/tmp", original_error="Directory not found")
+        error = MigrationInitError(
+            "Failed to initialize migrations",
+            directory="/tmp",
+            original_error="Directory not found",
+        )
 
         # Check the error message
         assert "Failed to initialize migrations" in str(error)
@@ -179,6 +183,7 @@ class TestMigrationExceptions:
 
     def test_custom_migration_error_subclass(self):
         """Test creating a custom MigrationError subclass."""
+
         # Define a custom MigrationError subclass
         class CustomMigrationError(MigrationError):
             """Custom migration error."""

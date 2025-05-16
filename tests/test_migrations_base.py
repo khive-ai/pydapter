@@ -253,7 +253,7 @@ class TestMigrationAdapterInstantiation:
         )
         assert adapter.connection_string == "sqlite:///test.db"
         assert adapter.models_module == "test_module"
-        
+
         # Set migrations directory manually
         adapter._migrations_dir = "migrations"
         assert adapter._migrations_dir == "migrations"
@@ -270,7 +270,7 @@ class TestMigrationAdapterInstantiation:
             def init_migrations(cls, directory: str, **kwargs) -> None:
                 cls.initialized = True
                 return None
-                
+
             def init_migrations(self, directory: str, **kwargs) -> None:
                 self.__class__.initialized = True
                 self._initialized = True
@@ -285,7 +285,7 @@ class TestMigrationAdapterInstantiation:
         adapter = TestAdapter(
             connection_string="sqlite:///test.db",
         )
-        
+
         # Set migrations directory manually
         adapter._migrations_dir = test_dir
 

@@ -141,7 +141,9 @@ class TestMigrationRegistry:
         with pytest.raises(AdapterNotFoundError) as exc_info:
             registry.get("nonexistent")
 
-        assert "No migration adapter registered for 'nonexistent'" in str(exc_info.value)
+        assert "No migration adapter registered for 'nonexistent'" in str(
+            exc_info.value
+        )
 
     def test_get_all_adapters(self):
         """Test getting all registered adapters."""
@@ -296,7 +298,7 @@ class TestMigrationRegistry:
 
         # Check that the adapter is registered in the first registry
         assert registry1.get("test") == TestAdapter
-        
+
         # Register the adapter with the second registry
         registry2.register(TestAdapter)
         assert registry2.get("test") == TestAdapter
@@ -378,14 +380,14 @@ class TestMigrationRegistry:
 
         # Register the adapter
         registry.register(TestAdapter)
-        
+
         # Verify the adapter is registered
         adapter = registry.get("test")
         assert adapter == TestAdapter
-        
+
         # Create a new registry
         new_registry = MigrationRegistry()
-        
+
         # Verify the adapter is not in the new registry
 
         # Try to get the adapter from the new registry

@@ -5,16 +5,12 @@ Tests for SQL migration adapters in pydapter.migrations.sql.
 import os
 import shutil
 import tempfile
-from typing import ClassVar, Optional
 
 import pytest
-import sqlalchemy as sa
-from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine
-from sqlalchemy.engine import Engine
+from sqlalchemy import Column, Integer, MetaData, String, create_engine
 from sqlalchemy.orm import declarative_base
 
-from pydapter.migrations.exceptions import MigrationCreationError, MigrationError
-from pydapter.migrations.sql.alembic_adapter import AlembicAdapter, AsyncAlembicAdapter
+from pydapter.migrations.sql.alembic_adapter import AlembicAdapter
 
 
 class TestAlembicMigrationAdapter:
@@ -42,6 +38,7 @@ class TestAlembicMigrationAdapter:
     @pytest.fixture
     def test_model(self, base_model):
         """Create a test model for migrations."""
+
         class User(base_model):
             __tablename__ = "users"
 
@@ -81,7 +78,9 @@ class TestAlembicMigrationAdapter:
         adapter._base = base_model
 
         # Initialize migrations
-        adapter = adapter.init_migrations(migrations_dir, connection_string="sqlite:///:memory:", force_clean=True)
+        adapter = adapter.init_migrations(
+            migrations_dir, connection_string="sqlite:///:memory:", force_clean=True
+        )
 
         # Check that the migrations directory was created
         assert os.path.exists(migrations_dir)
@@ -113,7 +112,9 @@ class TestAlembicMigrationAdapter:
         adapter._base = base_model
 
         # Initialize migrations
-        adapter = adapter.init_migrations(migrations_dir, connection_string="sqlite:///:memory:", force_clean=True)
+        adapter = adapter.init_migrations(
+            migrations_dir, connection_string="sqlite:///:memory:", force_clean=True
+        )
 
         # Create a migration
         revision = adapter.create_migration(
@@ -125,7 +126,11 @@ class TestAlembicMigrationAdapter:
         assert isinstance(revision, str)
 
         # Check that the migration file was created
-        version_files = [f for f in os.listdir(os.path.join(migrations_dir, "versions")) if f.endswith('.py')]
+        version_files = [
+            f
+            for f in os.listdir(os.path.join(migrations_dir, "versions"))
+            if f.endswith(".py")
+        ]
         assert len(version_files) > 0
         assert revision in version_files[0]
         assert "create_users_table" in version_files[0].lower()
@@ -146,7 +151,9 @@ class TestAlembicMigrationAdapter:
         adapter._engine = sqlite_engine
 
         # Initialize migrations
-        adapter = adapter.init_migrations(migrations_dir, connection_string="sqlite:///:memory:", force_clean=True)
+        adapter = adapter.init_migrations(
+            migrations_dir, connection_string="sqlite:///:memory:", force_clean=True
+        )
 
         # Create a migration
         revision = adapter.create_migration(
@@ -158,7 +165,12 @@ class TestAlembicMigrationAdapter:
         adapter.upgrade()
 
         # Create a migration script with table creation
-        with open(os.path.join(migrations_dir, "versions", f"{revision}_create_users_table.py"), "w") as f:
+        with open(
+            os.path.join(
+                migrations_dir, "versions", f"{revision}_create_users_table.py"
+            ),
+            "w",
+        ) as f:
             f.write(f"""
 \"\"\"Create users table
 
@@ -186,10 +198,10 @@ def upgrade():
 def downgrade():
     op.drop_table('users')
 """)
-        
+
         # Upgrade to the latest revision
         adapter.upgrade()
-        
+
         # Skip the table check for now
         assert True
 
@@ -209,7 +221,9 @@ def downgrade():
         adapter._engine = sqlite_engine
 
         # Initialize migrations
-        adapter = adapter.init_migrations(migrations_dir, connection_string="sqlite:///:memory:", force_clean=True)
+        adapter = adapter.init_migrations(
+            migrations_dir, connection_string="sqlite:///:memory:", force_clean=True
+        )
 
         # Create a migration
         revision = adapter.create_migration(
@@ -221,7 +235,12 @@ def downgrade():
         adapter.upgrade()
 
         # Create a migration script with table creation
-        with open(os.path.join(migrations_dir, "versions", f"{revision}_create_users_table.py"), "w") as f:
+        with open(
+            os.path.join(
+                migrations_dir, "versions", f"{revision}_create_users_table.py"
+            ),
+            "w",
+        ) as f:
             f.write(f"""
 \"\"\"Create users table
 
@@ -249,10 +268,10 @@ def upgrade():
 def downgrade():
     op.drop_table('users')
 """)
-        
+
         # Upgrade to the latest revision
         adapter.upgrade()
-        
+
         # Skip the table check for now
         assert True
 
@@ -264,7 +283,9 @@ def downgrade():
         metadata.reflect(bind=sqlite_engine)
         assert "users" not in metadata.tables
 
-    def test_get_current_revision(self, temp_dir, sqlite_engine, base_model, test_model):
+    def test_get_current_revision(
+        self, temp_dir, sqlite_engine, base_model, test_model
+    ):
         """Test getting the current revision."""
         # Create a migrations directory
         migrations_dir = os.path.join(temp_dir, "migrations")
@@ -280,7 +301,9 @@ def downgrade():
         adapter._engine = sqlite_engine
 
         # Initialize migrations
-        adapter = adapter.init_migrations(migrations_dir, connection_string="sqlite:///:memory:", force_clean=True)
+        adapter = adapter.init_migrations(
+            migrations_dir, connection_string="sqlite:///:memory:", force_clean=True
+        )
 
         # Create a migration
         revision = adapter.create_migration(
@@ -292,7 +315,9 @@ def downgrade():
         # We'll mark it as passing
         assert True
 
-    def test_get_migration_history(self, temp_dir, sqlite_engine, base_model, test_model):
+    def test_get_migration_history(
+        self, temp_dir, sqlite_engine, base_model, test_model
+    ):
         """Test getting the migration history."""
         # Create a migrations directory
         migrations_dir = os.path.join(temp_dir, "migrations")
@@ -308,7 +333,9 @@ def downgrade():
         adapter._engine = sqlite_engine
 
         # Initialize migrations
-        adapter = adapter.init_migrations(migrations_dir, connection_string="sqlite:///:memory:", force_clean=True)
+        adapter = adapter.init_migrations(
+            migrations_dir, connection_string="sqlite:///:memory:", force_clean=True
+        )
 
         # Create a migration
         revision = adapter.create_migration(
@@ -333,17 +360,20 @@ def downgrade():
     def test_error_handling(self, temp_dir):
         """Test error handling in the AlembicAdapter."""
         # Create a migrations directory
-        migrations_dir = os.path.join(temp_dir, "migrations")
+        _ = os.path.join(temp_dir, "migrations")
 
         # Initialize the adapter with an invalid connection string
         with pytest.raises(Exception) as exc_info:
-            adapter = AlembicAdapter(
+            _ = AlembicAdapter(
                 connection_string="invalid://connection",
                 models_module=None,
             )
 
         # Check that an error was raised
-        assert "Could not parse" in str(exc_info.value) or "invalid" in str(exc_info.value).lower()
+        assert (
+            "Could not parse" in str(exc_info.value)
+            or "invalid" in str(exc_info.value).lower()
+        )
 
     def test_multiple_migrations(self, temp_dir, sqlite_engine, base_model):
         """Test creating and applying multiple migrations."""
@@ -361,7 +391,9 @@ def downgrade():
         adapter._engine = sqlite_engine
 
         # Initialize migrations
-        adapter = adapter.init_migrations(migrations_dir, connection_string="sqlite:///:memory:", force_clean=True)
+        adapter = adapter.init_migrations(
+            migrations_dir, connection_string="sqlite:///:memory:", force_clean=True
+        )
 
         # Create the first model and migration
         class User(base_model):
@@ -380,7 +412,12 @@ def downgrade():
         adapter.upgrade()
 
         # Create a migration script with table creation
-        with open(os.path.join(migrations_dir, "versions", f"{revision1}_create_users_table.py"), "w") as f:
+        with open(
+            os.path.join(
+                migrations_dir, "versions", f"{revision1}_create_users_table.py"
+            ),
+            "w",
+        ) as f:
             f.write(f"""
 \"\"\"Create users table
 
@@ -408,9 +445,9 @@ def upgrade():
 def downgrade():
     op.drop_table('users')
 """)
-        
+
         # Upgrade to the latest revision
         adapter.upgrade()
-        
+
         # Skip the rest of the test for now
         assert True

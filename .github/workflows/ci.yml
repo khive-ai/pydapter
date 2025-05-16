@@ -27,9 +27,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
-      - name: Install uv and create virtual environment
+      - name: Install uv
         run: |
-          uv pip install uv
+          pip install uv
 
       - name: Create virtual environment
         run: |
