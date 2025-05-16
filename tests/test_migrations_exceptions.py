@@ -86,10 +86,7 @@ class TestMigrationExceptions:
 
     def test_migration_error_with_cause(self):
         """Test MigrationError with a cause."""
-        # Create a cause exception
-        cause = ValueError("Original error")
-
-        # Create a MigrationError with the cause
+        # Create a MigrationError with an original error message
         error = MigrationError("Migration failed", original_error="Original error")
 
         # Check the error message
@@ -98,10 +95,7 @@ class TestMigrationExceptions:
 
     def test_migration_init_error_with_cause(self):
         """Test MigrationInitError with a cause."""
-        # Create a cause exception
-        cause = ValueError("Directory not found")
-
-        # Create a MigrationInitError with the cause
+        # Create a MigrationInitError with an original error message
         error = MigrationInitError(
             "Failed to initialize migrations",
             directory="/tmp",
@@ -170,11 +164,7 @@ class TestMigrationExceptions:
 
     def test_migration_error_with_nested_cause(self):
         """Test MigrationError with a nested cause."""
-        # Create a nested cause
-        nested_cause = ValueError("Nested error")
-        cause = RuntimeError("Intermediate error")
-
-        # Create a MigrationError with the cause
+        # Create a MigrationError with an intermediate error message
         error = MigrationError("Migration failed", original_error="Intermediate error")
 
         # Check the error message

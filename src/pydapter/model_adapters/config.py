@@ -53,7 +53,7 @@ class VectorIndexConfig(BaseModel):
 class PostgresAdapterConfig(BaseModel):
     """Configuration for PostgreSQL adapters."""
 
-    schema: str = "public"
+    db_schema: str = Field(default="public", description="Database schema name")
     batch_size: int = Field(default=1000, gt=0)
     vector_index_config: VectorIndexConfig = Field(default_factory=VectorIndexConfig)
     validate_vector_dimensions: bool = True

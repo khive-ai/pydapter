@@ -271,7 +271,7 @@ class TestMigrationAdapterInstantiation:
                 cls.initialized = True
                 return None
 
-            def init_migrations(self, directory: str, **kwargs) -> None:
+            def initialize_migrations(self, directory: str, **kwargs) -> None:
                 self.__class__.initialized = True
                 self._initialized = True
                 self._migrations_dir = directory
@@ -294,6 +294,6 @@ class TestMigrationAdapterInstantiation:
         assert adapter._initialized is False  # Not initialized yet
 
         # Initialize the migrations
-        adapter.init_migrations(test_dir)
+        adapter.initialize_migrations(test_dir)
         assert TestAdapter.initialized is True
         assert adapter._initialized is True

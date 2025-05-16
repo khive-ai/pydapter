@@ -305,8 +305,8 @@ def downgrade():
             migrations_dir, connection_string="sqlite:///:memory:", force_clean=True
         )
 
-        # Create a migration
-        revision = adapter.create_migration(
+        # Create a migration (not using the return value)
+        adapter.create_migration(
             "Create users table",
             autogenerate=False,
         )
