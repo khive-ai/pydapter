@@ -4,23 +4,14 @@ pydapter.migrations.sql.alembic_adapter - Alembic migration adapter implementati
 
 import os
 import shutil
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 import sqlalchemy as sa
 from alembic import command, config
-from alembic.runtime import environment
-from alembic.script import ScriptDirectory
-from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from pydapter.migrations.base import AsyncMigrationAdapter, SyncMigrationAdapter
-from pydapter.migrations.exceptions import (
-    MigrationCreationError,
-    MigrationDowngradeError,
-    MigrationError,
-    MigrationInitError,
-    MigrationUpgradeError,
-)
+from pydapter.migrations.exceptions import MigrationError, MigrationInitError
 
 
 class AlembicAdapter(SyncMigrationAdapter):

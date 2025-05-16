@@ -4,7 +4,6 @@ from functools import wraps
 from typing import Any
 
 from ..async_core import AsyncAdapter
-
 from .embedable import Embedable
 from .identifiable import Identifiable
 from .invokable import Invokable
