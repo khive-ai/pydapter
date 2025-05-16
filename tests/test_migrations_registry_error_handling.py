@@ -3,7 +3,7 @@ Tests for error handling in migration registry in pydapter.migrations.registry.
 """
 
 from typing import Any, ClassVar, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 

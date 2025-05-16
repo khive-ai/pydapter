@@ -2,9 +2,8 @@
 Tests for async migration registry in pydapter.migrations.registry.
 """
 
-import asyncio
 from typing import Any, ClassVar, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -16,7 +15,6 @@ from pydapter.migrations.exceptions import (
     MigrationInitError,
     MigrationUpgradeError,
 )
-from pydapter.migrations.protocols import AsyncMigrationProtocol
 from pydapter.migrations.registry import AsyncMigrationRegistry
 
 
