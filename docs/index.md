@@ -88,4 +88,5 @@ adapter.write_one(new_user)
 - Follow our tutorials:
   - [Using Protocols](tutorials/using_protocols.md)
   - [Using Migrations](tutorials/using_migrations.md)
-- If you're transitioning from the dev/ directory, see the [Migration Guide](migration_guide.md)
+- If you're transitioning from the dev/ directory, see the
+  [Migration Guide](migration_guide.md)

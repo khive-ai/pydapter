@@ -1,10 +1,14 @@
 # Protocols Module
 
-The Protocols module provides a set of standardized interfaces that can be used to add common capabilities to your models. These protocols follow a clean inheritance hierarchy and are designed to be composable, allowing you to mix and match capabilities as needed.
+The Protocols module provides a set of standardized interfaces that can be used
+to add common capabilities to your models. These protocols follow a clean
+inheritance hierarchy and are designed to be composable, allowing you to mix and
+match capabilities as needed.
 
 ## Installation
 
-The Protocols module is available as an optional dependency. To use it, install pydapter with the `protocols` extra:
+The Protocols module is available as an optional dependency. To use it, install
+pydapter with the `protocols` extra:
 
 ```bash
 pip install pydapter[protocols]
@@ -18,9 +22,11 @@ The Protocols module provides the following interfaces:
 
 ### Identifiable
 
-The `Identifiable` protocol provides a unique identifier for objects. It's the foundation of the protocol hierarchy.
+The `Identifiable` protocol provides a unique identifier for objects. It's the
+foundation of the protocol hierarchy.
 
 **Key features:**
+
 - Automatic UUID generation
 - String serialization of UUIDs
 - UUID validation
@@ -43,6 +49,7 @@ print(f"User ID: {user.id}")  # User ID: 3f7c8e9a-1d2b-4c3d-8e7f-5a6b7c8d9e0f
 The `Temporal` protocol adds creation and update timestamps to objects.
 
 **Key features:**
+
 - Automatic creation timestamp
 - Automatic update timestamp
 - Method to manually update the timestamp
@@ -68,9 +75,11 @@ print(f"Updated at: {user.updated_at}")  # Updated at: 2025-05-16T15:31:00+00:00
 
 ### Embedable
 
-The `Embedable` protocol adds support for vector embeddings, which are commonly used in machine learning and natural language processing applications.
+The `Embedable` protocol adds support for vector embeddings, which are commonly
+used in machine learning and natural language processing applications.
 
 **Key features:**
+
 - Storage for embedding vectors
 - Content field for the text to be embedded
 - Dimension calculation
@@ -81,7 +90,7 @@ from pydapter.protocols import Identifiable, Temporal, Embedable
 
 class Document(Identifiable, Temporal, Embedable):
     title: str
-    
+
 # Create a document with an embedding
 document = Document(
     title="Sample Document",
@@ -101,9 +110,11 @@ document2 = Document(
 
 ### Invokable
 
-The `Invokable` protocol adds function invocation capabilities with execution tracking.
+The `Invokable` protocol adds function invocation capabilities with execution
+tracking.
 
 **Key features:**
+
 - Execution status tracking
 - Duration measurement
 - Error handling
@@ -115,7 +126,7 @@ from pydapter.protocols import Identifiable, Temporal, Invokable
 
 class APICall(Identifiable, Temporal, Invokable):
     endpoint: str
-    
+
     async def fetch_data(self):
         # Simulate API call
         await asyncio.sleep(1)
@@ -135,14 +146,16 @@ print(f"Response: {api_call.execution.response}")  # Response: {'data': 'Sample 
 
 ### Event
 
-The `Event` protocol combines the capabilities of `Identifiable`, `Temporal`, `Embedable`, and `Invokable` to provide a comprehensive event tracking interface.
+The `Event` protocol combines the capabilities of `Identifiable`, `Temporal`,
+`Embedable`, and `Invokable` to provide a comprehensive event tracking
+interface.
 
 ```python
 from pydapter.protocols import Event
 
 class LogEvent(Event):
     event_type: str
-    
+
     async def process(self):
         # Process the event
         return {"processed": True}
@@ -180,13 +193,15 @@ Identifiable
     └── Other custom protocols...
 ```
 
-This design allows you to compose protocols as needed, inheriting only the capabilities required for your specific use case.
+This design allows you to compose protocols as needed, inheriting only the
+capabilities required for your specific use case.
 
 ## Best Practices
 
 ### Composing Protocols
 
-When using multiple protocols, inherit them in the correct order to ensure proper initialization:
+When using multiple protocols, inherit them in the correct order to ensure
+proper initialization:
 
 ```python
 # Correct order
@@ -200,20 +215,22 @@ class MyModel(Embedable, Temporal, Identifiable):
 
 ### Custom Content Creation
 
-The `Embedable` protocol allows you to customize how content is created by overriding the `create_content` method:
+The `Embedable` protocol allows you to customize how content is created by
+overriding the `create_content` method:
 
 ```python
 class Document(Identifiable, Temporal, Embedable):
     title: str
     body: str
-    
+
     def create_content(self):
         return f"{self.title}\n\n{self.body}"
 ```
 
 ### Custom Invocation Functions
 
-When using the `Invokable` protocol, you need to set the `_invoke_function` attribute to the function you want to invoke:
+When using the `Invokable` protocol, you need to set the `_invoke_function`
+attribute to the function you want to invoke:
 
 ```python
 async def fetch_data(endpoint):
@@ -227,7 +244,10 @@ api_call._invoke_args = [api_call.endpoint]  # Arguments to pass to the function
 
 ## Type Checking
 
-The protocols module is designed to work well with static type checkers like mypy. The protocols are defined using `typing_extensions.Protocol` and are marked as `runtime_checkable`, allowing for both static and runtime type checking.
+The protocols module is designed to work well with static type checkers like
+mypy. The protocols are defined using `typing_extensions.Protocol` and are
+marked as `runtime_checkable`, allowing for both static and runtime type
+checking.
 
 ```python
 from typing import List
@@ -243,7 +263,8 @@ process_identifiables([User(name="John"), Document(title="Sample")])
 
 ## Error Handling
 
-If you try to import protocols without the required dependencies, you'll get a clear error message:
+If you try to import protocols without the required dependencies, you'll get a
+clear error message:
 
 ```
 ImportError: The 'protocols' feature requires the 'typing_extensions' package. Install it with: pip install pydapter[protocols]
@@ -263,9 +284,9 @@ from pydantic import Field
 
 class Versionable(Temporal):
     """Protocol for objects that support versioning."""
-    
+
     version: int = Field(default=1)
-    
+
     def increment_version(self):
         """Increment the version and update the timestamp."""
         self.version += 1
@@ -278,7 +299,8 @@ class Document(Identifiable, Temporal, Versionable):
 
 ### Integration with Adapters
 
-The protocols can be used with pydapter adapters to provide standardized interfaces for data access:
+The protocols can be used with pydapter adapters to provide standardized
+interfaces for data access:
 
 ```python
 from pydapter.core import Adapter
@@ -297,3 +319,4 @@ adapter = Adapter(users)
 
 # Query by ID
 user = adapter.get(id="3f7c8e9a-1d2b-4c3d-8e7f-5a6b7c8d9e0f")
+```

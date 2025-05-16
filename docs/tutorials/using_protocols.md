@@ -1,10 +1,14 @@
 # Tutorial: Using Protocols to Create Standardized Models
 
-This tutorial demonstrates how to use the pydapter protocols module to create models with standardized capabilities. We'll build a simple document management system that leverages the protocol interfaces to provide consistent behavior across different types of documents.
+This tutorial demonstrates how to use the pydapter protocols module to create
+models with standardized capabilities. We'll build a simple document management
+system that leverages the protocol interfaces to provide consistent behavior
+across different types of documents.
 
 ## Prerequisites
 
-Before starting, ensure you have installed pydapter with the protocols extension:
+Before starting, ensure you have installed pydapter with the protocols
+extension:
 
 ```bash
 pip install pydapter[protocols]
@@ -22,19 +26,19 @@ from pydapter.protocols import Identifiable, Temporal, Embedable
 
 class BaseDocument(Identifiable, Temporal):
     """Base document class with ID and timestamp tracking."""
-    
+
     title: str
     author: str
-    
+
     def __str__(self) -> str:
         return f"{self.title} by {self.author}"
 
 
 class EmbeddableDocument(BaseDocument, Embedable):
     """Document that supports vector embeddings."""
-    
+
     content: str
-    
+
     def create_content(self) -> str:
         """Create content for embedding from document metadata and content."""
         return f"{self.title}\n{self.author}\n{self.content}"
@@ -47,20 +51,20 @@ Now, let's create specific document types that inherit from our base classes:
 ```python
 class TextDocument(EmbeddableDocument):
     """A simple text document."""
-    
+
     format: str = "text"
-    
-    
+
+
 class PDFDocument(EmbeddableDocument):
     """A PDF document with additional metadata."""
-    
+
     format: str = "pdf"
     page_count: int
-    
-    
+
+
 class ImageDocument(BaseDocument):
     """An image document that doesn't need text embedding."""
-    
+
     format: str = "image"
     width: int
     height: int
@@ -78,30 +82,30 @@ T = TypeVar('T', bound=BaseDocument)
 
 class DocumentRepository:
     """Repository for managing documents."""
-    
+
     def __init__(self):
         self.documents: Dict[UUID, BaseDocument] = {}
-    
+
     def add(self, document: BaseDocument) -> None:
         """Add a document to the repository."""
         self.documents[document.id] = document
-    
+
     def get(self, document_id: UUID) -> Optional[BaseDocument]:
         """Get a document by ID."""
         return self.documents.get(document_id)
-    
+
     def list_all(self) -> List[BaseDocument]:
         """List all documents."""
         return list(self.documents.values())
-    
+
     def find_by_type(self, doc_type: Type[T]) -> List[T]:
         """Find documents by type."""
         return [doc for doc in self.documents.values() if isinstance(doc, doc_type)]
-    
+
     def find_by_author(self, author: str) -> List[BaseDocument]:
         """Find documents by author."""
         return [doc for doc in self.documents.values() if doc.author == author]
-    
+
     def update(self, document: BaseDocument) -> None:
         """Update a document."""
         if document.id in self.documents:
@@ -196,7 +200,7 @@ for doc in repo.find_by_type(EmbeddableDocument):
 
 # Find similar documents
 def find_similar_documents(
-    query_doc: EmbeddableDocument, 
+    query_doc: EmbeddableDocument,
     candidates: List[EmbeddableDocument],
     threshold: float = 0.7
 ) -> List[Tuple[EmbeddableDocument, float]]:
@@ -229,11 +233,11 @@ from datetime import datetime
 
 class DocumentEvent(Event):
     """Event for tracking document operations."""
-    
+
     event_type: str
     document_id: UUID
     user_id: str
-    
+
     async def process(self):
         """Process the event."""
         # In a real application, this might log to a database or message queue
@@ -241,8 +245,8 @@ class DocumentEvent(Event):
         return {"processed": True, "timestamp": datetime.now().isoformat()}
 
 async def track_document_event(
-    event_type: str, 
-    document: BaseDocument, 
+    event_type: str,
+    document: BaseDocument,
     user_id: str
 ) -> DocumentEvent:
     """Track a document event."""
@@ -263,7 +267,7 @@ async def main():
     print(f"Event status: {view_event.execution.status}")
     print(f"Event duration: {view_event.execution.duration:.6f} seconds")
     print(f"Event response: {view_event.execution.response}")
-    
+
     # Track an edit event
     edit_event = await track_document_event("edit", text_doc, "user123")
     print(f"Event status: {edit_event.execution.status}")
@@ -288,19 +292,19 @@ from pydapter.protocols import Identifiable, Temporal, Embedable, Invokable, Eve
 # Step 1: Define Base Document Models
 class BaseDocument(Identifiable, Temporal):
     """Base document class with ID and timestamp tracking."""
-    
+
     title: str
     author: str
-    
+
     def __str__(self) -> str:
         return f"{self.title} by {self.author}"
 
 
 class EmbeddableDocument(BaseDocument, Embedable):
     """Document that supports vector embeddings."""
-    
+
     content: str
-    
+
     def create_content(self) -> str:
         """Create content for embedding from document metadata and content."""
         return f"{self.title}\n{self.author}\n{self.content}"
@@ -309,20 +313,20 @@ class EmbeddableDocument(BaseDocument, Embedable):
 # Step 2: Create Specific Document Types
 class TextDocument(EmbeddableDocument):
     """A simple text document."""
-    
+
     format: str = "text"
-    
-    
+
+
 class PDFDocument(EmbeddableDocument):
     """A PDF document with additional metadata."""
-    
+
     format: str = "pdf"
     page_count: int
-    
-    
+
+
 class ImageDocument(BaseDocument):
     """An image document that doesn't need text embedding."""
-    
+
     format: str = "image"
     width: int
     height: int
@@ -334,30 +338,30 @@ T = TypeVar('T', bound=BaseDocument)
 
 class DocumentRepository:
     """Repository for managing documents."""
-    
+
     def __init__(self):
         self.documents: Dict[UUID, BaseDocument] = {}
-    
+
     def add(self, document: BaseDocument) -> None:
         """Add a document to the repository."""
         self.documents[document.id] = document
-    
+
     def get(self, document_id: UUID) -> Optional[BaseDocument]:
         """Get a document by ID."""
         return self.documents.get(document_id)
-    
+
     def list_all(self) -> List[BaseDocument]:
         """List all documents."""
         return list(self.documents.values())
-    
+
     def find_by_type(self, doc_type: Type[T]) -> List[T]:
         """Find documents by type."""
         return [doc for doc in self.documents.values() if isinstance(doc, doc_type)]
-    
+
     def find_by_author(self, author: str) -> List[BaseDocument]:
         """Find documents by author."""
         return [doc for doc in self.documents.values() if doc.author == author]
-    
+
     def update(self, document: BaseDocument) -> None:
         """Update a document."""
         if document.id in self.documents:
@@ -369,11 +373,11 @@ class DocumentRepository:
 # Step 6: Define Document Event
 class DocumentEvent(Event):
     """Event for tracking document operations."""
-    
+
     event_type: str
     document_id: UUID
     user_id: str
-    
+
     async def process(self):
         """Process the event."""
         # In a real application, this might log to a database or message queue
@@ -399,7 +403,7 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
 
 
 def find_similar_documents(
-    query_doc: EmbeddableDocument, 
+    query_doc: EmbeddableDocument,
     candidates: List[EmbeddableDocument],
     threshold: float = 0.7
 ) -> List[Tuple[EmbeddableDocument, float]]:
@@ -414,8 +418,8 @@ def find_similar_documents(
 
 
 async def track_document_event(
-    event_type: str, 
-    document: BaseDocument, 
+    event_type: str,
+    document: BaseDocument,
     user_id: str
 ) -> DocumentEvent:
     """Track a document event."""
@@ -501,7 +505,7 @@ async def main():
     print(f"\nEvent status: {view_event.execution.status}")
     print(f"Event duration: {view_event.execution.duration:.6f} seconds")
     print(f"Event response: {view_event.execution.response}")
-    
+
     edit_event = await track_document_event("edit", text_doc, "user123")
     print(f"Event status: {edit_event.execution.status}")
 
@@ -512,7 +516,8 @@ if __name__ == "__main__":
 
 ## Summary
 
-In this tutorial, we've demonstrated how to use pydapter's protocols to create standardized models with consistent behavior. We've covered:
+In this tutorial, we've demonstrated how to use pydapter's protocols to create
+standardized models with consistent behavior. We've covered:
 
 1. Creating base document models with `Identifiable` and `Temporal` protocols
 2. Adding embedding support with the `Embedable` protocol
@@ -520,4 +525,5 @@ In this tutorial, we've demonstrated how to use pydapter's protocols to create s
 4. Working with document embeddings for similarity search
 5. Tracking document events with the `Invokable` and `Event` protocols
 
-The protocols module provides a powerful way to add standardized capabilities to your models, making your code more consistent and easier to maintain.
+The protocols module provides a powerful way to add standardized capabilities to
+your models, making your code more consistent and easier to maintain.
