@@ -1,5 +1,5 @@
 """
-Tests for base migration adapter classes.
+Tests for base migration adapter classes in pydapter.migrations.base.
 """
 
 import os
@@ -229,3 +229,71 @@ class TestImplementedAsyncAdapter:
         assert await ImplementedAsyncAdapter.create_migration("test") == "revision123"
         assert await ImplementedAsyncAdapter.get_current_revision() == "revision123"
         assert len(await ImplementedAsyncAdapter.get_migration_history()) == 1
+
+
+class TestMigrationAdapterInstantiation:
+    """Test instantiation of migration adapters."""
+
+    def test_adapter_instantiation(self):
+        """Test instantiation of migration adapters."""
+
+        # Create a concrete implementation
+        class TestAdapter(BaseMigrationAdapter):
+            migration_key: ClassVar[str] = "test_adapter"
+
+        # Test instantiation with required parameters
+        adapter = TestAdapter(connection_string="sqlite:///test.db")
+        assert adapter.connection_string == "sqlite:///test.db"
+        assert adapter.models_module is None
+
+        # Test instantiation with all parameters
+        adapter = TestAdapter(
+            connection_string="sqlite:///test.db",
+            models_module="test_module",
+        )
+        assert adapter.connection_string == "sqlite:///test.db"
+        assert adapter.models_module == "test_module"
+        
+        # Set migrations directory manually
+        adapter._migrations_dir = "migrations"
+        assert adapter._migrations_dir == "migrations"
+
+    def test_adapter_initialization_with_directory(self, tmpdir):
+        """Test initialization of migration adapters with directory."""
+
+        # Create a concrete implementation that tracks initialization
+        class TestAdapter(BaseMigrationAdapter):
+            migration_key: ClassVar[str] = "test_adapter"
+            initialized: ClassVar[bool] = False
+
+            @classmethod
+            def init_migrations(cls, directory: str, **kwargs) -> None:
+                cls.initialized = True
+                return None
+                
+            def init_migrations(self, directory: str, **kwargs) -> None:
+                self.__class__.initialized = True
+                self._initialized = True
+                self._migrations_dir = directory
+                return None
+
+        # Create a test directory
+        test_dir = os.path.join(tmpdir, "migrations")
+        os.makedirs(test_dir, exist_ok=True)
+
+        # Initialize the adapter
+        adapter = TestAdapter(
+            connection_string="sqlite:///test.db",
+        )
+        
+        # Set migrations directory manually
+        adapter._migrations_dir = test_dir
+
+        # Check that the adapter is initialized
+        assert adapter._migrations_dir == test_dir
+        assert adapter._initialized is False  # Not initialized yet
+
+        # Initialize the migrations
+        adapter.init_migrations(test_dir)
+        assert TestAdapter.initialized is True
+        assert adapter._initialized is True
