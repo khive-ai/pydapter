@@ -6,7 +6,7 @@ from pydapter.async_core import AsyncAdaptable
 
 
 @pytest.fixture
-def _ModelFactory():
+def _ModelFactory():  # type: ignore[no-redef]
     class Factory:
         def __call__(self, **kw):
             from pydantic import BaseModel
@@ -53,11 +53,9 @@ def mongo_url():
     from testcontainers.mongodb import MongoDbContainer
 
     # Use MongoDB container with authentication
-    with (
-        MongoDbContainer("mongo:6.0")
-        .with_env("MONGO_INITDB_ROOT_USERNAME", "test")
-        .with_env("MONGO_INITDB_ROOT_PASSWORD", "test") as mongo
-    ):
+    with MongoDbContainer("mongo:6.0").with_env(
+        "MONGO_INITDB_ROOT_USERNAME", "test"
+    ).with_env("MONGO_INITDB_ROOT_PASSWORD", "test") as mongo:
         yield f"mongodb://test:test@{mongo.get_container_host_ip()}:{mongo.get_exposed_port(27017)}"
 
 

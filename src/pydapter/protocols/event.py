@@ -11,16 +11,21 @@ from .utils import as_async_fn, validate_model_to_dict
 
 
 class Event(Invokable, Embedable):
+    event_type: str = None
+
     def __init__(
         self,
         event_invoke_function: Callable,
         event_invoke_args: list[Any],
         event_invoke_kwargs: dict[str, Any],
+        event_type: str = None,
     ):
         super().__init__(response_obj=None)
         self._invoke_function = event_invoke_function
         self._invoke_args = event_invoke_args or []
         self._invoke_kwargs = event_invoke_kwargs or {}
+        if event_type is not None:
+            self.event_type = event_type
 
     def create_content(self):
         if self.content is not None:
@@ -43,7 +48,7 @@ class Event(Invokable, Embedable):
             content=self.content,
             embedding=self.embedding,
             duration=self.execution.duration,
-            status=self.execution.status.value,
+            status=self.execution.status.value.lower(),  # Ensure status is lowercase
             error=self.execution.error,
         )
 
@@ -72,7 +77,7 @@ def as_event(
             if len(args) > 2 and hasattr(args[0], "__class__"):
                 args = args[1:]
             request_obj = args[0] if request_obj is None else request_obj
-            event = Event(func, list(args), kwargs)
+            event = Event(func, list(args), kwargs, event_type=event_type)
             event.request = validate_model_to_dict(request_obj)
             await event.invoke()
             if embed_content and embed_function is not None:
