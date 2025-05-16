@@ -26,7 +26,7 @@ import sys
 import time
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import Optional
 
 
 class Colors:
@@ -74,16 +74,16 @@ class CIStep:
         self.output = output
 
         duration = round(self.end_time - (self.start_time or 0), 2)
-        
+
         if result == StepResult.SUCCESS:
             status = f"{Colors.GREEN}✓ PASSED{Colors.ENDC}"
         elif result == StepResult.FAILURE:
             status = f"{Colors.FAIL}✗ FAILED{Colors.ENDC}"
         else:  # SKIPPED
             status = f"{Colors.WARNING}⚠ SKIPPED{Colors.ENDC}"
-            
+
         print(f"{status} {self.description} in {duration}s")
-        
+
         if output and result == StepResult.FAILURE:
             print(f"\n{Colors.FAIL}Output:{Colors.ENDC}")
             print(output)
@@ -96,17 +96,17 @@ class CIRunner:
     def __init__(self, args):
         self.args = args
         self.project_root = Path(__file__).parent.parent.absolute()
-        self.steps: List[CIStep] = []
-        self.results: List[Tuple[str, StepResult]] = []
-        
+        self.steps: list[CIStep] = []
+        self.results: list[tuple[str, StepResult]] = []
+
         # Environment setup
         self.env = os.environ.copy()
         if args.python_path:
             self.env["PATH"] = f"{args.python_path}:{self.env.get('PATH', '')}"
 
     def run_command(
-        self, cmd: List[str], check: bool = True, cwd: Optional[Path] = None
-    ) -> Tuple[int, str]:
+        self, cmd: list[str], check: bool = True, cwd: Optional[Path] = None
+    ) -> tuple[int, str]:
         """Run a shell command and return exit code and output."""
         if self.args.dry_run:
             print(f"Would run: {' '.join(cmd)}")
@@ -122,7 +122,10 @@ class CIRunner:
                 env=self.env,
             )
             if check and result.returncode != 0:
-                return result.returncode, f"Command failed with code {result.returncode}\n{result.stdout}\n{result.stderr}"
+                return (
+                    result.returncode,
+                    f"Command failed with code {result.returncode}\n{result.stdout}\n{result.stderr}",
+                )
             return result.returncode, f"{result.stdout}\n{result.stderr}"
         except Exception as e:
             return 1, f"Error executing command: {e}"
@@ -143,7 +146,7 @@ class CIRunner:
 
         cmd = ["uv", "run", "ruff", "check", "src", "tests"]
         exit_code, output = self.run_command(cmd)
-        
+
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE
         step.complete(result, output)
         return result
@@ -158,7 +161,7 @@ class CIRunner:
 
         cmd = ["uv", "run", "ruff", "format", "--check", "src", "tests"]
         exit_code, output = self.run_command(cmd)
-        
+
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE
         step.complete(result, output)
         return result
@@ -182,7 +185,7 @@ class CIRunner:
 
         cmd = ["uv", "run", "mypy", "src"]
         exit_code, output = self.run_command(cmd)
-        
+
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE
         step.complete(result, output)
         return result
@@ -197,18 +200,21 @@ class CIRunner:
 
         # Exclude integration tests
         cmd = [
-            "uv", "run", "pytest", 
-            "-xvs", 
-            "--cov=pydapter", 
+            "uv",
+            "run",
+            "pytest",
+            "-xvs",
+            "--cov=pydapter",
             "--cov-report=term-missing",
-            "-k", "not integration",
+            "-k",
+            "not integration",
         ]
-        
+
         if self.args.parallel:
             cmd.extend(["-n", str(self.args.parallel)])
-            
+
         exit_code, output = self.run_command(cmd)
-        
+
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE
         step.complete(result, output)
         return result
@@ -223,18 +229,21 @@ class CIRunner:
 
         # Only run integration tests
         cmd = [
-            "uv", "run", "pytest", 
-            "-xvs", 
-            "--cov=pydapter", 
+            "uv",
+            "run",
+            "pytest",
+            "-xvs",
+            "--cov=pydapter",
             "--cov-report=term-missing",
-            "-k", "integration",
+            "-k",
+            "integration",
         ]
-        
+
         if self.args.parallel:
             cmd.extend(["-n", str(self.args.parallel)])
-            
+
         exit_code, output = self.run_command(cmd)
-        
+
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE
         step.complete(result, output)
         return result
@@ -249,7 +258,7 @@ class CIRunner:
 
         cmd = ["uv", "run", "coverage", "report", "--fail-under=80"]
         exit_code, output = self.run_command(cmd)
-        
+
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE
         step.complete(result, output)
         return result
@@ -292,35 +301,47 @@ class CIRunner:
         # Determine overall success
         failures = [r for _, r in self.results if r == StepResult.FAILURE]
         success = len(failures) == 0
-        
+
         if success:
             print(f"\n{Colors.GREEN}{Colors.BOLD}CI PASSED{Colors.ENDC}")
         else:
             print(f"\n{Colors.FAIL}{Colors.BOLD}CI FAILED{Colors.ENDC}")
-            
+
         return success
 
 
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Run CI checks for pydapter")
-    
+
     # Skip options
     parser.add_argument("--skip-lint", action="store_true", help="Skip linting checks")
-    parser.add_argument("--skip-type-check", action="store_true", help="Skip type checking")
+    parser.add_argument(
+        "--skip-type-check", action="store_true", help="Skip type checking"
+    )
     parser.add_argument("--skip-unit", action="store_true", help="Skip unit tests")
-    parser.add_argument("--skip-integration", action="store_true", help="Skip integration tests")
-    parser.add_argument("--skip-coverage", action="store_true", help="Skip coverage report")
-    
+    parser.add_argument(
+        "--skip-integration", action="store_true", help="Skip integration tests"
+    )
+    parser.add_argument(
+        "--skip-coverage", action="store_true", help="Skip coverage report"
+    )
+
     # Configuration options
     parser.add_argument("--python-version", help="Python version to use (e.g., 3.10)")
     parser.add_argument("--python-path", help="Path to Python executable")
-    parser.add_argument("--parallel", type=int, help="Run tests in parallel with specified number of processes")
-    
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        help="Run tests in parallel with specified number of processes",
+    )
+
     # Other options
-    parser.add_argument("--dry-run", action="store_true", help="Show commands without executing them")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show commands without executing them"
+    )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-    
+
     return parser.parse_args()
 
 

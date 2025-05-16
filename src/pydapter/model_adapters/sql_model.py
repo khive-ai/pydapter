@@ -45,7 +45,9 @@ def create_base():
     """Create a new base class with a fresh metadata instance."""
 
     class _Base(DeclarativeBase):  # shared metadata so Alembic sees everything
-        metadata = MetaData(schema="public")
+        metadata = MetaData(
+            schema="public"
+        )  # Using 'schema' here is correct for SQLAlchemy
 
     return _Base
 

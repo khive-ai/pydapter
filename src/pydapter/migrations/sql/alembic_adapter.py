@@ -4,14 +4,20 @@ pydapter.migrations.sql.alembic_adapter - Alembic migration adapter implementati
 
 import os
 import shutil
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Optional
 
 import sqlalchemy as sa
 from alembic import command, config
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from pydapter.migrations.base import AsyncMigrationAdapter, SyncMigrationAdapter
-from pydapter.migrations.exceptions import MigrationError, MigrationInitError
+from pydapter.migrations.exceptions import (
+    MigrationCreationError,
+    MigrationDowngradeError,
+    MigrationError,
+    MigrationInitError,
+    MigrationUpgradeError,
+)
 
 
 class AlembicAdapter(SyncMigrationAdapter):
@@ -137,6 +143,9 @@ datefmt = %H:%M:%S
             adapter._migrations_dir = directory
             adapter._initialized = True
 
+            # Return the adapter instance
+            return adapter
+
         except Exception as exc:
             if isinstance(exc, MigrationError):
                 raise
@@ -177,6 +186,199 @@ datefmt = %H:%M:%S
             # Write the updated env.py file
             with open(env_path, "w") as f:
                 f.write(env_content)
+
+    def create_migration(
+        self, message: str, autogenerate: bool = True, **kwargs
+    ) -> str:
+        """
+        Create a new migration.
+
+        Args:
+            message: Description of the migration
+            autogenerate: Whether to auto-generate the migration based on model changes
+            **kwargs: Additional adapter-specific arguments
+
+        Returns:
+            The revision identifier of the created migration
+
+        Raises:
+            MigrationCreationError: If creation fails
+        """
+        try:
+            if not self._initialized:
+                raise MigrationCreationError(
+                    "Migrations have not been initialized. Call init_migrations first."
+                )
+
+            # Create the migration
+            command.revision(
+                self.alembic_cfg,
+                message=message,
+                autogenerate=autogenerate,
+            )
+
+            # Get the revision ID from the latest revision
+            from alembic.script import ScriptDirectory
+
+            script = ScriptDirectory.from_config(self.alembic_cfg)
+            revision = script.get_current_head()
+
+            return revision
+        except Exception as exc:
+            if isinstance(exc, MigrationError):
+                raise
+            raise MigrationCreationError(
+                f"Failed to create migration: {str(exc)}",
+                autogenerate=autogenerate,
+                original_error=str(exc),
+            ) from exc
+
+    def upgrade(self, revision: str = "head", **kwargs) -> None:
+        """
+        Upgrade to the specified revision.
+
+        Args:
+            revision: Revision to upgrade to (default: "head" for latest)
+            **kwargs: Additional adapter-specific arguments
+
+        Raises:
+            MigrationUpgradeError: If upgrade fails
+        """
+        try:
+            if not self._initialized:
+                raise MigrationUpgradeError(
+                    "Migrations have not been initialized. Call init_migrations first."
+                )
+
+            # Upgrade to the specified revision
+            command.upgrade(self.alembic_cfg, revision)
+
+            return None
+        except Exception as exc:
+            if isinstance(exc, MigrationError):
+                raise
+            raise MigrationUpgradeError(
+                f"Failed to upgrade: {str(exc)}",
+                revision=revision,
+                original_error=str(exc),
+            ) from exc
+
+    def downgrade(self, revision: str, **kwargs) -> None:
+        """
+        Downgrade to the specified revision.
+
+        Args:
+            revision: Revision to downgrade to
+            **kwargs: Additional adapter-specific arguments
+
+        Raises:
+            MigrationDowngradeError: If downgrade fails
+        """
+        try:
+            if not self._initialized:
+                raise MigrationDowngradeError(
+                    "Migrations have not been initialized. Call init_migrations first."
+                )
+
+            # Downgrade to the specified revision
+            command.downgrade(self.alembic_cfg, revision)
+
+            return None
+        except Exception as exc:
+            if isinstance(exc, MigrationError):
+                raise
+            raise MigrationDowngradeError(
+                f"Failed to downgrade: {str(exc)}",
+                revision=revision,
+                original_error=str(exc),
+            ) from exc
+
+    def get_current_revision(self, **kwargs) -> Optional[str]:
+        """
+        Get the current revision.
+
+        Args:
+            **kwargs: Additional adapter-specific arguments
+
+        Returns:
+            The current revision, or None if no migrations have been applied
+
+        Raises:
+            MigrationError: If getting the current revision fails
+        """
+        try:
+            if not self._initialized:
+                raise MigrationError(
+                    "Migrations have not been initialized. Call init_migrations first."
+                )
+
+            # Get the current revision
+            from alembic.migration import MigrationContext
+
+            # Get the database connection
+            connection = self.engine.connect()
+
+            # Create a migration context
+            migration_context = MigrationContext.configure(connection)
+
+            # Get the current revision
+            current_revision = migration_context.get_current_revision()
+
+            # Close the connection
+            connection.close()
+
+            return current_revision
+        except Exception as exc:
+            if isinstance(exc, MigrationError):
+                raise
+            raise MigrationError(
+                f"Failed to get current revision: {str(exc)}",
+                original_error=str(exc),
+            ) from exc
+
+    def get_migration_history(self, **kwargs) -> list[dict]:
+        """
+        Get the migration history.
+
+        Args:
+            **kwargs: Additional adapter-specific arguments
+
+        Returns:
+            A list of dictionaries containing migration information
+
+        Raises:
+            MigrationError: If getting the migration history fails
+        """
+        try:
+            if not self._initialized:
+                raise MigrationError(
+                    "Migrations have not been initialized. Call init_migrations first."
+                )
+
+            # Get the migration history
+            from alembic.script import ScriptDirectory
+
+            script = ScriptDirectory.from_config(self.alembic_cfg)
+
+            # Get all revisions
+            revisions = []
+            for revision in script.walk_revisions():
+                revisions.append(
+                    {
+                        "revision": revision.revision,
+                        "message": revision.doc,
+                        "created": None,  # Alembic doesn't store creation dates
+                    }
+                )
+
+            return revisions
+        except Exception as exc:
+            if isinstance(exc, MigrationError):
+                raise
+            raise MigrationError(
+                f"Failed to get migration history: {str(exc)}",
+                original_error=str(exc),
+            ) from exc
 
 
 class AsyncAlembicAdapter(AsyncMigrationAdapter):

@@ -86,7 +86,7 @@ def test_postgres_adapter_config_defaults():
     """Test PostgresAdapterConfig default values."""
     config = PostgresAdapterConfig()
 
-    assert config.schema == "public"
+    assert config.db_schema == "public"
     assert config.batch_size == 1000
     assert isinstance(config.vector_index_config, VectorIndexConfig)
     assert config.validate_vector_dimensions is True
@@ -95,7 +95,7 @@ def test_postgres_adapter_config_defaults():
 def test_postgres_adapter_config_custom_values():
     """Test PostgresAdapterConfig with custom values."""
     config = PostgresAdapterConfig(
-        schema="custom_schema",
+        db_schema="custom_schema",
         batch_size=500,
         validate_vector_dimensions=False,
         vector_index_config=VectorIndexConfig(
@@ -104,7 +104,7 @@ def test_postgres_adapter_config_custom_values():
         ),
     )
 
-    assert config.schema == "custom_schema"
+    assert config.db_schema == "custom_schema"
     assert config.batch_size == 500
     assert config.validate_vector_dimensions is False
     assert config.vector_index_config.index_type == "ivfflat"

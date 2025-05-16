@@ -64,7 +64,7 @@ def test_create_base():
     """Test the create_base function."""
     Base = create_base()
     assert hasattr(Base, "metadata")
-    assert Base.metadata.schema == "public"
+    assert Base.metadata.schema == "public"  # SQLAlchemy uses 'schema', not 'db_schema'
 
 
 def test_register_type_mapping():

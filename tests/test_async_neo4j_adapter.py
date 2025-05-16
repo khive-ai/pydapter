@@ -15,8 +15,9 @@ from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.async_neo4j_ import AsyncNeo4jAdapter
 
 
-class TestModel(BaseModel):
-    """Test model for AsyncNeo4jAdapter tests."""
+# Define a model class for testing - using SampleModel instead of TestModel to avoid pytest collection
+class SampleModel(BaseModel):
+    """Sample model for AsyncNeo4jAdapter tests."""
 
     id: int
     name: str
@@ -195,7 +196,7 @@ class TestAsyncNeo4jAdapter:
     async def test_from_obj_missing_url(self):
         """Test from_obj method with missing URL."""
         with pytest.raises(AdapterValidationError) as exc_info:
-            await AsyncNeo4jAdapter.from_obj(TestModel, {})
+            await AsyncNeo4jAdapter.from_obj(SampleModel, {})
         assert "Missing required parameter 'url'" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -237,19 +238,19 @@ class TestAsyncNeo4jAdapter:
             AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
         ):
             result = await AsyncNeo4jAdapter.from_obj(
-                TestModel,
+                SampleModel,
                 {"url": "bolt://localhost:7687", "where": "n.id = 1"},
             )
 
             # Verify the query was constructed correctly
             mock_session.run.assert_called_once_with(
-                "MATCH (n:`TestModel`) WHERE n.id = 1 RETURN n"
+                "MATCH (n:`SampleModel`) WHERE n.id = 1 RETURN n"
             )
 
             # Verify the result
             assert isinstance(result, list)
             assert len(result) == 1
-            assert isinstance(result[0], TestModel)
+            assert isinstance(result[0], SampleModel)
             assert result[0].id == 1
             assert result[0].name == "test"
             assert result[0].value == 42.5
@@ -293,7 +294,7 @@ class TestAsyncNeo4jAdapter:
             AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
         ):
             result = await AsyncNeo4jAdapter.from_obj(
-                TestModel,
+                SampleModel,
                 {"url": "bolt://localhost:7687", "label": "CustomLabel"},
             )
 
@@ -305,7 +306,7 @@ class TestAsyncNeo4jAdapter:
             # Verify the result
             assert isinstance(result, list)
             assert len(result) == 1
-            assert isinstance(result[0], TestModel)
+            assert isinstance(result[0], SampleModel)
             assert result[0].id == 1
             assert result[0].name == "test"
             assert result[0].value == 42.5
@@ -349,13 +350,13 @@ class TestAsyncNeo4jAdapter:
             AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
         ):
             result = await AsyncNeo4jAdapter.from_obj(
-                TestModel,
+                SampleModel,
                 {"url": "bolt://localhost:7687"},
                 many=False,
             )
 
             # Verify the result
-            assert isinstance(result, TestModel)
+            assert isinstance(result, SampleModel)
             assert result.id == 1
             assert result.name == "test"
             assert result.value == 42.5
@@ -396,7 +397,7 @@ class TestAsyncNeo4jAdapter:
             AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
         ):
             result = await AsyncNeo4jAdapter.from_obj(
-                TestModel,
+                SampleModel,
                 {"url": "bolt://localhost:7687"},
             )
 
@@ -438,7 +439,7 @@ class TestAsyncNeo4jAdapter:
         ):
             with pytest.raises(ResourceError) as exc_info:
                 await AsyncNeo4jAdapter.from_obj(
-                    TestModel,
+                    SampleModel,
                     {"url": "bolt://localhost:7687"},
                     many=False,
                 )
@@ -471,7 +472,7 @@ class TestAsyncNeo4jAdapter:
         ):
             with pytest.raises(QueryError) as exc_info:
                 await AsyncNeo4jAdapter.from_obj(
-                    TestModel,
+                    SampleModel,
                     {"url": "bolt://localhost:7687"},
                 )
             assert "Neo4j Cypher syntax error" in str(exc_info.value)
@@ -516,7 +517,7 @@ class TestAsyncNeo4jAdapter:
         ):
             with pytest.raises(AdapterValidationError) as exc_info:
                 await AsyncNeo4jAdapter.from_obj(
-                    TestModel,
+                    SampleModel,
                     {"url": "bolt://localhost:7687"},
                 )
             assert "Validation error" in str(exc_info.value)
@@ -526,7 +527,7 @@ class TestAsyncNeo4jAdapter:
         """Test to_obj method with missing URL."""
         with pytest.raises(AdapterValidationError) as exc_info:
             await AsyncNeo4jAdapter.to_obj(
-                TestModel(id=1, name="test", value=42.5), url=None
+                SampleModel(id=1, name="test", value=42.5), url=None
             )
         assert "Missing required parameter 'url'" in str(exc_info.value)
 
@@ -542,7 +543,7 @@ class TestAsyncNeo4jAdapter:
         ):
             with pytest.raises(AdapterValidationError) as exc_info:
                 await AsyncNeo4jAdapter.to_obj(
-                    TestModel(id=1, name="test", value=42.5),
+                    SampleModel(id=1, name="test", value=42.5),
                     url="bolt://localhost:7687",
                     merge_on="",  # Empty string will trigger the validation error
                 )
@@ -575,7 +576,7 @@ class TestAsyncNeo4jAdapter:
             AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
         ):
             result = await AsyncNeo4jAdapter.to_obj(
-                TestModel(id=1, name="test", value=42.5),
+                SampleModel(id=1, name="test", value=42.5),
                 url="bolt://localhost:7687",
                 label="CustomLabel",
             )
@@ -617,7 +618,7 @@ class TestAsyncNeo4jAdapter:
             AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
         ):
             result = await AsyncNeo4jAdapter.to_obj(
-                TestModel(id=1, name="test", value=42.5),
+                SampleModel(id=1, name="test", value=42.5),
                 url="bolt://localhost:7687",
                 merge_on="name",
             )
@@ -625,7 +626,7 @@ class TestAsyncNeo4jAdapter:
             # Verify the query was constructed correctly
             mock_session.run.assert_called_once()
             args, kwargs = mock_session.run.call_args
-            assert args[0] == "MERGE (n:`TestModel` {name: $val}) SET n += $props"
+            assert args[0] == "MERGE (n:`SampleModel` {name: $val}) SET n += $props"
             assert kwargs["val"] == "test"
             assert kwargs["props"] == {"id": 1, "name": "test", "value": 42.5}
 
@@ -644,7 +645,7 @@ class TestAsyncNeo4jAdapter:
         ):
             with pytest.raises(AdapterValidationError) as exc_info:
                 await AsyncNeo4jAdapter.to_obj(
-                    TestModel(id=1, name="test", value=42.5),
+                    SampleModel(id=1, name="test", value=42.5),
                     url="bolt://localhost:7687",
                     merge_on="non_existent_property",
                 )
@@ -673,8 +674,8 @@ class TestAsyncNeo4jAdapter:
 
         # Create multiple models
         models = [
-            TestModel(id=1, name="test1", value=42.5),
-            TestModel(id=2, name="test2", value=43.5),
+            SampleModel(id=1, name="test1", value=42.5),
+            SampleModel(id=2, name="test2", value=43.5),
         ]
 
         # Patch the _create_driver method
@@ -713,7 +714,7 @@ class TestAsyncNeo4jAdapter:
         ):
             with pytest.raises(QueryError) as exc_info:
                 await AsyncNeo4jAdapter.to_obj(
-                    TestModel(id=1, name="test", value=42.5),
+                    SampleModel(id=1, name="test", value=42.5),
                     url="bolt://localhost:7687",
                 )
             # Just check that it's a QueryError, the exact message might vary
