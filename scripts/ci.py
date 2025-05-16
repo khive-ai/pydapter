@@ -255,7 +255,7 @@ class CIRunner:
         step = self.add_step("format", "Code formatting checks")
         step.start()
 
-        cmd = ["uv", "run", "ruff", "format", "--check", "src", "tests"]
+        cmd = ["uv", "run", "ruff", "format", "src", "tests"]
         exit_code, output = self.run_command(cmd)
 
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE

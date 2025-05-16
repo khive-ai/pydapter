@@ -6,7 +6,7 @@ from pydapter.async_core import AsyncAdaptable
 
 
 @pytest.fixture
-def _ModelFactory():
+def _ModelFactory():  # type: ignore[no-redef]
     class Factory:
         def __call__(self, **kw):
             from pydantic import BaseModel
