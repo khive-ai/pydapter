@@ -15,8 +15,23 @@ Examples:
     # Run only unit tests
     python scripts/ci.py --skip-lint --skip-type-check --skip-integration
 
+    # Run only a specific component
+    python scripts/ci.py --only lint
+    python scripts/ci.py --only unit
+    python scripts/ci.py --only integration
+
+    # Skip tests that require external dependencies
+    python scripts/ci.py --skip-external-deps
+
     # Run with specific Python version
     python scripts/ci.py --python-version 3.10
+
+    # Run tests in parallel
+    python scripts/ci.py --parallel 4
+    
+    # Install all dependencies before running tests
+    # uv sync --extra all
+    # python scripts/ci.py
 """
 
 import argparse
@@ -26,7 +41,7 @@ import sys
 import time
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 
 class Colors:
@@ -93,11 +108,39 @@ class CIStep:
 class CIRunner:
     """Main CI runner that orchestrates all steps."""
 
+    # Define required dependencies for each step
+    REQUIRED_DEPS = {
+        "lint": ["ruff"],
+        "type_check": ["mypy"],
+        "unit_tests": ["pytest", "pytest-cov"],
+        "integration_tests": ["pytest", "pytest-cov"],
+        "coverage": ["coverage"],
+    }
+
+    # Define external dependencies that might be skipped
+    EXTERNAL_DEPS_FILES = [
+        "test_weaviate_adapter.py",
+        "test_async_weaviate_adapter.py",
+        "test_neo4j_adapter.py",
+        "test_async_neo4j_adapter.py",
+        "test_qdrant_adapter.py",
+        "test_async_qdrant_adapter.py",
+        "test_mongo_adapter.py",
+        "test_async_mongo_adapter.py",
+        "test_integration_weaviate.py",
+        "test_integration_neo4j.py",
+        "test_integration_qdrant.py",
+        "test_integration_mongodb.py",
+        "test_integration_async_neo4j.py",
+        "test_pg_vector_model_adapter.py",
+    ]
+
     def __init__(self, args):
         self.args = args
         self.project_root = Path(__file__).parent.parent.absolute()
-        self.steps: list[CIStep] = []
-        self.results: list[tuple[str, StepResult]] = []
+        self.steps: List[CIStep] = []
+        self.results: List[Tuple[str, StepResult]] = []
+        self.missing_deps: Set[str] = set()
 
         # Environment setup
         self.env = os.environ.copy()
@@ -105,8 +148,8 @@ class CIRunner:
             self.env["PATH"] = f"{args.python_path}:{self.env.get('PATH', '')}"
 
     def run_command(
-        self, cmd: list[str], check: bool = True, cwd: Optional[Path] = None
-    ) -> tuple[int, str]:
+        self, cmd: List[str], check: bool = True, cwd: Optional[Path] = None
+    ) -> Tuple[int, str]:
         """Run a shell command and return exit code and output."""
         if self.args.dry_run:
             print(f"Would run: {' '.join(cmd)}")
@@ -136,10 +179,56 @@ class CIRunner:
         self.steps.append(step)
         return step
 
+    def check_dependencies(self, step_name: str) -> bool:
+        """
+        Check if required dependencies for a step are installed.
+        Returns True if all dependencies are available or successfully installed.
+        """
+        if step_name not in self.REQUIRED_DEPS:
+            return True
+
+        missing_deps = []
+        for dep in self.REQUIRED_DEPS[step_name]:
+            exit_code, _ = self.run_command(["uv", "pip", "show", dep], check=False)
+            if exit_code != 0:
+                missing_deps.append(dep)
+
+        if not missing_deps:
+            return True
+
+        # Try to install missing dependencies
+        print(f"{Colors.WARNING}Installing missing dependencies: {', '.join(missing_deps)}{Colors.ENDC}")
+        for dep in missing_deps:
+            exit_code, output = self.run_command(["uv", "pip", "install", dep], check=False)
+            if exit_code != 0:
+                print(f"{Colors.FAIL}Failed to install {dep}: {output}{Colors.ENDC}")
+                self.missing_deps.add(dep)
+                return False
+
+        return True
+
+    def should_skip_external_deps(self) -> bool:
+        """Check if external dependencies should be skipped."""
+        return self.args.skip_external_deps
+
+    def get_test_files(self) -> List[str]:
+        """Get list of test files, excluding external dependency tests if needed."""
+        test_dir = self.project_root / "tests"
+        all_test_files = [f.name for f in test_dir.glob("test_*.py")]
+        
+        if not self.should_skip_external_deps():
+            return all_test_files
+        
+        # Filter out tests that require external dependencies
+        return [f for f in all_test_files if f not in self.EXTERNAL_DEPS_FILES]
+
     def run_linting(self) -> StepResult:
         """Run linting checks using ruff."""
-        if self.args.skip_lint:
+        if self.args.skip_lint or (self.args.only and self.args.only != "lint"):
             return StepResult.SKIPPED
+
+        if not self.check_dependencies("lint"):
+            return StepResult.FAILURE
 
         step = self.add_step("lint", "Linting checks")
         step.start()
@@ -153,8 +242,11 @@ class CIRunner:
 
     def run_formatting(self) -> StepResult:
         """Run code formatting checks."""
-        if self.args.skip_lint:
+        if self.args.skip_lint or (self.args.only and self.args.only != "lint"):
             return StepResult.SKIPPED
+
+        if not self.check_dependencies("lint"):
+            return StepResult.FAILURE
 
         step = self.add_step("format", "Code formatting checks")
         step.start()
@@ -168,20 +260,14 @@ class CIRunner:
 
     def run_type_checking(self) -> StepResult:
         """Run type checking with mypy."""
-        if self.args.skip_type_check:
+        if self.args.skip_type_check or (self.args.only and self.args.only != "type"):
             return StepResult.SKIPPED
+
+        if not self.check_dependencies("type_check"):
+            return StepResult.FAILURE
 
         step = self.add_step("type_check", "Type checking")
         step.start()
-
-        # Check if mypy is installed
-        exit_code, _ = self.run_command(["uv", "pip", "show", "mypy"], check=False)
-        if exit_code != 0:
-            # Install mypy if not available
-            _, output = self.run_command(["uv", "pip", "install", "mypy"], check=False)
-            if "Successfully installed mypy" not in output:
-                step.complete(StepResult.FAILURE, "Failed to install mypy")
-                return StepResult.FAILURE
 
         cmd = ["uv", "run", "mypy", "src"]
         exit_code, output = self.run_command(cmd)
@@ -192,13 +278,26 @@ class CIRunner:
 
     def run_unit_tests(self) -> StepResult:
         """Run unit tests."""
-        if self.args.skip_unit:
+        if self.args.skip_unit or (self.args.only and self.args.only != "unit"):
             return StepResult.SKIPPED
+
+        if not self.check_dependencies("unit_tests"):
+            return StepResult.FAILURE
 
         step = self.add_step("unit_tests", "Unit tests")
         step.start()
 
-        # Exclude integration tests
+        # Get test files, excluding external dependency tests if needed
+        test_files = self.get_test_files()
+        
+        # Filter out integration tests
+        test_files = [f for f in test_files if not f.startswith("test_integration_")]
+        
+        if not test_files:
+            step.complete(StepResult.SKIPPED, "No test files to run")
+            return StepResult.SKIPPED
+
+        # Build the command
         cmd = [
             "uv",
             "run",
@@ -213,6 +312,10 @@ class CIRunner:
         if self.args.parallel:
             cmd.extend(["-n", str(self.args.parallel)])
 
+        # If skipping external deps, explicitly specify test files
+        if self.should_skip_external_deps():
+            cmd.extend([str(self.project_root / "tests" / f) for f in test_files])
+
         exit_code, output = self.run_command(cmd)
 
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE
@@ -221,13 +324,26 @@ class CIRunner:
 
     def run_integration_tests(self) -> StepResult:
         """Run integration tests."""
-        if self.args.skip_integration:
+        if self.args.skip_integration or (self.args.only and self.args.only != "integration"):
             return StepResult.SKIPPED
+
+        if not self.check_dependencies("integration_tests"):
+            return StepResult.FAILURE
 
         step = self.add_step("integration_tests", "Integration tests")
         step.start()
 
-        # Only run integration tests
+        # Get test files, excluding external dependency tests if needed
+        test_files = self.get_test_files()
+        
+        # Keep only integration tests
+        test_files = [f for f in test_files if f.startswith("test_integration_")]
+        
+        if not test_files:
+            step.complete(StepResult.SKIPPED, "No integration test files to run")
+            return StepResult.SKIPPED
+
+        # Build the command
         cmd = [
             "uv",
             "run",
@@ -242,6 +358,10 @@ class CIRunner:
         if self.args.parallel:
             cmd.extend(["-n", str(self.args.parallel)])
 
+        # If skipping external deps, explicitly specify test files
+        if self.should_skip_external_deps():
+            cmd.extend([str(self.project_root / "tests" / f) for f in test_files])
+
         exit_code, output = self.run_command(cmd)
 
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE
@@ -250,8 +370,11 @@ class CIRunner:
 
     def run_coverage_report(self) -> StepResult:
         """Generate coverage report."""
-        if self.args.skip_coverage:
+        if self.args.skip_coverage or (self.args.only and self.args.only != "coverage"):
             return StepResult.SKIPPED
+
+        if not self.check_dependencies("coverage"):
+            return StepResult.FAILURE
 
         step = self.add_step("coverage", "Coverage report")
         step.start()
@@ -268,6 +391,11 @@ class CIRunner:
         print(f"\n{Colors.BOLD}Running CI for pydapter{Colors.ENDC}")
         print(f"Python: {sys.version.split()[0]}")
         print(f"Working directory: {self.project_root}\n")
+
+        # Print warning if skipping external dependencies
+        if self.should_skip_external_deps():
+            print(f"{Colors.WARNING}Skipping tests that require external dependencies{Colors.ENDC}")
+            print(f"{Colors.WARNING}To run all tests, install all dependencies with: uv sync --extra all{Colors.ENDC}\n")
 
         # Run all steps
         lint_result = self.run_linting()
@@ -298,6 +426,14 @@ class CIRunner:
                 status = f"{Colors.WARNING}SKIP{Colors.ENDC}"
             print(f"  {name}: {status}")
 
+        # Print missing dependencies if any
+        if self.missing_deps:
+            print(f"\n{Colors.WARNING}Missing dependencies:{Colors.ENDC}")
+            for dep in self.missing_deps:
+                print(f"  - {dep}")
+            print(f"\nInstall with: uv pip install {' '.join(self.missing_deps)}")
+            print(f"Or install all dependencies with: uv sync --extra all")
+
         # Determine overall success
         failures = [r for _, r in self.results if r == StepResult.FAILURE]
         success = len(failures) == 0
@@ -325,6 +461,18 @@ def parse_args():
     )
     parser.add_argument(
         "--skip-coverage", action="store_true", help="Skip coverage report"
+    )
+    parser.add_argument(
+        "--skip-external-deps",
+        action="store_true",
+        help="Skip tests that require external dependencies",
+    )
+
+    # Run only specific components
+    parser.add_argument(
+        "--only",
+        choices=["lint", "type", "unit", "integration", "coverage"],
+        help="Run only the specified component",
     )
 
     # Configuration options
