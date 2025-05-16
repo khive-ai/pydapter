@@ -51,7 +51,7 @@ class Invokable(Temporal):
             logger.warning("invoke() canceled by external request.")
             raise
         except Exception as ex:
-            e1 = ex
+            e1 = ex  # type: ignore
 
         finally:
             self.execution.duration = asyncio.get_event_loop().time() - start

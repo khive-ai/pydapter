@@ -9,14 +9,18 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import cache
-from typing import TypeVar
+from typing import Any, Protocol, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel
 
-Import = TypeVar("I")
+Imp = TypeVar("Imp")
 
-HasLen = TypeVar("HasLen")
+
+class HasLen(Protocol):
+    def __len__(self) -> int: ...
+
+
 Bin = list[int]
 T = TypeVar("T")
 
@@ -37,7 +41,7 @@ def import_module(
     package_name: str,
     module_name: str | None = None,
     import_name: str | list | None = None,
-) -> Import | list[Import]:
+) -> Imp | list[Imp] | Any:
     """Import a module by its path."""
     try:
         full_import_path = (

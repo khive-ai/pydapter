@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import ClassVar, Protocol, TypeVar, runtime_checkable
 
-T = TypeVar("T")
+T = TypeVar("T", covariant=True)
 
 
 @runtime_checkable
