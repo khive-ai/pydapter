@@ -374,6 +374,7 @@ class CIRunner:
             "pytest",
             "-xvs",
             "--cov=pydapter",
+            "--cov-append",  # Append to existing coverage data instead of overwriting
             "--cov-report=term-missing",
             "-k",
             "integration",
