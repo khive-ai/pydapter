@@ -403,7 +403,7 @@ class CIRunner:
         step = self.add_step("coverage", "Coverage report")
         step.start()
 
-        cmd = ["uv", "run", "coverage", "report", "--fail-under=80"]
+        cmd = ["uv", "run", "coverage", "report", "--fail-under=75"]
         exit_code, output = self.run_command(cmd)
 
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE

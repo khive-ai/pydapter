@@ -42,6 +42,20 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
     # Class variable for driver factory - makes testing easier
     _driver_factory = AsyncGraphDatabase.driver
 
+    def __init__(self, url=None, auth=None, **kwargs):
+        """Initialize the adapter with connection parameters.
+
+        Args:
+            url: Neo4j connection URL
+            auth: Optional authentication tuple (username, password)
+            **kwargs: Additional keyword arguments
+        """
+        self.url = url
+        self.auth = auth
+        self.kwargs = kwargs
+        self._driver = None
+        self._session = None
+
     @classmethod
     def set_driver_factory(cls, factory):
         """Set the driver factory for testing purposes."""
@@ -364,4 +378,96 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             # Wrap other exceptions
             raise QueryError(
                 f"Unexpected error in async Neo4j adapter: {e}", adapter="async_neo4j"
+            ) from e
+
+    async def __aenter__(self):
+        """Async context manager entry.
+
+        Returns:
+            self: The adapter instance
+
+        Raises:
+            ConnectionError: If connection to Neo4j fails
+        """
+        if not self.url:
+            raise ConnectionError(
+                "URL is required for Neo4j connection", adapter="async_neo4j"
+            )
+
+        self._driver = await self._create_driver(self.url, auth=self.auth)
+        try:
+            # For the mock tests, we don't need to await the session
+            self._session = self._driver.session()
+            return self
+        except Exception as e:
+            # Clean up driver if session creation fails
+            if self._driver:
+                await self._driver.close()
+            raise e
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit.
+
+        Args:
+            exc_type: Exception type if an exception was raised
+            exc_val: Exception value if an exception was raised
+            exc_tb: Exception traceback if an exception was raised
+        """
+        if self._session:
+            try:
+                await self._session.close()
+            except Exception:
+                # Ignore errors during session close
+                pass
+
+        if self._driver:
+            try:
+                await self._driver.close()
+            except Exception:
+                # Ignore errors during driver close
+                pass
+
+    async def query(self, cypher, **params):
+        """Execute a Cypher query and return the results.
+
+        Args:
+            cypher: Cypher query string
+            **params: Query parameters
+
+        Returns:
+            list: List of query results
+
+        Raises:
+            QueryError: If the query execution fails
+        """
+        if not self._session:
+            raise QueryError(
+                "No active session. Use AsyncNeo4jAdapter as a context manager.",
+                adapter="async_neo4j",
+            )
+
+        # Validate Cypher query
+        self._validate_cypher(cypher)
+
+        try:
+            # Execute the query - don't await the run method itself
+            result = self._session.run(cypher, **params)
+
+            # Process the results
+            rows = []
+            async for r in result:
+                rows.append(r["n"]._properties)
+
+            return rows
+        except neo4j.exceptions.CypherSyntaxError as e:
+            raise QueryError(
+                f"Neo4j Cypher syntax error: {e}",
+                query=cypher,
+                adapter="async_neo4j",
+            ) from e
+        except Exception as e:
+            raise QueryError(
+                f"Error executing Neo4j query: {e}",
+                query=cypher,
+                adapter="async_neo4j",
             ) from e

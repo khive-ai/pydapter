@@ -10,8 +10,23 @@ from pydapter.exceptions import AdapterError
 class MigrationError(AdapterError):
     """Base exception for all migration-related errors."""
 
-    def __init__(self, message: str, **context: Any):
+    def __init__(
+        self,
+        message: str,
+        original_error: Exception = None,
+        adapter: str = None,
+        **context: Any,
+    ):
         super().__init__(message, **context)
+        self.original_error = original_error
+        self.adapter = adapter
+
+    def __str__(self) -> str:
+        """Return a string representation of the error."""
+        result = super().__str__()
+        if hasattr(self, "original_error") and self.original_error is not None:
+            result += f" (original_error='{self.original_error}')"
+        return result
 
 
 class MigrationInitError(MigrationError):
@@ -27,6 +42,9 @@ class MigrationInitError(MigrationError):
         super().__init__(message, directory=directory, adapter=adapter, **context)
         self.directory = directory
         self.adapter = adapter
+        # Ensure original_error is set even if not passed through super().__init__
+        if "original_error" in context:
+            self.original_error = context["original_error"]
 
 
 class MigrationCreationError(MigrationError):
@@ -50,6 +68,9 @@ class MigrationCreationError(MigrationError):
         self.message_text = message_text
         self.autogenerate = autogenerate
         self.adapter = adapter
+        # Ensure original_error is set even if not passed through super().__init__
+        if "original_error" in context:
+            self.original_error = context["original_error"]
 
 
 class MigrationUpgradeError(MigrationError):
@@ -65,6 +86,9 @@ class MigrationUpgradeError(MigrationError):
         super().__init__(message, revision=revision, adapter=adapter, **context)
         self.revision = revision
         self.adapter = adapter
+        # Ensure original_error is set even if not passed through super().__init__
+        if "original_error" in context:
+            self.original_error = context["original_error"]
 
 
 class MigrationDowngradeError(MigrationError):
@@ -80,6 +104,9 @@ class MigrationDowngradeError(MigrationError):
         super().__init__(message, revision=revision, adapter=adapter, **context)
         self.revision = revision
         self.adapter = adapter
+        # Ensure original_error is set even if not passed through super().__init__
+        if "original_error" in context:
+            self.original_error = context["original_error"]
 
 
 class MigrationNotFoundError(MigrationError):
@@ -95,3 +122,6 @@ class MigrationNotFoundError(MigrationError):
         super().__init__(message, revision=revision, adapter=adapter, **context)
         self.revision = revision
         self.adapter = adapter
+        # Ensure original_error is set even if not passed through super().__init__
+        if "original_error" in context:
+            self.original_error = context["original_error"]
