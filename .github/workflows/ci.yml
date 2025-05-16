@@ -34,12 +34,12 @@ jobs:
       - name: Create virtual environment
         run: |
           uv venv .venv
-          source .venv/bin/activate
           echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
+          source .venv/bin/activate
           uv sync --extra all
 
       - name: Run CI script
@@ -86,7 +86,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install -e ".[dev]"
+          uv venv
+          source .venv/bin/activate
+          uv sync --extra all
 
       # - name: Upload coverage to Codecov
       #   uses: codecov/codecov-action@v4
