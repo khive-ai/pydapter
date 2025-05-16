@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+from importlib.util import find_spec
 
 if TYPE_CHECKING:
     # Type checking imports
@@ -43,8 +44,9 @@ __all__ = [
 ]
 
 # Optional imports based on available dependencies
-try:
-    from .sql.alembic_adapter import AlembicAdapter, AsyncAlembicAdapter
-    __all__.extend(["AlembicAdapter", "AsyncAlembicAdapter"])
-except ImportError:
-    pass
+if find_spec("sqlalchemy") is not None and find_spec("alembic") is not None:
+    try:
+        from .sql.alembic_adapter import AlembicAdapter, AsyncAlembicAdapter
+        __all__.extend(["AlembicAdapter", "AsyncAlembicAdapter"])
+    except ImportError:
+        pass
