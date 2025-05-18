@@ -1,6 +1,6 @@
 [project]
 name            = "pydapter"
-version         = "0.1.6"
+version         = "0.1.7"
 description     = "Tiny trait + adapter toolkit for pydantic models"
 readme          = "README.md"
 requires-python = ">=3.10"
@@ -51,9 +51,6 @@ motor     = ["motor>=3"]
 qdrant    = ["qdrant-client>=1.14"]
 aiohttp   = ["aiohttp>=3.11.10"]
 
-# New dependencies
-protocols = ["typing-extensions>=4.6.0"]
-
 migrations-core = []  # No additional dependencies beyond pydantic
 
 migrations-sql = [
@@ -66,11 +63,6 @@ migrations-sql = [
 migrations = [
     "pydapter[migrations-core]",
     "pydapter[migrations-sql]",
-]
-
-migrations-all = [
-    "pydapter[migrations]",
-    "pydapter[protocols]",
 ]
 
 # ----------------------------------
@@ -91,8 +83,6 @@ all = [
     "aiohttp>=3.11.10",
     "openpyxl>=3.1.5",
     "pgvector>=0.4.1",
-    # Add new dependencies
-    "typing-extensions>=4.6.0",
     "alembic>=1.11.0",
     "sqlalchemy[asyncio]>=2.0; python_version >= '3.7'",
 ]
