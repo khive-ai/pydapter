@@ -19,11 +19,6 @@ def check_dependency(package_name: str, feature_name: str) -> None:
         )
 
 
-def check_protocols_dependencies() -> None:
-    """Check if protocols dependencies are installed."""
-    check_dependency("typing_extensions", "protocols")
-
-
 def check_migrations_dependencies() -> None:
     """Check if core migrations dependencies are installed."""
     pass  # Core migrations only depend on pydantic, which is already a dependency

@@ -2397,7 +2397,7 @@ wheels = [
 
 [[package]]
 name = "pydapter"
-version = "0.1.6"
+version = "0.1.7"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
@@ -2423,7 +2423,6 @@ all = [
     { name = "pymongo" },
     { name = "qdrant-client" },
     { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "typing-extensions" },
     { name = "weaviate" },
     { name = "weaviate-client" },
     { name = "xlsxwriter" },
@@ -2436,11 +2435,6 @@ excel = [
 migrations = [
     { name = "alembic" },
     { name = "sqlalchemy", extra = ["asyncio"] },
-]
-migrations-all = [
-    { name = "alembic" },
-    { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "typing-extensions" },
 ]
 migrations-sql = [
     { name = "alembic" },
@@ -2467,9 +2461,6 @@ postgres = [
     { name = "psycopg", extra = ["binary"] },
     { name = "psycopg2-binary" },
     { name = "sqlalchemy" },
-]
-protocols = [
-    { name = "typing-extensions" },
 ]
 qdrant = [
     { name = "qdrant-client" },
@@ -2534,10 +2525,8 @@ requires-dist = [
     { name = "psycopg2-binary", marker = "extra == 'all'", specifier = ">=2.9.10" },
     { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.6" },
-    { name = "pydapter", extras = ["migrations"], marker = "extra == 'migrations-all'" },
     { name = "pydapter", extras = ["migrations-core"], marker = "extra == 'migrations'" },
     { name = "pydapter", extras = ["migrations-sql"], marker = "extra == 'migrations'" },
-    { name = "pydapter", extras = ["protocols"], marker = "extra == 'migrations-all'" },
     { name = "pymongo", marker = "extra == 'all'", specifier = ">=4.7" },
     { name = "pymongo", marker = "extra == 'mongo'", specifier = ">=4.7" },
     { name = "qdrant-client", marker = "extra == 'all'", specifier = ">=1.14" },
@@ -2549,8 +2538,6 @@ requires-dist = [
     { name = "sqlalchemy", extras = ["asyncio"], marker = "python_full_version >= '3.7' and extra == 'all'", specifier = ">=2.0" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "python_full_version >= '3.7' and extra == 'migrations-sql'", specifier = ">=2.0" },
     { name = "toml", specifier = ">=0.10.0" },
-    { name = "typing-extensions", marker = "extra == 'all'", specifier = ">=4.6.0" },
-    { name = "typing-extensions", marker = "extra == 'protocols'", specifier = ">=4.6.0" },
     { name = "weaviate", marker = "extra == 'all'", specifier = ">=0.1.2" },
     { name = "weaviate", marker = "extra == 'weaviate'", specifier = ">=0.1.2" },
     { name = "weaviate-client", marker = "extra == 'all'", specifier = ">=4.4" },
@@ -2558,7 +2545,7 @@ requires-dist = [
     { name = "xlsxwriter", marker = "extra == 'all'", specifier = ">=3.2" },
     { name = "xlsxwriter", marker = "extra == 'excel'", specifier = ">=3.2" },
 ]
-provides-extras = ["pandas", "excel", "sql", "postgres", "pgvector", "mongo", "weaviate", "neo4j", "motor", "qdrant", "aiohttp", "protocols", "migrations-core", "migrations-sql", "migrations", "migrations-all", "all"]
+provides-extras = ["pandas", "excel", "sql", "postgres", "pgvector", "mongo", "weaviate", "neo4j", "motor", "qdrant", "aiohttp", "migrations-core", "migrations-sql", "migrations", "all"]
 
 [package.metadata.requires-dev]
 dev = [
