@@ -1,8 +1,3 @@
-# Copyright (c) 2025, HaiyangLi <quantocean.li at gmail dot com>
-#
-# SPDX-License-Identifier: Apache-2.0
-
-
 import orjson as json
 from pydantic import BaseModel, Field, field_validator
 

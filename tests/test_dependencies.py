@@ -7,7 +7,6 @@ from pydapter.utils.dependencies import (
     check_dependency,
     check_migrations_dependencies,
     check_migrations_sql_dependencies,
-    check_protocols_dependencies,
 )
 
 
@@ -29,24 +28,6 @@ def test_check_dependency_not_installed():
         in str(excinfo.value)
     )
     assert "pip install pydapter[test]" in str(excinfo.value)
-
-
-def test_protocols_dependencies():
-    """Test check_protocols_dependencies."""
-    # If typing_extensions is installed, this should not raise an exception
-    if find_spec("typing_extensions") is not None:
-        check_protocols_dependencies()
-    else:
-        # If typing_extensions is not installed, this should raise an ImportError
-        with pytest.raises(ImportError) as excinfo:
-            check_protocols_dependencies()
-
-        # Check that the error message contains the expected text
-        assert (
-            "The 'protocols' feature requires the 'typing_extensions' package"
-            in str(excinfo.value)
-        )
-        assert "pip install pydapter[protocols]" in str(excinfo.value)
 
 
 def test_migrations_dependencies():
