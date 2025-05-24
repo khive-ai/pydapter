@@ -261,7 +261,6 @@ class CIRunner:
         step.complete(result, output)
         return result
 
-
     def run_unit_tests(self) -> StepResult:
         """Run unit tests."""
         if self.args.skip_unit or (self.args.only and self.args.only != "unit"):

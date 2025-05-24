@@ -142,4 +142,3 @@ exclude = [
     "temp_logs/*",
     "logs/*"
 ]
-

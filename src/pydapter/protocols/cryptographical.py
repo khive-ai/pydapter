@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable, Union
+from typing import Protocol, Union, runtime_checkable
 
 from pydantic import JsonValue
 
