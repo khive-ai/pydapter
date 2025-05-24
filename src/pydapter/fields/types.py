@@ -168,17 +168,19 @@ class Field:
         annotation = str(self.annotation).lower().strip()
         if "none" in annotation or "optional" in annotation:
             return self.copy()
-        
+
         # If the field has a validator, wrap it to handle None values
         new_validator = Undefined
         if self.validator is not Undefined:
             original_validator = self.validator
+
             def nullable_validator(cls, v):
                 if v is None:
                     return v
                 return original_validator(cls, v)
+
             new_validator = nullable_validator
-        
+
         return self.copy(
             annotation=self.annotation | None,
             default=None,
@@ -196,11 +198,12 @@ class Field:
         annotation = (
             list[self.annotation] if strict else list[self.annotation] | self.annotation
         )
-        
+
         # If the field has a validator, wrap it to handle lists
         new_validator = Undefined
         if self.validator is not Undefined:
             original_validator = self.validator
+
             def listable_validator(cls, v):
                 if isinstance(v, list):
                     # Validate each item in the list
@@ -210,8 +213,9 @@ class Field:
                     if strict:
                         raise ValueError("Expected a list")
                     return original_validator(cls, v)
+
             new_validator = listable_validator
-        
+
         return self.copy(annotation=annotation, validator=new_validator)
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -257,7 +261,9 @@ def create_model(
                 {} if field.validator_kwargs is Undefined else field.validator_kwargs
             )
             validator_name = f"validate_{field.name}"
-            validators[validator_name] = field_validator(field.name, **kwargs)(field.validator)
+            validators[validator_name] = field_validator(field.name, **kwargs)(
+                field.validator
+            )
 
     # Create the base model with validators included
     model: type[BaseModel] = create_pydantic_model(

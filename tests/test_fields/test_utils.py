@@ -370,9 +370,9 @@ class FieldAssertions:
 
         # Check that error mentions the expected field
         error_str = str(exc_info.value).lower()
-        assert (
-            error_field.lower() in error_str
-        ), f"Expected error for field '{error_field}', but got: {exc_info.value}"
+        assert error_field.lower() in error_str, (
+            f"Expected error for field '{error_field}', but got: {exc_info.value}"
+        )
 
 
 # ============================================
