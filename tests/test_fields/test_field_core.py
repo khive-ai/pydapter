@@ -7,6 +7,7 @@ import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
+
 from pydapter.exceptions import ValidationError as ValidationException
 from pydapter.fields.dts import DATETIME, validate_datetime
 from pydapter.fields.embedding import EMBEDDING, validate_embedding

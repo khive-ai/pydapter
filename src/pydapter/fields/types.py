@@ -144,7 +144,9 @@ class Field:
     def field_validator(self) -> dict[str, Callable] | None:
         if self.validator is Undefined:
             return None
-        kwargs: dict[Any, Any] = {} if self.validator_kwargs is Undefined else self.validator_kwargs
+        kwargs: dict[Any, Any] = (
+            {} if self.validator_kwargs is Undefined else self.validator_kwargs
+        )
         return {
             f"{self.name}_field_validator": field_validator(self.name, **kwargs)(
                 self.validator

@@ -16,14 +16,7 @@ from uuid import UUID, uuid4
 import pytest
 from pydantic import BaseModel, Field
 
-from pydapter.fields import (
-    DATETIME,
-    EMBEDDING,
-    EXECUTION,
-    ID_FROZEN,
-    Embedding,
-    Execution,
-)
+from pydapter.fields import Embedding, Execution
 from pydapter.protocols.embeddable import Embeddable, EmbeddableMixin
 from pydapter.protocols.event import Event
 from pydapter.protocols.identifiable import Identifiable, IdentifiableMixin
@@ -40,17 +33,24 @@ from pydapter.protocols.utils import (
 # Concrete implementations for testing protocols
 class ConcreteIdentifiable(BaseModel, IdentifiableMixin):
     """Concrete implementation of Identifiable protocol for testing."""
+
     id: UUID = Field(default_factory=uuid4)
 
 
 class ConcreteTemporal(BaseModel, TemporalMixin):
     """Concrete implementation of Temporal protocol for testing."""
-    created_at: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(timezone.utc))
-    updated_at: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(timezone.utc))
+
+    created_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(timezone.utc)
+    )
+    updated_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(timezone.utc)
+    )
 
 
 class ConcreteEmbeddable(BaseModel, EmbeddableMixin):
     """Concrete implementation of Embeddable protocol for testing."""
+
     content: str | None = Field(default=None)
     embedding: Embedding = Field(default_factory=list)
 
@@ -61,9 +61,14 @@ class ConcreteEmbeddable(BaseModel, EmbeddableMixin):
 
 class ConcreteInvokable(BaseModel, IdentifiableMixin, InvokableMixin, TemporalMixin):
     """Concrete implementation of Invokable protocol for testing."""
+
     id: UUID = Field(default_factory=uuid4)
-    created_at: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(timezone.utc))
-    updated_at: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(timezone.utc))
+    created_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(timezone.utc)
+    )
+    updated_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(timezone.utc)
+    )
     request: dict | None = Field(default=None)
     execution: Execution = Field(default_factory=Execution)
 
@@ -74,10 +79,10 @@ class TestIdentifiableProtocol:
     def test_identifiable_protocol_compliance(self):
         """Test that concrete implementation satisfies Identifiable protocol."""
         identifiable = ConcreteIdentifiable()
-        
+
         # Test protocol compliance
         assert isinstance(identifiable, Identifiable)
-        
+
         # Test that it has required attributes
         assert hasattr(identifiable, "id")
         assert isinstance(identifiable.id, UUID)
@@ -118,7 +123,7 @@ class TestIdentifiableProtocol:
         # Pydantic may override __hash__ to None, but the mixin method is still available
         mixin_hash_method = IdentifiableMixin.__hash__
         assert callable(mixin_hash_method)
-        
+
         # Test that the mixin's hash method works correctly when called directly
         hash_result = mixin_hash_method(identifiable)
         expected_hash = hash(identifiable.id)
@@ -131,10 +136,10 @@ class TestTemporalProtocol:
     def test_temporal_protocol_compliance(self):
         """Test that concrete implementation satisfies Temporal protocol."""
         temporal = ConcreteTemporal()
-        
+
         # Test protocol compliance
         assert isinstance(temporal, Temporal)
-        
+
         # Test that it has required attributes
         assert hasattr(temporal, "created_at")
         assert hasattr(temporal, "updated_at")
@@ -194,10 +199,10 @@ class TestEmbeddableProtocol:
     def test_embeddable_protocol_compliance(self):
         """Test that concrete implementation satisfies Embeddable protocol."""
         embeddable = ConcreteEmbeddable()
-        
+
         # Test protocol compliance
         assert isinstance(embeddable, Embeddable)
-        
+
         # Test that it has required attributes
         assert hasattr(embeddable, "content")
         assert hasattr(embeddable, "embedding")
@@ -250,7 +255,9 @@ class TestEmbeddableProtocol:
         assert result == [0.1, 0.2, 0.3]
 
         # Test with dict containing embedding
-        result = ConcreteEmbeddable.parse_embedding_response({"embedding": [0.1, 0.2, 0.3]})
+        result = ConcreteEmbeddable.parse_embedding_response(
+            {"embedding": [0.1, 0.2, 0.3]}
+        )
         assert result == [0.1, 0.2, 0.3]
 
 
@@ -260,10 +267,10 @@ class TestInvokableProtocol:
     def test_invokable_protocol_compliance(self):
         """Test that concrete implementation satisfies Invokable protocol."""
         invokable = ConcreteInvokable()
-        
+
         # Test protocol compliance
         assert isinstance(invokable, Invokable)
-        
+
         # Test that it has required attributes
         assert hasattr(invokable, "request")
         assert hasattr(invokable, "execution")
@@ -348,6 +355,7 @@ class TestEventClass:
 
     def test_event_protocol_compliance(self):
         """Test that Event satisfies the expected protocols."""
+
         # Create a simple function to use as the event handler
         def test_function(a, b, c=None):
             return a + b + (c or 0)
@@ -381,14 +389,15 @@ class TestEventClass:
     @pytest.mark.asyncio
     async def test_event_invocation(self):
         """Test that Event can be invoked."""
+
         def test_function(a, b):
             return {"result": a + b}  # Return dict to satisfy validation
 
         event = Event(test_function, (3, 4), {}, event_type="test")
-        
+
         # Invoke the event
         await event.invoke()
-        
+
         # Check that execution completed
         assert event.execution.status == ExecutionStatus.COMPLETED
         assert event.execution.response == {"result": 7}

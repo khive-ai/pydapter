@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field as PydanticField, field_validator
+from pydantic import BaseModel, ConfigDict
+from pydantic import Field as PydanticField
+from pydantic import field_validator
 
 from pydapter.exceptions import ValidationError
 from pydapter.fields.params import validate_model_to_params
