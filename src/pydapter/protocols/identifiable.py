@@ -11,7 +11,7 @@ class Identifiable(Protocol):
     id: UUID
 
 
-class IdentifiableMixin(Identifiable):
+class IdentifiableMixin:
     """Base class for objects with a unique identifier"""
 
     @field_serializer("id")

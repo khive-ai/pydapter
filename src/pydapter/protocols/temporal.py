@@ -15,7 +15,7 @@ class Temporal(Protocol):
     updated_at: datetime
 
 
-class TemporalMixin(Temporal):
+class TemporalMixin:
     def update_timestamp(self) -> None:
         """Update the last updated timestamp to the current time."""
         self.updated_at = datetime.now(timezone.utc)

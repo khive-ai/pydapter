@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field as PydanticField, field_validator
 
 from pydapter.exceptions import ValidationError
 from pydapter.fields.params import validate_model_to_params
@@ -31,8 +31,8 @@ class Execution(BaseModel):
     response: dict | None = None
     status: ExecutionStatus = ExecutionStatus.PENDING
     error: str | None = None
-    response_obj: Any = Field(None, exclude=True)
-    updated_at: datetime | None = Field(
+    response_obj: Any = PydanticField(None, exclude=True)
+    updated_at: datetime | None = PydanticField(
         default_factory=lambda: datetime.now(tz=timezone.utc),
         exclude=True,
     )

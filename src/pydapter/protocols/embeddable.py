@@ -11,7 +11,7 @@ class Embeddable(Protocol):
     embedding: Embedding
 
 
-class EmbeddableMixin(Embeddable):
+class EmbeddableMixin:
     """Mixin class for embedding functionality."""
 
     @property

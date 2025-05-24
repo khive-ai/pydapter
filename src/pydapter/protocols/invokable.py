@@ -22,7 +22,7 @@ class Invokable(Protocol):
     _handler_kwargs: dict[str, Any]
 
 
-class InvokableMixin(Invokable):
+class InvokableMixin:
     """An executable can be invoked with a request"""
 
     _handler: Callable | None = PrivateAttr(None)

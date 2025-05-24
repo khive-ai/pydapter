@@ -7,12 +7,12 @@ import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
-from protocols.errors import ValidationException
-from protocols.fields.dts import DATETIME, validate_datetime
-from protocols.fields.embedding import EMBEDDING, validate_embedding
-from protocols.fields.ids import ID_FROZEN, ID_MUTABLE, ID_NULLABLE, validate_uuid
-from protocols.fields.params import PARAMS, validate_model_to_params
-from protocols.types import Field, Undefined, create_model
+from pydapter.exceptions import ValidationError as ValidationException
+from pydapter.fields.dts import DATETIME, validate_datetime
+from pydapter.fields.embedding import EMBEDDING, validate_embedding
+from pydapter.fields.ids import ID_FROZEN, ID_MUTABLE, ID_NULLABLE, validate_uuid
+from pydapter.fields.params import PARAMS, validate_model_to_params
+from pydapter.fields.types import Field, Undefined, create_model
 
 # ============================================
 # Test Undefined Singleton
@@ -24,7 +24,7 @@ class TestUndefinedType:
 
     def test_undefined_is_singleton(self):
         """Undefined should always be the same instance"""
-        from protocols.types import Undefined as Undefined2
+        from pydapter.fields.types import Undefined as Undefined2
 
         assert Undefined is Undefined2
         assert id(Undefined) == id(Undefined2)
@@ -302,7 +302,7 @@ class TestDateTimeFields:
 
     def test_datetime_serializer(self):
         """Test datetime serialization"""
-        from protocols.fields.dts import datetime_serializer
+        from pydapter.fields.dts import datetime_serializer
 
         dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)
         serialized = datetime_serializer(dt)

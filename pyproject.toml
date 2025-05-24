@@ -1,41 +1,70 @@
 [project]
 name            = "pydapter"
-version         = "0.1.9"
+version         = "0.2.0"
 description     = "Tiny trait + adapter toolkit for pydantic models"
 readme          = "README.md"
 requires-python = ">=3.10"
 authors         = [{ name = "HaiyangLi", email = "quantocean.li@gmail.com" }]
 dependencies = [
-    "fastmcp>=2.5.0",
     "pydantic>=2.6",
     "toml>=0.10.0",
 ]
 
 [dependency-groups]
 dev = [
-    "black[jupyter]>=25.1.0",
-    "ipykernel>=6.29.5",
-    "ipywidgets>=8.1.6",
-    "isort>=6.0.1",
-    "pytest>=8.3.5",
-    "pytest-asyncio>=0.26.0",
-    "pytest-cov>=4.1.0",
-    "pytest-benchmark>=4.0.0",
-    "pytest-mock>=3.14.0",
-    "testcontainers[mongodb,postgres,qdrant, weaviate]>=3.7.0",
-    "pre-commit>=4.2.0",
-    "ruff>=0.11.7",
-    "hypothesis>=6.131.9",
     # Documentation
     "mkdocs>=1.5.0",
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.24.0",
     "pymdown-extensions>=10.7.0",
     "mkdocs-autorefs>=0.5.0",
-    "khive>=0.2.10",
-    "mypy>=1.15.0",
     "types-toml>=0.10.8",
     "pandas-stubs>=2.2.3",
+
+    # linting
+    "black>=25.1.0",
+    "isort>=6.0.1",
+    "pre-commit>=4.2.0",
+    "ruff>=0.11.11",
+    "bandit>=1.7.5",
+    "mypy>=1.5.0",
+    "khive>=0.3.3",
+
+    # pytest
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-benchmark>=5.0.0",
+    "pytest-timeout>=2.1.0",
+    "pytest-mock>=3.11.0",
+    "pytest-xdist>=3.3.0",  # Parallel test execution
+    "pytest-watch>=4.2.0",  # Watch mode
+
+    # test container
+    "testcontainers[mongodb,postgres,qdrant, weaviate]>=3.7.0",
+
+    # property based testing
+    "hypothesis>=6.131.25",
+    "hypothesis-jsonschema>=0.23.0",
+
+    # Mutation testing
+    "mutmut>=3.3.0",
+
+    # Performance profiling
+    "py-spy>=0.3.14",
+    "memory-profiler>=0.61.0",
+
+    # Test data generation
+    "faker>=37.3.0",
+    "factory-boy>=3.3.0",
+
+    # Async testing utilities
+    "anyio>=4.9.0",
+    "trio>=0.22.0",
+
+    # Additional utilities
+    "python-dotenv>=1.1.0",
+    "colorama>=0.4.6",  # Colored test output
 ]
 
 [project.optional-dependencies]

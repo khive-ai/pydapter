@@ -9,7 +9,7 @@ import uuid
 import pytest
 from pydantic import BaseModel
 
-from pydapter.protocols.embedable import Embedable
+from pydapter.protocols.embeddable import Embeddable
 from pydapter.protocols.event import Event
 from pydapter.protocols.identifiable import Identifiable
 from pydapter.protocols.invokable import ExecutionStatus, Invokable

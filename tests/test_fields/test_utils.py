@@ -6,9 +6,9 @@ from typing import Any
 from uuid import UUID
 
 import pytest
-from protocols.fields.dts import DATETIME
-from protocols.fields.ids import ID_FROZEN
-from protocols.types import Field, create_model
+from pydapter.fields.dts import DATETIME
+from pydapter.fields.ids import ID_FROZEN
+from pydapter.fields.types import Field, create_model
 from pydantic import BaseModel
 
 # ============================================

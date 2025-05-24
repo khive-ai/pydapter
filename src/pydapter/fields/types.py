@@ -168,10 +168,22 @@ class Field:
         annotation = str(self.annotation).lower().strip()
         if "none" in annotation or "optional" in annotation:
             return self.copy()
+        
+        # If the field has a validator, wrap it to handle None values
+        new_validator = Undefined
+        if self.validator is not Undefined:
+            original_validator = self.validator
+            def nullable_validator(cls, v):
+                if v is None:
+                    return v
+                return original_validator(cls, v)
+            new_validator = nullable_validator
+        
         return self.copy(
             annotation=self.annotation | None,
             default=None,
             default_factory=Undefined,
+            validator=new_validator,
         )
 
     def as_listable(self, strict: bool = False) -> Field:
@@ -184,7 +196,23 @@ class Field:
         annotation = (
             list[self.annotation] if strict else list[self.annotation] | self.annotation
         )
-        return self.copy(annotation=annotation)
+        
+        # If the field has a validator, wrap it to handle lists
+        new_validator = Undefined
+        if self.validator is not Undefined:
+            original_validator = self.validator
+            def listable_validator(cls, v):
+                if isinstance(v, list):
+                    # Validate each item in the list
+                    return [original_validator(cls, item) for item in v]
+                else:
+                    # Single value - validate directly (only if not strict)
+                    if strict:
+                        raise ValueError("Expected a list")
+                    return original_validator(cls, v)
+            new_validator = listable_validator
+        
+        return self.copy(annotation=annotation, validator=new_validator)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self, "immutable") and self.immutable:
@@ -216,26 +244,30 @@ def create_model(
             details={"model_name": model_name},
         )
 
+    if fields is None:
+        fields = []
+
     use_fields = {field.name: (field.annotation, field.field_info) for field in fields}
 
-    # Create the base model first
-    model: type[BaseModel] = create_pydantic_model(
-        model_name,
-        __config__=config,
-        __doc__=doc,
-        __base__=base,
-        **use_fields,
-    )
-
-    # Add field validators to the model
+    # Collect validators for fields that have them
+    validators = {}
     for field in fields:
         if field.validator is not Undefined:
             kwargs = (
                 {} if field.validator_kwargs is Undefined else field.validator_kwargs
             )
             validator_name = f"validate_{field.name}"
-            validator_func = field_validator(field.name, **kwargs)(field.validator)
-            setattr(model, validator_name, validator_func)
+            validators[validator_name] = field_validator(field.name, **kwargs)(field.validator)
+
+    # Create the base model with validators included
+    model: type[BaseModel] = create_pydantic_model(
+        model_name,
+        __config__=config,
+        __doc__=doc,
+        __base__=base,
+        __validators__=validators,
+        **use_fields,
+    )
 
     if frozen:
         model.model_config = getattr(model, "model_config", {})
