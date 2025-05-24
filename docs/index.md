@@ -3,7 +3,6 @@
 [![PyPI version](https://badge.fury.io/py/pydapter.svg)](https://badge.fury.io/py/pydapter)
 [![Python Versions](https://img.shields.io/pypi/pyversions/pydapter.svg)](https://pypi.org/project/pydapter/)
 [![License](https://img.shields.io/github/license/agenticsorg/pydapter.svg)](https://github.com/agenticsorg/pydapter/blob/main/LICENSE)
-[![Tests](https://github.com/agenticsorg/pydapter/actions/workflows/tests.yml/badge.svg)](https://github.com/agenticsorg/pydapter/actions/workflows/tests.yml)
 
 **pydapter** is a tiny trait + adapter toolkit for pydantic models.
 
