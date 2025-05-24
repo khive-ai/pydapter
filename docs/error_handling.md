@@ -10,7 +10,7 @@ All pydapter exceptions inherit from the base `AdapterError` class, which
 provides context-rich error messages and a consistent interface for error
 handling.
 
-```
+```text
 AdapterError
 ├── ValidationError
 ├── ParseError

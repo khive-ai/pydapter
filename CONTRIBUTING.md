@@ -7,11 +7,14 @@ guidelines and instructions for contributing to the project.
 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
+
    ```bash
    git clone https://github.com/your-username/pydapter.git
    cd pydapter
    ```
+
 3. Set up a development environment:
+
    ```bash
    # Using uv (recommended)
    uv pip install -e ".[dev,all]"
@@ -19,7 +22,9 @@ guidelines and instructions for contributing to the project.
    # Or using pip
    pip install -e ".[dev,all]"
    ```
+
 4. Install pre-commit hooks:
+
    ```bash
    pre-commit install
    ```
@@ -27,6 +32,7 @@ guidelines and instructions for contributing to the project.
 ## Development Workflow
 
 1. Create a new branch for your feature or bugfix:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -34,16 +40,19 @@ guidelines and instructions for contributing to the project.
 2. Make your changes, following the project's coding standards
 
 3. Run the CI script locally to ensure all tests pass:
+
    ```bash
    python scripts/ci.py
    ```
 
 4. Commit your changes using conventional commit messages:
+
    ```bash
    git commit -m "feat: add new feature"
    ```
 
 5. Push your branch to your fork:
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -137,8 +146,10 @@ The project uses automated validation tools:
 
 When contributing documentation:
 
-1. **API Reference**: Follow the pattern established in `docs/api/protocols.md` and `docs/api/core.md`
-2. **Manual Enhancement**: Add examples, best practices, and cross-references beyond basic API extraction
+1. **API Reference**: Follow the pattern established in `docs/api/protocols.md` and
+   `docs/api/core.md`
+2. **Manual Enhancement**: Add examples, best practices, and cross-references beyond
+   basic API extraction
 3. **User Personas**: Consider different user needs (new users, API users, contributors)
 4. **Code Examples**: Provide complete, runnable examples
 5. **Navigation**: Ensure proper cross-linking between related sections

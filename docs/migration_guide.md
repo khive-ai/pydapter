@@ -106,8 +106,9 @@ For a transitional period, the modules in the `dev/` directory will continue to
 work by re-exporting from the new locations. However, you will see deprecation
 warnings:
 
-```
-DeprecationWarning: Importing from dev.protocols is deprecated and will be removed in a future version. Please use pydapter.protocols instead.
+```text
+DeprecationWarning: Importing from dev.protocols is deprecated and will be
+removed in a future version. Please use pydapter.protocols instead.
 ```
 
 It's recommended to update your import statements as soon as possible to avoid
@@ -118,8 +119,9 @@ issues when the backward compatibility is removed in a future version.
 If you try to import from the new modules without installing the required
 dependencies, you'll get a clear error message:
 
-```
-ImportError: The 'protocols' feature requires the 'typing_extensions' package. Install it with: pip install pydapter[protocols]
+```text
+ImportError: The 'protocols' feature requires the 'typing_extensions' package.
+Install it with: pip install pydapter[protocols]
 ```
 
 This helps guide you to install the correct dependencies.

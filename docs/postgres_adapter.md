@@ -33,7 +33,9 @@ installation or a Docker container:
 
 ```bash
 # Using Docker to run PostgreSQL
-docker run --name pydapter-postgres -e POSTGRES_PASSWORD=password -e POSTGRES_USER=pydapter -e POSTGRES_DB=pydapter_demo -p 5432:5432 -d postgres:14
+docker run --name pydapter-postgres -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_USER=pydapter -e POSTGRES_DB=pydapter_demo \
+  -p 5432:5432 -d postgres:14
 
 # Alternatively, install PostgreSQL locally and create a database
 # createuser -s pydapter

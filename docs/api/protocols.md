@@ -14,7 +14,7 @@ pip install pydapter
 Protocols in pydapter are **independent, composable interfaces** that can be
 mixed and matched:
 
-```
+```text
 Independent Protocols:
 ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
 │   Identifiable  │  │    Temporal     │  │   Embeddable    │

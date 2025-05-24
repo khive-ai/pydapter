@@ -219,7 +219,7 @@ revision = AlembicAdapter.create_migration(
 )
 ```
 
-2. Edit the generated script in the `migrations/versions/` directory:
+1. Edit the generated script in the `migrations/versions/` directory:
 
 ```python
 """Custom data migration
@@ -400,16 +400,20 @@ class CustomDatabaseAdapter(SyncMigrationAdapter):
 ### Common Issues
 
 1. **Missing dependencies**:
-   ```
+
+   ```text
    ImportError: The 'migrations-sql' feature requires the 'sqlalchemy' package.
    ```
+
    Solution: Install the required dependencies with
    `pip install pydapter[migrations-sql]`
 
 2. **Alembic command not found**:
-   ```
+
+   ```text
    ModuleNotFoundError: No module named 'alembic'
    ```
+
    Solution: Install Alembic with `pip install alembic`
 
 3. **Autogeneration not detecting changes**: Solution: Ensure your models are

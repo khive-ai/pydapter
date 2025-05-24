@@ -19,7 +19,7 @@ This will install the required dependencies, including SQLAlchemy and Alembic.
 
 First, let's create a basic project structure:
 
-```
+```text
 user_management/
 ├── migrations/        # Will be created by the migration tool
 ├── models.py          # SQLAlchemy models

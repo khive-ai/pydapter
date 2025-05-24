@@ -23,7 +23,7 @@ pip install "pydapter[migrations]"
 The migrations module provides a framework for managing database schema changes,
 following the adapter pattern:
 
-```
+```text
 MigrationProtocol
        │
        ▼

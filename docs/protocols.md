@@ -179,7 +179,7 @@ print(f"Status: {log_event.execution.status}")
 
 The protocols follow a hierarchical structure:
 
-```
+```text
 Identifiable
     │
     ├── Temporal
@@ -266,7 +266,7 @@ process_identifiables([User(name="John"), Document(title="Sample")])
 If you try to import protocols without the required dependencies, you'll get a
 clear error message:
 
-```
+```text
 ImportError: The 'protocols' feature requires the 'typing_extensions' package. Install it with: pip install pydapter[protocols]
 ```
 
