@@ -1,6 +1,8 @@
 # Fields API Reference
 
-The `pydapter.fields` module provides a robust system for defining and managing data fields with enhanced validation, type transformation, and protocol integration.
+The `pydapter.fields` module provides a robust system for defining and managing
+data fields with enhanced validation, type transformation, and protocol
+integration.
 
 ## Installation
 
@@ -24,9 +26,11 @@ The fields module extends Pydantic's field system with additional features:
 
 **Module:** `pydapter.fields.types`
 
-Enhanced field descriptor that provides advanced functionality over Pydantic's standard fields.
+Enhanced field descriptor that provides advanced functionality over Pydantic's
+standard fields.
 
 **Constructor:**
+
 ```python
 class Field:
     def __init__(
@@ -49,6 +53,7 @@ class Field:
 ```
 
 **Key Methods:**
+
 - `copy(**kwargs)`: Create a copy with updated values
 - `as_nullable()`: Create nullable variant with None default
 - `as_listable(strict=False)`: Create list variant
@@ -56,6 +61,7 @@ class Field:
 - `field_validator` property: Returns validator dictionary
 
 **Basic Usage:**
+
 ```python
 from pydapter.fields import Field
 
@@ -74,6 +80,7 @@ name_list = name_field.as_listable()
 ```
 
 **Advanced Usage:**
+
 ```python
 # Custom email field with validation
 email_field = Field(
@@ -105,7 +112,7 @@ Sentinel type for undefined values in field definitions.
 class UndefinedType:
     def __bool__(self) -> Literal[False]:
         return False
-    
+
     def __repr__(self) -> Literal["UNDEFINED"]:
         return "UNDEFINED"
 
@@ -113,6 +120,7 @@ Undefined = UndefinedType()  # Singleton instance
 ```
 
 **Usage:**
+
 ```python
 from pydapter.fields.types import Undefined
 
@@ -128,7 +136,9 @@ if field.default is not Undefined:
 **Module:** `pydapter.fields.ids`
 
 #### ID_FROZEN
+
 Immutable UUID field for entity identification.
+
 ```python
 ID_FROZEN = Field(
     name="id",
@@ -141,10 +151,12 @@ ID_FROZEN = Field(
 ```
 
 #### ID_MUTABLE
+
 Mutable UUID field that can be updated.
+
 ```python
 ID_MUTABLE = Field(
-    name="id", 
+    name="id",
     annotation=UUID,
     default_factory=uuid4,
     validator=validate_uuid
@@ -152,7 +164,9 @@ ID_MUTABLE = Field(
 ```
 
 #### ID_NULLABLE
+
 Optional UUID field that can be None.
+
 ```python
 ID_NULLABLE = Field(
     name="id",
@@ -163,6 +177,7 @@ ID_NULLABLE = Field(
 ```
 
 **Usage:**
+
 ```python
 from pydapter.fields import ID_FROZEN, create_model
 
@@ -181,7 +196,9 @@ User = create_model(
 **Module:** `pydapter.fields.dts`
 
 #### DATETIME
+
 Standard datetime field with UTC timezone.
+
 ```python
 DATETIME = Field(
     name="timestamp",
@@ -193,12 +210,15 @@ DATETIME = Field(
 ```
 
 #### DATETIME_NULLABLE
+
 Optional datetime field.
+
 ```python
 DATETIME_NULLABLE = DATETIME.as_nullable()
 ```
 
 **Validation Function:**
+
 ```python
 def validate_datetime(cls, v) -> datetime:
     """Validates and ensures timezone-aware datetime"""
@@ -210,12 +230,13 @@ def validate_datetime(cls, v) -> datetime:
 ```
 
 **Usage:**
+
 ```python
 from pydapter.fields import DATETIME, DATETIME_NULLABLE
 
 # In model creation
 Article = create_model(
-    "Article", 
+    "Article",
     fields=[
         DATETIME.copy(name="created_at"),
         DATETIME_NULLABLE.copy(name="published_at")
@@ -228,7 +249,9 @@ Article = create_model(
 **Module:** `pydapter.fields.embedding`
 
 #### EMBEDDING
+
 Vector embedding field for AI/ML applications.
+
 ```python
 EMBEDDING = Field(
     name="embedding",
@@ -241,6 +264,7 @@ EMBEDDING = Field(
 ```
 
 **Validation Function:**
+
 ```python
 def validate_embedding(cls, v) -> list[float] | None:
     """Validates embedding vectors"""
@@ -254,6 +278,7 @@ def validate_embedding(cls, v) -> list[float] | None:
 ```
 
 **Usage:**
+
 ```python
 from pydapter.fields import EMBEDDING
 
@@ -272,7 +297,9 @@ Document = create_model(
 **Module:** `pydapter.fields.execution`
 
 #### EXECUTION
+
 Execution state tracking field.
+
 ```python
 EXECUTION = Field(
     name="execution",
@@ -285,6 +312,7 @@ EXECUTION = Field(
 ```
 
 **Execution Model:**
+
 ```python
 class ExecutionStatus(str, Enum):
     PENDING = "pending"
@@ -305,6 +333,7 @@ class Execution(BaseModel):
 ```
 
 **Usage:**
+
 ```python
 from pydapter.fields import EXECUTION
 from pydapter.fields.execution import ExecutionStatus
@@ -327,7 +356,9 @@ task.execution.status = ExecutionStatus.PROCESSING
 **Module:** `pydapter.fields.params`
 
 #### PARAMS
+
 General parameter dictionary field.
+
 ```python
 PARAMS = Field(
     name="params",
@@ -340,7 +371,9 @@ PARAMS = Field(
 ```
 
 #### PARAM_TYPE
+
 Parameter type field.
+
 ```python
 PARAM_TYPE = Field(
     name="param_type",
@@ -351,12 +384,15 @@ PARAM_TYPE = Field(
 ```
 
 #### PARAM_TYPE_NULLABLE
+
 Optional parameter type field.
+
 ```python
 PARAM_TYPE_NULLABLE = PARAM_TYPE.as_nullable()
 ```
 
 **Validation Functions:**
+
 ```python
 def validate_model_to_params(v) -> dict:
     """Converts models to parameter dictionaries"""
@@ -383,11 +419,12 @@ def validate_model_to_type(v) -> type:
 ```python
 # Basic type aliases
 ID = UUID                    # Unique identifier type
-Embedding = list[float]      # Vector embedding type  
+Embedding = list[float]      # Vector embedding type
 Metadata = dict             # General metadata type
 ```
 
 **Usage:**
+
 ```python
 from pydapter.fields.types import ID, Embedding, Metadata
 
@@ -409,6 +446,7 @@ class Document(BaseModel):
 Enhanced model creation that integrates with the Field system.
 
 **Signature:**
+
 ```python
 def create_model(
     model_name: str,
@@ -421,6 +459,7 @@ def create_model(
 ```
 
 **Usage:**
+
 ```python
 from pydapter.fields import Field, create_model, ID_FROZEN, DATETIME
 
@@ -445,6 +484,7 @@ user = User(name="John Doe", email="john@example.com")
 ```
 
 **Advanced Usage:**
+
 ```python
 # With base class
 class BaseEntity(BaseModel):
@@ -519,7 +559,7 @@ def create_email_field(name: str, required: bool = True) -> Field:
         if "@" not in v or "." not in v:
             raise ValueError("Invalid email format")
         return v.lower().strip()
-    
+
     return Field(
         name=name,
         annotation=str if required else str | None,
@@ -589,7 +629,7 @@ def create_range_field(name: str, min_val: int, max_val: int) -> Field:
         if not min_val <= v <= max_val:
             raise ValueError(f"Value must be between {min_val} and {max_val}")
         return v
-    
+
     return Field(
         name=name,
         annotation=int,
@@ -601,7 +641,7 @@ def create_range_field(name: str, min_val: int, max_val: int) -> Field:
 def create_normalized_string_field(name: str) -> Field:
     def normalize_string(cls, v):
         return v.strip().lower() if v else v
-    
+
     return Field(
         name=name,
         annotation=str,
@@ -614,7 +654,7 @@ def create_validated_list_field(name: str, item_validator: callable) -> Field:
         if not isinstance(v, list):
             raise ValueError("Value must be a list")
         return [item_validator(cls, item) for item in v]
-    
+
     return Field(
         name=name,
         annotation=list,
@@ -626,7 +666,8 @@ def create_validated_list_field(name: str, item_validator: callable) -> Field:
 
 ### Field Design
 
-1. **Use Pre-defined Fields**: Leverage existing field definitions for consistency
+1. **Use Pre-defined Fields**: Leverage existing field definitions for
+   consistency
 2. **Immutability**: Use `immutable=True` for fields that shouldn't change
 3. **Validation**: Always include appropriate validators for data integrity
 4. **Documentation**: Provide clear titles and descriptions
@@ -663,4 +704,5 @@ When upgrading from previous versions:
 4. **Type Annotations**: Add proper type hints
 5. **Protocol Integration**: Leverage pre-defined fields for protocols
 
-For detailed migration instructions, see the [Migration Guide](../migration_guide.md#fields-system).
+For detailed migration instructions, see the
+[Migration Guide](../migration_guide.md#fields-system).

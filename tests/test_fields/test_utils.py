@@ -6,10 +6,11 @@ from typing import Any
 from uuid import UUID
 
 import pytest
+from pydantic import BaseModel
+
 from pydapter.fields.dts import DATETIME
 from pydapter.fields.ids import ID_FROZEN
 from pydapter.fields.types import Field, create_model
-from pydantic import BaseModel
 
 # ============================================
 # Test Fixtures

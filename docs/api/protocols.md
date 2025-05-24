@@ -1,6 +1,7 @@
 # Protocols API Reference
 
-The `pydapter.protocols` module provides independent, composable interfaces for models with specialized functionality.
+The `pydapter.protocols` module provides independent, composable interfaces for
+models with specialized functionality.
 
 ## Installation
 
@@ -10,7 +11,8 @@ pip install pydapter
 
 ## Overview
 
-Protocols in pydapter are **independent, composable interfaces** that can be mixed and matched:
+Protocols in pydapter are **independent, composable interfaces** that can be
+mixed and matched:
 
 ```
 Independent Protocols:
@@ -29,7 +31,8 @@ Independent Protocols:
 Event = Identifiable + Temporal + Embeddable + Invokable
 ```
 
-Each protocol defines specific fields and can be used independently or combined through multiple inheritance.
+Each protocol defines specific fields and can be used independently or combined
+through multiple inheritance.
 
 ## Core Protocols
 
@@ -40,6 +43,7 @@ Each protocol defines specific fields and can be used independently or combined 
 Provides unique identification using UUID.
 
 **Protocol Interface:**
+
 ```python
 @runtime_checkable
 class Identifiable(Protocol):
@@ -47,10 +51,12 @@ class Identifiable(Protocol):
 ```
 
 **Mixin Class:** `IdentifiableMixin`
+
 - Provides UUID serialization to string
 - Implements `__hash__` based on ID
 
 **Usage:**
+
 ```python
 from pydapter.protocols.identifiable import IdentifiableMixin
 from pydantic import BaseModel
@@ -70,6 +76,7 @@ print(user.id)  # UUID field must be provided or use field defaults
 Adds timestamp tracking capabilities.
 
 **Protocol Interface:**
+
 ```python
 @runtime_checkable
 class Temporal(Protocol):
@@ -78,10 +85,12 @@ class Temporal(Protocol):
 ```
 
 **Mixin Class:** `TemporalMixin`
+
 - `update_timestamp()`: Updates `updated_at` to current UTC time
 - Provides datetime serialization to ISO format
 
 **Usage:**
+
 ```python
 from pydapter.protocols.temporal import TemporalMixin
 from pydantic import BaseModel
@@ -101,6 +110,7 @@ article.update_timestamp()  # Updates updated_at field
 Provides content and vector embedding support.
 
 **Protocol Interface:**
+
 ```python
 @runtime_checkable
 class Embeddable(Protocol):
@@ -109,10 +119,12 @@ class Embeddable(Protocol):
 ```
 
 **Mixin Class:** `EmbeddableMixin`
+
 - `n_dim` property: Returns embedding dimensions
 - `parse_embedding_response()`: Parses various embedding API response formats
 
 **Usage:**
+
 ```python
 from pydapter.protocols.embeddable import EmbeddableMixin
 from pydantic import BaseModel
@@ -133,6 +145,7 @@ print(doc.n_dim)  # Returns embedding length
 Enables asynchronous execution with state tracking.
 
 **Protocol Interface:**
+
 ```python
 @runtime_checkable
 class Invokable(Protocol):
@@ -144,11 +157,13 @@ class Invokable(Protocol):
 ```
 
 **Mixin Class:** `InvokableMixin`
+
 - `invoke()`: Executes the handler and tracks execution state
 - `has_invoked` property: Returns True if execution completed or failed
 - Private attributes for handler management
 
 **Usage:**
+
 ```python
 from pydapter.protocols.invokable import InvokableMixin
 from pydapter.fields.execution import Execution
@@ -177,6 +192,7 @@ print(task.execution.status)  # ExecutionStatus.COMPLETED
 Provides content hashing capabilities.
 
 **Protocol Interface:**
+
 ```python
 @runtime_checkable
 class Cryptographical(Protocol):
@@ -185,9 +201,11 @@ class Cryptographical(Protocol):
 ```
 
 **Mixin Class:** `CryptographicalMixin`
+
 - `hash_content()`: Generates SHA-256 hash of content
 
 **Usage:**
+
 ```python
 from pydapter.protocols.cryptographical import CryptographicalMixin
 from pydantic import BaseModel
@@ -207,18 +225,21 @@ print(data.sha256)  # SHA-256 hash of content
 
 **Module:** `pydapter.protocols.event`
 
-The Event class combines multiple protocols into a comprehensive event tracking system.
+The Event class combines multiple protocols into a comprehensive event tracking
+system.
 
 **Inheritance:**
+
 ```python
 class Event(_BaseEvent, IdentifiableMixin, InvokableMixin, TemporalMixin, EmbeddableMixin):
     # Combines all major protocols
 ```
 
 **Event Fields (from BASE_EVENT_FIELDS):**
+
 - `id`: Unique identifier (UUID, frozen)
 - `created_at`: Creation timestamp
-- `updated_at`: Last update timestamp  
+- `updated_at`: Last update timestamp
 - `embedding`: Vector representation
 - `execution`: Execution state tracking
 - `request`: Request parameters (dict)
@@ -226,6 +247,7 @@ class Event(_BaseEvent, IdentifiableMixin, InvokableMixin, TemporalMixin, Embedd
 - `event_type`: Event classification (str | None)
 
 **Constructor:**
+
 ```python
 def __init__(
     self,
@@ -237,6 +259,7 @@ def __init__(
 ```
 
 **Usage:**
+
 ```python
 from pydapter.protocols.event import Event
 
@@ -262,6 +285,7 @@ print(event.execution.status)  # ExecutionStatus.COMPLETED
 Transforms functions into event-tracked operations.
 
 **Signature:**
+
 ```python
 def as_event(
     *,
@@ -278,6 +302,7 @@ def as_event(
 ```
 
 **Basic Usage:**
+
 ```python
 from pydapter.protocols.event import as_event
 
@@ -291,6 +316,7 @@ print(event.event_type)  # "api_call"
 ```
 
 **Advanced Usage with Embedding and Persistence:**
+
 ```python
 from pydapter.protocols.event import as_event
 from pydapter.extras import AsyncPostgresAdapter
@@ -324,8 +350,8 @@ Protocols are designed to be composed through multiple inheritance:
 
 ```python
 from pydapter.protocols import (
-    IdentifiableMixin, 
-    TemporalMixin, 
+    IdentifiableMixin,
+    TemporalMixin,
     EmbeddableMixin,
     CryptographicalMixin
 )
@@ -366,7 +392,7 @@ class SimpleEvent(BaseModel, IdentifiableMixin, TemporalMixin):
     action: str
     user_id: str
 
-# Just embedding capability  
+# Just embedding capability
 class EmbeddedText(BaseModel, EmbeddableMixin):
     text: str
 
@@ -378,7 +404,8 @@ class ExecutableTask(BaseModel, InvokableMixin):
 
 ## Field Integration
 
-Protocols integrate with the `pydapter.fields` system through pre-defined field definitions:
+Protocols integrate with the `pydapter.fields` system through pre-defined field
+definitions:
 
 ```python
 from pydapter.protocols.event import BASE_EVENT_FIELDS
@@ -400,13 +427,15 @@ BASE_EVENT_FIELDS = [
 ### Protocol Selection
 
 1. **Use Minimal Sets**: Only include protocols you actually need
-2. **Composition Over Inheritance**: Prefer multiple protocol mixins over complex hierarchies
+2. **Composition Over Inheritance**: Prefer multiple protocol mixins over
+   complex hierarchies
 3. **Field Consistency**: Use standard field definitions from `pydapter.fields`
 
 ### Event Tracking
 
 1. **Strategic Decoration**: Use `@as_event` for important business operations
-2. **Content Management**: Implement robust content parsing for complex responses
+2. **Content Management**: Implement robust content parsing for complex
+   responses
 3. **Error Handling**: Handle execution failures gracefully
 4. **Performance**: Consider overhead for high-frequency operations
 
@@ -437,6 +466,8 @@ When upgrading from previous versions:
 1. **Protocol Independence**: Update code that assumed hierarchical inheritance
 2. **Field Integration**: Migrate to standardized field definitions
 3. **Event Composition**: Use Event class for comprehensive event tracking
-4. **Mixin Usage**: Prefer mixin classes over protocol interfaces for implementation
+4. **Mixin Usage**: Prefer mixin classes over protocol interfaces for
+   implementation
 
-For detailed migration instructions, see the [Migration Guide](../migration_guide.md#protocols-and-fields).
+For detailed migration instructions, see the
+[Migration Guide](../migration_guide.md#protocols-and-fields).

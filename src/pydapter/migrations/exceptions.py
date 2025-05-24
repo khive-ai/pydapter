@@ -13,8 +13,8 @@ class MigrationError(AdapterError):
     def __init__(
         self,
         message: str,
-        original_error: Exception = None,
-        adapter: str = None,
+        original_error: Optional[Exception] = None,
+        adapter: Optional[str] = None,
         **context: Any,
     ):
         super().__init__(message, **context)

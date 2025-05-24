@@ -2,7 +2,6 @@
 Basic types for protocols - maintained for backwards compatibility.
 """
 
-from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel
@@ -18,7 +17,12 @@ class Log(BaseModel):
     content: str | None = None
     embedding: Embedding | None = None
     metadata: dict[str, Any] | None = None
-    created_at: datetime | None = None
+    created_at: str | None = None  # ISO format string
+    updated_at: str | None = None  # ISO format string
+    duration: float | None = None
+    status: str | None = None
+    error: str | None = None
+    sha256: str | None = None
 
     class Config:
         arbitrary_types_allowed = True

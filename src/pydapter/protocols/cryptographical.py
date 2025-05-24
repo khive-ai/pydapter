@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+from typing import Protocol, Union, runtime_checkable
 
 from pydantic import JsonValue
 
@@ -18,7 +18,7 @@ class CryptographicalMixin(Cryptographical):
         self.sha256 = sha256_of_obj(self.content)
 
 
-def sha256_of_obj(obj: dict | str) -> str:
+def sha256_of_obj(obj: Union[dict, str, JsonValue]) -> str:
     """Deterministic SHA-256 of an arbitrary mapping."""
     import hashlib
 

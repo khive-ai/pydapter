@@ -335,7 +335,7 @@ datefmt = %H:%M:%S
                 raise
             raise MigrationError(
                 f"Failed to get current revision: {str(exc)}",
-                original_error=str(exc),
+                original_error=exc,
             ) from exc
 
     def get_migration_history(self, **kwargs) -> list[dict]:
@@ -379,7 +379,7 @@ datefmt = %H:%M:%S
                 raise
             raise MigrationError(
                 f"Failed to get migration history: {str(exc)}",
-                original_error=str(exc),
+                original_error=exc,
             ) from exc
 
 
