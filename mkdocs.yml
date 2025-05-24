@@ -83,6 +83,7 @@ nav:
       - Using Migrations: tutorials/using_migrations.md
   - API Reference:
       - Core: api/core.md
+      - Fields: api/fields.md
       - Adapters: api/adapters.md
       - Extras: api/extras.md
       - Protocols: api/protocols.md

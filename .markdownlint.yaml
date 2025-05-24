@@ -1,0 +1,32 @@
+# Markdownlint configuration for pydapter documentation
+# See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+
+# Default state for all rules
+default: true
+
+# Rule customizations
+MD003: # Header style
+  style: "atx"
+
+MD007: # Unordered list indentation
+  indent: 2
+
+MD013: # Line length
+  line_length: 88
+  heading_line_length: 100
+  code_block_line_length: 120
+  tables: false
+
+MD024: # Multiple headers with the same content
+  siblings_only: true
+
+MD033: # Inline HTML
+  allowed_elements: ["br", "sub", "sup", "kbd", "details", "summary"]
+
+MD041: # First line in file should be a top level header
+  front_matter_title: "^\\s*title\\s*[:=]"
+
+# Disable rules that conflict with our documentation style
+MD026: false  # Trailing punctuation in header
+MD034: false  # Bare URL used (we use bare URLs in some contexts)
+MD036: false  # Emphasis used instead of header (we use emphasis for API elements)

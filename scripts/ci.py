@@ -114,6 +114,7 @@ class CIRunner:
         "unit_tests": ["pytest", "pytest-cov"],
         "integration_tests": ["pytest", "pytest-cov"],
         "coverage": ["coverage"],
+        "docs": [],  # Uses external tools (markdownlint-cli, markdown-link-check)
     }
 
     # Define external dependencies that might be skipped
@@ -374,6 +375,83 @@ class CIRunner:
         step.complete(result, output)
         return result
 
+    def run_documentation_validation(self) -> StepResult:
+        """Run documentation validation checks."""
+        if self.args.skip_docs or (self.args.only and self.args.only != "docs"):
+            return StepResult.SKIPPED
+
+        step = self.add_step("docs_validation", "Documentation validation")
+        step.start()
+
+        # Check if documentation validation tools are available
+        markdownlint_available = self.check_external_tool("markdownlint")
+        link_check_available = self.check_external_tool("markdown-link-check")
+
+        if not markdownlint_available or not link_check_available:
+            missing_tools = []
+            if not markdownlint_available:
+                missing_tools.append("markdownlint-cli")
+            if not link_check_available:
+                missing_tools.append("markdown-link-check")
+
+            error_msg = (
+                f"Missing documentation validation tools: {', '.join(missing_tools)}\n"
+            )
+            error_msg += (
+                "Install with: npm install -g markdownlint-cli markdown-link-check"
+            )
+            step.complete(StepResult.FAILURE, error_msg)
+            return StepResult.FAILURE
+
+        # Run markdownlint
+        lint_exit_code, lint_output = self.run_command(
+            ["markdownlint", "docs/**/*.md"], check=False
+        )
+
+        # Run markdown-link-check on key files
+        link_check_files = [
+            "docs/api/core.md",
+            "docs/api/protocols.md",
+            "docs/api/fields.md",
+            "docs/getting_started.md",
+            "docs/index.md",
+        ]
+
+        link_check_exit_code = 0
+        link_check_output = ""
+
+        for file_path in link_check_files:
+            if (self.project_root / file_path).exists():
+                exit_code, output = self.run_command(
+                    [
+                        "markdown-link-check",
+                        file_path,
+                        "--config",
+                        ".markdownlinkcheck.json",
+                    ],
+                    check=False,
+                )
+                if exit_code != 0:
+                    link_check_exit_code = exit_code
+                    link_check_output += f"\n{file_path}:\n{output}"
+
+        # Combine results
+        combined_output = ""
+        if lint_exit_code != 0:
+            combined_output += f"Markdownlint errors:\n{lint_output}\n"
+        if link_check_exit_code != 0:
+            combined_output += f"Link check errors:\n{link_check_output}\n"
+
+        overall_success = lint_exit_code == 0 and link_check_exit_code == 0
+        result = StepResult.SUCCESS if overall_success else StepResult.FAILURE
+        step.complete(result, combined_output)
+        return result
+
+    def check_external_tool(self, tool_name: str) -> bool:
+        """Check if an external tool is available in PATH."""
+        exit_code, _ = self.run_command(["which", tool_name], check=False)
+        return exit_code == 0
+
     def run_all(self) -> bool:
         """Run all CI steps and return overall success status."""
         print(f"\n{Colors.BOLD}Running CI for pydapter{Colors.ENDC}")
@@ -395,6 +473,7 @@ class CIRunner:
         unit_test_result = self.run_unit_tests()
         integration_test_result = self.run_integration_tests()
         coverage_result = self.run_coverage_report()
+        docs_result = self.run_documentation_validation()
 
         # Collect results
         self.results = [
@@ -403,6 +482,7 @@ class CIRunner:
             ("Unit tests", unit_test_result),
             ("Integration tests", integration_test_result),
             ("Coverage", coverage_result),
+            ("Documentation", docs_result),
         ]
 
         # Print summary
@@ -450,6 +530,9 @@ def parse_args():
         "--skip-coverage", action="store_true", help="Skip coverage report"
     )
     parser.add_argument(
+        "--skip-docs", action="store_true", help="Skip documentation validation"
+    )
+    parser.add_argument(
         "--skip-external-deps",
         action="store_true",
         help="Skip tests that require external dependencies",
@@ -458,7 +541,7 @@ def parse_args():
     # Run only specific components
     parser.add_argument(
         "--only",
-        choices=["lint", "unit", "integration", "coverage"],
+        choices=["lint", "unit", "integration", "coverage", "docs"],
         help="Run only the specified component",
     )
 

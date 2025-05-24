@@ -60,6 +60,7 @@ The project uses a comprehensive CI system that runs:
 - Unit tests (using pytest)
 - Integration tests (using pytest)
 - Coverage reporting
+- Documentation validation (using markdownlint and markdown-link-check)
 
 You can run the CI script locally with various options:
 
@@ -70,8 +71,11 @@ python scripts/ci.py
 # Skip integration tests (which require Docker)
 python scripts/ci.py --skip-integration
 
+# Run only documentation validation
+python scripts/ci.py --only docs
+
 # Run only linting and formatting checks
-python scripts/ci.py --skip-unit --skip-integration --skip-type-check --skip-coverage
+python scripts/ci.py --skip-unit --skip-integration --skip-coverage --skip-docs
 
 # Run tests in parallel
 python scripts/ci.py --parallel 4
@@ -108,14 +112,63 @@ uv run pytest --cov=pydapter
 
 ## Documentation
 
-Documentation is written in Markdown and built with MkDocs. To preview the
-documentation locally:
+Documentation is written in Markdown and built with MkDocs using a hybrid approach
+that combines auto-generated API references with enhanced manual content.
+
+### Documentation Standards
+
+All documentation must follow these standards:
+
+1. **Markdown Quality**: All markdown files must pass `markdownlint` validation
+2. **Link Integrity**: All internal and external links must be valid
+3. **API Documentation**: Use the hybrid approach with enhanced manual content
+4. **Code Examples**: Include working code examples with proper syntax highlighting
+5. **Cross-References**: Link related concepts and maintain navigation consistency
+
+### Validation Tools
+
+The project uses automated validation tools:
+
+- **markdownlint**: Ensures consistent markdown formatting
+- **markdown-link-check**: Validates all links in documentation
+- **Pre-commit hooks**: Automatic validation before commits
+
+### Writing Documentation
+
+When contributing documentation:
+
+1. **API Reference**: Follow the pattern established in `docs/api/protocols.md` and `docs/api/core.md`
+2. **Manual Enhancement**: Add examples, best practices, and cross-references beyond basic API extraction
+3. **User Personas**: Consider different user needs (new users, API users, contributors)
+4. **Code Examples**: Provide complete, runnable examples
+5. **Navigation**: Ensure proper cross-linking between related sections
+
+### Documentation Workflow
 
 ```bash
+# Preview documentation locally
 uv run mkdocs serve
+
+# Validate documentation
+python scripts/ci.py --only docs
+
+# Check specific files
+markdownlint docs/**/*.md
+markdown-link-check docs/api/core.md --config .markdownlinkcheck.json
+
+# Fix common issues automatically (when possible)
+markdownlint --fix docs/**/*.md
 ```
 
-Then open http://127.0.0.1:8000/ in your browser.
+### Documentation Structure
+
+- `docs/api/`: API reference documentation (hybrid approach)
+- `docs/tutorials/`: Step-by-step guides
+- `docs/`: General guides and concepts
+- Examples should be complete and testable
+- Cross-references should use relative links
+
+Then open http://127.0.0.1:8000/ in your browser to preview changes.
 
 ## Pull Request Process
 
