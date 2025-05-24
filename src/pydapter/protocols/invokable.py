@@ -66,7 +66,7 @@ class InvokableMixin:
                 self.execution.status = ExecutionStatus.FAILED
                 logger.error(f"invoke() failed for event {str(self.id)[:6]}...")
             else:
-                self.response_obj = response
+                self.execution.response_obj = response
                 self.execution.response = validate_model_to_dict(response)
                 self.execution.status = ExecutionStatus.COMPLETED
             self.execution.updated_at = datetime.now(tz=timezone.utc)

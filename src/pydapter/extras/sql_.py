@@ -135,7 +135,7 @@ class SQLAdapter(Adapter[T]):
         table: str,
         many=True,
         **kw,
-    ) -> dict[str, Any]:  # type: ignore
+    ) -> dict[str, Any]:
         try:
             # Validate required parameters
             if not engine_url:
@@ -172,7 +172,7 @@ class SQLAdapter(Adapter[T]):
             if not items:
                 return {"success": True, "count": 0}  # Nothing to insert
 
-            rows = [i.model_dump() for i in items]  # type: ignore
+            rows = [i.model_dump() for i in items]
 
             # Execute insert or update (upsert)
             try:

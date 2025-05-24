@@ -40,8 +40,8 @@ BASE_EVENT_FIELDS = [
     ),
     Field(
         name="event_type",
-        annotation=str,
-        field_validator=lambda cls, x: cls.__name__,
+        annotation=str | None,
+        validator=lambda cls, x: cls.__name__,
         title="Event Type",
         description="Type of the event",
     ),

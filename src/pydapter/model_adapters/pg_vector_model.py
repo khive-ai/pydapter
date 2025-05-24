@@ -41,7 +41,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
                 extra = {"vector_dim": col.type.dim}
                 default_val = None if col.nullable else ...
                 fields[col.key] = (
-                    Annotated[py_type, Field(json_schema_extra=extra)],  # type: ignore[arg-type]
+                    Annotated[py_type, Field(json_schema_extra=extra)],
                     default_val,
                 )
             else:

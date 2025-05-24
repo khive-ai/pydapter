@@ -160,7 +160,7 @@ class SQLModelAdapter:
                     "nullable": is_nullable or not info.is_required(),
                 }
                 default = (
-                    info.default if info.default is not None else info.default_factory  # type: ignore[arg-type]
+                    info.default if info.default is not None else info.default_factory
                 )
                 if default is not None:
                     kwargs["default"] = default
@@ -185,9 +185,7 @@ class SQLModelAdapter:
             kwargs: dict[str, Any] = {
                 "nullable": is_nullable or not info.is_required(),
             }
-            default = (
-                info.default if info.default is not None else info.default_factory  # type: ignore[arg-type]
-            )
+            default = info.default if info.default is not None else info.default_factory
             if default is not None:
                 kwargs["default"] = default
 

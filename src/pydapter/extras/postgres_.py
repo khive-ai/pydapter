@@ -14,7 +14,7 @@ from .sql_ import SQLAdapter
 T = TypeVar("T", bound=BaseModel)
 
 
-class PostgresAdapter(SQLAdapter[T]):  # type: ignore[type-arg]
+class PostgresAdapter(SQLAdapter[T]):
     obj_key = "postgres"
     DEFAULT = "postgresql+psycopg://user:pass@localhost/db"
 
