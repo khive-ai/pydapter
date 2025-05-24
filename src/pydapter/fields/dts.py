@@ -5,7 +5,14 @@ from pydapter.exceptions import ValidationError
 from pydapter.fields.types import Field
 
 # Use timezone.utc for compatibility with Python < 3.11
-UTC = timezone.utc
+# Create a UTC timezone constant for consistent usage across the codebase
+try:
+    UTC = timezone.utc
+except AttributeError:
+    # Fallback for very old Python versions (shouldn't happen with 3.10+)
+    from datetime import timedelta
+
+    UTC = timezone(timedelta(0))
 
 __all__ = (
     "DATETIME",
