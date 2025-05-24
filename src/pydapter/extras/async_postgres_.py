@@ -14,7 +14,7 @@ from .async_sql_ import AsyncSQLAdapter
 T = TypeVar("T", bound=BaseModel)
 
 
-class AsyncPostgresAdapter(AsyncSQLAdapter[T]):  # type: ignore[type-arg]
+class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
     obj_key = "async_pg"
     DEFAULT = "postgresql+asyncpg://test:test@localhost/test"
 

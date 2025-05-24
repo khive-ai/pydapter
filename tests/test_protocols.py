@@ -9,7 +9,7 @@ import uuid
 import pytest
 from pydantic import BaseModel
 
-from pydapter.protocols.embedable import Embedable
+from pydapter.protocols.embeddable import Embeddable
 from pydapter.protocols.event import Event
 from pydapter.protocols.identifiable import Identifiable
 from pydapter.protocols.invokable import ExecutionStatus, Invokable
@@ -134,63 +134,63 @@ class TestTemporalProtocol:
         assert temporal.updated_at.isoformat() in serialized
 
 
-class TestEmbedableProtocol:
-    """Tests for the Embedable protocol."""
+class TestEmbeddableProtocol:
+    """Tests for the Embeddable protocol."""
 
-    def test_embedable_class_definition(self):
-        """Test that the Embedable class is defined correctly."""
+    def test_Embeddable_class_definition(self):
+        """Test that the Embeddable class is defined correctly."""
         # Check that the class is a subclass of BaseModel
-        assert issubclass(Embedable, BaseModel)
+        assert issubclass(Embeddable, BaseModel)
 
         # Create an instance to check for instance attributes
-        embedable = Embedable()
-        assert hasattr(embedable, "content")
-        assert hasattr(embedable, "embedding")
-        assert hasattr(embedable, "n_dim")
-        assert hasattr(embedable, "create_content")
+        embeddable = Embeddable()
+        assert hasattr(embeddable, "content")
+        assert hasattr(embeddable, "embedding")
+        assert hasattr(embeddable, "n_dim")
+        assert hasattr(embeddable, "create_content")
 
-    def test_embedable_initialization(self):
-        """Test initializing an Embedable object."""
-        # Create an embedable object with no embedding
-        embedable = Embedable()
+    def test_Embeddable_initialization(self):
+        """Test initializing an Embeddable object."""
+        # Create an Embeddable object with no embedding
+        Embeddable = Embeddable()
 
         # Check that the embedding is an empty list
-        assert embedable.embedding == []
-        assert embedable.n_dim == 0
+        assert Embeddable.embedding == []
+        assert Embeddable.n_dim == 0
 
-        # Create an embedable object with an embedding
+        # Create an Embeddable object with an embedding
         embedding = [0.1, 0.2, 0.3]
-        embedable = Embedable(embedding=embedding)
+        Embeddable = Embeddable(embedding=embedding)
 
         # Check that the embedding was set correctly
-        assert embedable.embedding == embedding
-        assert embedable.n_dim == 3
+        assert Embeddable.embedding == embedding
+        assert Embeddable.n_dim == 3
 
-    def test_embedable_with_content(self):
-        """Test an Embedable object with content."""
-        # Create an embedable object with content
+    def test_Embeddable_with_content(self):
+        """Test an Embeddable object with content."""
+        # Create an Embeddable object with content
         content = "This is some content"
-        embedable = Embedable(content=content)
+        embeddable = Embeddable(content=content)
 
         # Check that the content was set correctly
-        assert embedable.content == content
+        assert embeddable.content == content
 
         # Check that create_content returns the content
-        assert embedable.create_content() == content
+        assert embeddable.create_content() == content
 
-    def test_embedable_parse_embedding(self):
+    def test_Embeddable_parse_embedding(self):
         """Test parsing embeddings in different formats."""
         # Test with a JSON string
-        embedable = Embedable(embedding="[0.1, 0.2, 0.3]")
-        assert embedable.embedding == [0.1, 0.2, 0.3]
+        Embeddable = Embeddable(embedding="[0.1, 0.2, 0.3]")
+        assert Embeddable.embedding == [0.1, 0.2, 0.3]
 
         # Test with a list of floats
-        embedable = Embedable(embedding=[0.1, 0.2, 0.3])
-        assert embedable.embedding == [0.1, 0.2, 0.3]
+        Embeddable = Embeddable(embedding=[0.1, 0.2, 0.3])
+        assert Embeddable.embedding == [0.1, 0.2, 0.3]
 
         # Test with None
-        embedable = Embedable(embedding=None)
-        assert embedable.embedding == []
+        Embeddable = Embeddable(embedding=None)
+        assert Embeddable.embedding == []
 
 
 class TestInvokableProtocol:
@@ -290,7 +290,7 @@ class TestEventClass:
     def test_event_inheritance(self):
         """Test that Event inherits from the expected protocols."""
         assert issubclass(Event, Identifiable)
-        assert issubclass(Event, Embedable)
+        assert issubclass(Event, Embeddable)
         assert issubclass(Event, Invokable)
 
     def test_event_initialization(self):

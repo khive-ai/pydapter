@@ -43,7 +43,7 @@ class TestAsEventDecorator:
         assert event.execution.status == ExecutionStatus.COMPLETED
         assert event.execution.duration is not None
         assert event.execution.error is None
-        assert event.event_type is None  # Not set in basic usage
+        assert event.event_type == "Event"  # Set by validator to class name
 
     @pytest.mark.asyncio
     async def test_decorator_with_pydantic_model(self):

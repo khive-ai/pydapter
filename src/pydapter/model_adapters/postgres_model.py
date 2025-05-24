@@ -358,9 +358,7 @@ class PostgresModelAdapter(SQLModelAdapter):
             kwargs: dict[str, Any] = {
                 "nullable": is_nullable,
             }
-            default = (
-                info.default if info.default is not None else info.default_factory  # type: ignore[arg-type]
-            )
+            default = info.default if info.default is not None else info.default_factory
             if default is not None:
                 kwargs["default"] = default
 
