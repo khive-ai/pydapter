@@ -80,7 +80,7 @@ class Field:
         exclude: bool | UndefinedType = Undefined,
         frozen: bool | UndefinedType = Undefined,
         validator: Callable | UndefinedType = Undefined,
-        validator_kwargs: dict = Undefined,
+        validator_kwargs: dict[Any, Any] | UndefinedType = Undefined,
         alias: str | UndefinedType = Undefined,
         immutable: bool = False,
         **extra_info: Any,
@@ -134,7 +134,7 @@ class Field:
             "alias": self.alias,
             **self.extra_info,
         }
-        field_obj = PydanticField(
+        field_obj: FieldInfo = PydanticField(
             **{k: v for k, v in params.items() if v is not Undefined}
         )
         field_obj.annotation = self.annotation
@@ -144,7 +144,7 @@ class Field:
     def field_validator(self) -> dict[str, Callable] | None:
         if self.validator is Undefined:
             return None
-        kwargs = {} if self.validator_kwargs is Undefined else self.validator_kwargs
+        kwargs: dict[Any, Any] = {} if self.validator_kwargs is Undefined else self.validator_kwargs
         return {
             f"{self.name}_field_validator": field_validator(self.name, **kwargs)(
                 self.validator
@@ -226,10 +226,10 @@ class Field:
 
 def create_model(
     model_name: str,
-    config: dict[str, Any] = None,
-    doc: str = None,
-    base: type[BaseModel] = None,
-    fields: list[Field] = None,
+    config: dict[str, Any] | None = None,
+    doc: str | None = None,
+    base: type[BaseModel] | None = None,
+    fields: list[Field] | None = None,
     frozen: bool = False,
 ):
     """Create a new pydantic model basing on fields and base class.
