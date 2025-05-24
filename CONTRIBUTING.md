@@ -121,8 +121,9 @@ uv run pytest --cov=pydapter
 
 ## Documentation
 
-Documentation is written in Markdown and built with MkDocs using a hybrid approach
-that combines auto-generated API references with enhanced manual content.
+Documentation is written in Markdown and built with MkDocs using a hybrid
+approach that combines auto-generated API references with enhanced manual
+content.
 
 ### Documentation Standards
 
@@ -131,8 +132,10 @@ All documentation must follow these standards:
 1. **Markdown Quality**: All markdown files must pass `markdownlint` validation
 2. **Link Integrity**: All internal and external links must be valid
 3. **API Documentation**: Use the hybrid approach with enhanced manual content
-4. **Code Examples**: Include working code examples with proper syntax highlighting
-5. **Cross-References**: Link related concepts and maintain navigation consistency
+4. **Code Examples**: Include working code examples with proper syntax
+   highlighting
+5. **Cross-References**: Link related concepts and maintain navigation
+   consistency
 
 ### Validation Tools
 
@@ -146,11 +149,12 @@ The project uses automated validation tools:
 
 When contributing documentation:
 
-1. **API Reference**: Follow the pattern established in `docs/api/protocols.md` and
-   `docs/api/core.md`
-2. **Manual Enhancement**: Add examples, best practices, and cross-references beyond
-   basic API extraction
-3. **User Personas**: Consider different user needs (new users, API users, contributors)
+1. **API Reference**: Follow the pattern established in `docs/api/protocols.md`
+   and `docs/api/core.md`
+2. **Manual Enhancement**: Add examples, best practices, and cross-references
+   beyond basic API extraction
+3. **User Personas**: Consider different user needs (new users, API users,
+   contributors)
 4. **Code Examples**: Provide complete, runnable examples
 5. **Navigation**: Ensure proper cross-linking between related sections
 

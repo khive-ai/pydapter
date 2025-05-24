@@ -1,4 +1,8 @@
-from pydapter.protocols.cryptographical import Cryptographical, CryptographicalMixin
+from pydapter.protocols.cryptographical import (
+    Cryptographical,
+    CryptographicalMixin,
+    sha256_of_obj,
+)
 from pydapter.protocols.embeddable import Embeddable, EmbeddableMixin
 from pydapter.protocols.event import Event, as_event
 from pydapter.protocols.identifiable import Identifiable, IdentifiableMixin
@@ -18,4 +22,5 @@ __all__ = (
     "TemporalMixin",
     "Cryptographical",
     "CryptographicalMixin",
+    "sha256_of_obj",
 )
