@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -7,7 +7,6 @@ from pydantic import Field as PydanticField
 from pydantic import field_validator
 
 from pydapter.exceptions import ValidationError
-from pydapter.fields.dts import UTC
 from pydapter.fields.params import validate_model_to_params
 from pydapter.fields.types import Field
 
@@ -36,7 +35,7 @@ class Execution(BaseModel):
     error: str | None = None
     response_obj: Any = PydanticField(None, exclude=True)
     updated_at: datetime | None = PydanticField(
-        default_factory=lambda: datetime.now(tz=UTC),
+        default_factory=lambda: datetime.now(tz=timezone.utc),
         exclude=True,
     )
 

@@ -1,13 +1,12 @@
 import asyncio
 from asyncio.log import logger
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 from uuid import UUID
 
 from pydantic import PrivateAttr
 
-from pydapter.fields.dts import UTC
 from pydapter.fields.execution import Execution, ExecutionStatus
 
 from .utils import validate_model_to_dict
@@ -78,4 +77,4 @@ class InvokableMixin:
                 self.execution.response_obj = response
                 self.execution.response = validate_model_to_dict(response)
                 self.execution.status = ExecutionStatus.COMPLETED
-            self.execution.updated_at = datetime.now(tz=UTC)
+            self.execution.updated_at = datetime.now(tz=timezone.utc)

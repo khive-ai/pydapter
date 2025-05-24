@@ -4,16 +4,6 @@ from datetime import datetime, timezone
 from pydapter.exceptions import ValidationError
 from pydapter.fields.types import Field
 
-# Use timezone.utc for compatibility with Python < 3.11
-# Create a UTC timezone constant for consistent usage across the codebase
-try:
-    UTC = timezone.utc
-except AttributeError:
-    # Fallback for very old Python versions (shouldn't happen with 3.10+)
-    from datetime import timedelta
-
-    UTC = timezone(timedelta(0))
-
 __all__ = (
     "DATETIME",
     "DATETIME_NULLABLE",
@@ -54,7 +44,7 @@ def nullable_datetime_validator(cls, v):
 DATETIME = Field(
     name="datetime_field",
     annotation=datetime,
-    default_factory=lambda: datetime.now(tz=UTC),
+    default_factory=lambda: datetime.now(tz=timezone.utc),
     validator=datetime_validator,
     immutable=True,
 )

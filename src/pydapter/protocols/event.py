@@ -1,7 +1,7 @@
 import asyncio
 import json
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 from typing import Any
 
@@ -19,7 +19,6 @@ from pydapter.fields import (
     Field,
     create_model,
 )
-from pydapter.fields.dts import UTC
 from pydapter.protocols.cryptographical import sha256_of_obj
 from pydapter.protocols.embeddable import EmbeddableMixin
 from pydapter.protocols.identifiable import IdentifiableMixin
@@ -87,7 +86,7 @@ class Event(
             elif self.updated_at < self.execution.updated_at:
                 self.updated_at = self.execution.updated_at
         else:
-            self.updated_at = datetime.now(tz=UTC)
+            self.updated_at = datetime.now(tz=timezone.utc)
 
     def hash_content(self) -> None:
         """Hash the content using SHA-256."""
@@ -201,7 +200,7 @@ def as_event(
                         event.content = content_parser(event.execution.response_obj)
                     except Exception as e:
                         if strict_content:
-                            event.updated_at = datetime.now(tz=UTC)
+                            event.updated_at = datetime.now(tz=timezone.utc)
                             event.content = None
                             event.execution.error = str(e)
                             event.execution.status = event.execution.FAILED
