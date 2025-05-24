@@ -15,6 +15,49 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
+    """
+    Asynchronous PostgreSQL adapter extending AsyncSQLAdapter with PostgreSQL-specific optimizations.
+
+    This adapter provides:
+    - Async PostgreSQL operations using asyncpg driver
+    - Enhanced error handling for PostgreSQL-specific issues
+    - Support for pgvector when vector columns are present
+    - Default PostgreSQL connection string management
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("async_pg")
+        DEFAULT: Default PostgreSQL+asyncpg connection string
+
+    Example:
+        ```python
+        import asyncio
+        from pydantic import BaseModel
+        from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
+
+        class User(BaseModel):
+            id: int
+            name: str
+            email: str
+
+        async def main():
+            # Query with custom connection
+            query_config = {
+                "query": "SELECT id, name, email FROM users WHERE active = true",
+                "dsn": "postgresql+asyncpg://user:pass@localhost/mydb"
+            }
+            users = await AsyncPostgresAdapter.from_obj(User, query_config, many=True)
+
+            # Insert with default connection
+            insert_config = {
+                "table": "users"
+            }
+            new_users = [User(id=1, name="John", email="john@example.com")]
+            await AsyncPostgresAdapter.to_obj(new_users, insert_config, many=True)
+
+        asyncio.run(main())
+        ```
+    """
+
     obj_key = "async_pg"
     DEFAULT = "postgresql+asyncpg://test:test@localhost/test"
 

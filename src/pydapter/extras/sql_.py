@@ -20,11 +20,71 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class SQLAdapter(Adapter[T]):
+    """
+    Generic SQL adapter using SQLAlchemy Core for database operations.
+
+    This adapter provides methods to:
+    - Execute SQL queries and convert results to Pydantic models
+    - Insert Pydantic models as rows into database tables
+    - Support for various SQL databases through SQLAlchemy
+    - Handle both raw SQL and table-based operations
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("sql")
+
+    Example:
+        ```python
+        import sqlalchemy as sa
+        from pydantic import BaseModel
+        from pydapter.extras.sql_ import SQLAdapter
+
+        class User(BaseModel):
+            id: int
+            name: str
+            email: str
+
+        # Setup database connection
+        engine = sa.create_engine("sqlite:///example.db")
+        metadata = sa.MetaData()
+
+        # Query from database
+        query = "SELECT id, name, email FROM users WHERE active = true"
+        users = SQLAdapter.from_obj(
+            User,
+            query,
+            many=True,
+            engine=engine
+        )
+
+        # Insert to database
+        new_users = [User(id=1, name="John", email="john@example.com")]
+        SQLAdapter.to_obj(
+            new_users,
+            many=True,
+            table="users",
+            metadata=metadata
+        )
+        ```
+    """
+
     obj_key = "sql"
 
-    # ---- helpers
     @staticmethod
     def _table(metadata: sa.MetaData, table: str, engine=None) -> sa.Table:
+        """
+        Helper method to get a SQLAlchemy Table object with autoloading.
+
+        Args:
+            metadata: SQLAlchemy MetaData instance
+            table: Name of the table to load
+            engine: Optional SQLAlchemy engine for autoloading
+
+        Returns:
+            SQLAlchemy Table object
+
+        Raises:
+            ResourceError: If table is not found or cannot be accessed
+        """
         try:
             # Use engine if provided, otherwise use metadata.bind
             autoload_with = engine if engine is not None else metadata.bind  # type: ignore

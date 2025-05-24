@@ -1,3 +1,11 @@
+"""
+JSON Adapter for Pydantic Models.
+
+This module provides the JsonAdapter class for converting between Pydantic models
+and JSON data formats. It supports reading from JSON files, strings, or bytes
+and writing Pydantic models to JSON format.
+"""
+
 from __future__ import annotations
 
 import json
@@ -14,6 +22,39 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class JsonAdapter(Adapter[T]):
+    """
+    Adapter for converting between Pydantic models and JSON data.
+
+    This adapter handles JSON files, strings, and byte data, providing methods to:
+    - Parse JSON data into Pydantic model instances
+    - Convert Pydantic models to JSON format
+    - Handle both single objects and arrays of objects
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("json")
+
+    Example:
+        ```python
+        from pydantic import BaseModel
+        from pydapter.adapters.json_ import JsonAdapter
+
+        class Person(BaseModel):
+            name: str
+            age: int
+
+        # Parse JSON data
+        json_data = '{"name": "John", "age": 30}'
+        person = JsonAdapter.from_obj(Person, json_data)
+
+        # Parse JSON array
+        json_array = '[{"name": "John", "age": 30}, {"name": "Jane", "age": 25}]'
+        people = JsonAdapter.from_obj(Person, json_array, many=True)
+
+        # Convert to JSON
+        json_output = JsonAdapter.to_obj(person)
+        ```
+    """
+
     obj_key = "json"
 
     # ---------------- incoming
