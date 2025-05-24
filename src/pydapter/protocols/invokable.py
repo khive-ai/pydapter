@@ -1,24 +1,33 @@
 import asyncio
 from asyncio.log import logger
 from collections.abc import Callable
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, Protocol, runtime_checkable
 
-from pydantic import Field, PrivateAttr
+from pydantic import PrivateAttr
 
-from .temporal import Temporal
-from .types import Execution, ExecutionStatus
-from .utils import as_async_fn, validate_model_to_dict
+from pydapter.fields.execution import Execution, ExecutionStatus
+
+from .utils import validate_model_to_dict
 
 
-class Invokable(Temporal):
+@runtime_checkable
+class Invokable(Protocol):
+    """An object that can be invoked with a request"""
+
+    request: dict | None
+    execution: Execution
+    _handler: Callable | None
+    _handler_args: tuple[Any, ...]
+    _handler_kwargs: dict[str, Any]
+
+
+class InvokableMixin(Invokable):
     """An executable can be invoked with a request"""
 
-    request: dict | None = None
-    execution: Execution = Field(default_factory=Execution)
-    response_obj: Any = Field(None, exclude=True)
-    _invoke_function: Callable | None = PrivateAttr(None)
-    _invoke_args: list[Any] = PrivateAttr([])
-    _invoke_kwargs: dict[str, Any] = PrivateAttr({})
+    _handler: Callable | None = PrivateAttr(None)
+    _handler_args: tuple[Any, ...] = PrivateAttr(())
+    _handler_kwargs: dict[str, Any] = PrivateAttr({})
 
     @property
     def has_invoked(self) -> bool:
@@ -28,10 +37,11 @@ class Invokable(Temporal):
         ]
 
     async def _invoke(self):
-        if self._invoke_function is None:
+        if self._handler is None:
             raise ValueError("Event invoke function is not set.")
-        async_fn = as_async_fn(self._invoke_function)
-        return await async_fn(*self._invoke_args, **self._invoke_kwargs)
+        if asyncio.iscoroutinefunction(self._handler):
+            return await self._handler(*self._handler_args, **self._handler_kwargs)
+        return self._handler(*self._handler_args, **self._handler_kwargs)
 
     async def invoke(self) -> None:
         start = asyncio.get_event_loop().time()
@@ -59,4 +69,4 @@ class Invokable(Temporal):
                 self.response_obj = response
                 self.execution.response = validate_model_to_dict(response)
                 self.execution.status = ExecutionStatus.COMPLETED
-            self.update_timestamp()
+            self.execution.updated_at = datetime.now(tz=timezone.utc)

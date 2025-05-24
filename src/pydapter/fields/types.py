@@ -1,0 +1,243 @@
+from __future__ import annotations
+
+import uuid
+from collections.abc import Callable
+from typing import Any, Literal
+
+from pydantic import BaseModel
+from pydantic import Field as PydanticField
+from pydantic import create_model as create_pydantic_model
+from pydantic import field_validator
+from pydantic.fields import FieldInfo
+
+from pydapter.exceptions import ValidationError
+
+__all__ = (
+    "Field",
+    "Undefined",
+    "UndefinedType",
+    "create_model",
+    "ID",
+    "Embedding",
+    "Metadata",
+)
+
+
+ID = uuid.UUID
+Embedding = list[float]
+Metadata = dict
+
+
+class UndefinedType:
+    __slots__ = ("undefined",)
+
+    def __init__(self) -> None:
+        self.undefined = True
+
+    def __bool__(self) -> Literal[False]:
+        return False
+
+    def __deepcopy__(self, memo):
+        # Ensure UNDEFINED is universal
+        return self
+
+    def __repr__(self) -> Literal["UNDEFINED"]:
+        return "UNDEFINED"
+
+
+Undefined = UndefinedType()
+
+
+class Field:
+    """Field descriptor for Pydantic models."""
+
+    __slots__ = (
+        "name",
+        "annotation",
+        "default",
+        "default_factory",
+        "title",
+        "description",
+        "examples",
+        "exclude",
+        "frozen",
+        "validator",
+        "validator_kwargs",
+        "alias",
+        "extra_info",
+        "immutable",
+    )
+
+    def __init__(
+        self,
+        name: str,
+        annotation: type | UndefinedType = Undefined,
+        default: Any = Undefined,
+        default_factory: Callable | UndefinedType = Undefined,
+        title: str | UndefinedType = Undefined,
+        description: str | UndefinedType = Undefined,
+        examples: list | UndefinedType = Undefined,
+        exclude: bool | UndefinedType = Undefined,
+        frozen: bool | UndefinedType = Undefined,
+        validator: Callable | UndefinedType = Undefined,
+        validator_kwargs: dict = Undefined,
+        alias: str | UndefinedType = Undefined,
+        immutable: bool = False,
+        **extra_info: Any,
+    ):
+        """Initialize a field descriptor."""
+        if default is not Undefined and default_factory is not Undefined:
+            raise ValueError("Cannot have both default and default_factory")
+
+        self.name = name
+        self.annotation = annotation if annotation is not Undefined else Any
+        self.default = default
+        self.default_factory = default_factory
+        self.title = title
+        self.description = description
+        self.examples = examples
+        self.exclude = exclude
+        self.frozen = frozen
+        self.validator = validator
+        self.validator_kwargs = validator_kwargs
+        self.alias = alias
+        self.extra_info = extra_info
+        self.immutable = immutable
+
+    def _to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "annotation": self.annotation,
+            "default": self.default,
+            "default_factory": self.default_factory,
+            "title": self.title,
+            "description": self.description,
+            "examples": self.examples,
+            "exclude": self.exclude,
+            "frozen": self.frozen,
+            "validator": self.validator,
+            "validator_kwargs": self.validator_kwargs,
+            "alias": self.alias,
+            "extra_info": self.extra_info,
+        }
+
+    @property
+    def field_info(self) -> FieldInfo:
+        params = {
+            "default": self.default,
+            "default_factory": self.default_factory,
+            "title": self.title,
+            "description": self.description,
+            "examples": self.examples,
+            "exclude": self.exclude,
+            "frozen": self.frozen,
+            "alias": self.alias,
+            **self.extra_info,
+        }
+        field_obj = PydanticField(
+            **{k: v for k, v in params.items() if v is not Undefined}
+        )
+        field_obj.annotation = self.annotation
+        return field_obj
+
+    @property
+    def field_validator(self) -> dict[str, Callable] | None:
+        if self.validator is Undefined:
+            return None
+        kwargs = {} if self.validator_kwargs is Undefined else self.validator_kwargs
+        return {
+            f"{self.name}_field_validator": field_validator(self.name, **kwargs)(
+                self.validator
+            )
+        }
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def copy(self, **kwargs: Any) -> Field:
+        """Create a copy of the field with updated values."""
+        params = self._to_dict()
+        params.update(kwargs)
+        return Field(**params)
+
+    def as_nullable(self) -> Field:
+        """Create a copy of a field descriptor with a nullable annotation and None as default value.
+
+        WARNING: the new_field will have no default value, nor default_factory.
+        """
+        annotation = str(self.annotation).lower().strip()
+        if "none" in annotation or "optional" in annotation:
+            return self.copy()
+        return self.copy(
+            annotation=self.annotation | None,
+            default=None,
+            default_factory=Undefined,
+        )
+
+    def as_listable(self, strict: bool = False) -> Field:
+        """Create a copy of a field descriptor with a listable annotation.
+
+        This method does not check whether the field is already listable.
+        If strict is True, the annotation will be converted to a list of the current annotation.
+        Otherwise, the list is an optional type.
+        """
+        annotation = (
+            list[self.annotation] if strict else list[self.annotation] | self.annotation
+        )
+        return self.copy(annotation=annotation)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if hasattr(self, "immutable") and self.immutable:
+            raise AttributeError(f"Cannot modify immutable field {self.name}")
+        object.__setattr__(self, name, value)
+
+
+def create_model(
+    model_name: str,
+    config: dict[str, Any] = None,
+    doc: str = None,
+    base: type[BaseModel] = None,
+    fields: list[Field] = None,
+    frozen: bool = False,
+):
+    """Create a new pydantic model basing on fields and base class.
+
+    Args:
+        model_name (str): Name of the new model.
+        config (dict[str, Any], optional): Configuration dictionary for the model.
+        doc (str, optional): Documentation string for the model.
+        base (type[BaseModel], optional): Base class to inherit from.
+        fields (list[Field], optional): List of fields to include in the model.
+        frozen (bool, optional): Whether the model should be immutable (frozen).
+    """
+    if config and base:
+        raise ValidationError(
+            message="Error creating new model: cannot provide both config and base class",
+            details={"model_name": model_name},
+        )
+
+    use_fields = {field.name: (field.annotation, field.field_info) for field in fields}
+
+    # Create the base model first
+    model: type[BaseModel] = create_pydantic_model(
+        model_name,
+        __config__=config,
+        __doc__=doc,
+        __base__=base,
+        **use_fields,
+    )
+
+    # Add field validators to the model
+    for field in fields:
+        if field.validator is not Undefined:
+            kwargs = (
+                {} if field.validator_kwargs is Undefined else field.validator_kwargs
+            )
+            validator_name = f"validate_{field.name}"
+            validator_func = field_validator(field.name, **kwargs)(field.validator)
+            setattr(model, validator_name, validator_func)
+
+    if frozen:
+        model.model_config = getattr(model, "model_config", {})
+        model.model_config["frozen"] = True
+    return model
