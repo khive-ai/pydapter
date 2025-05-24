@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import io
 from pathlib import Path
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import pandas as pd
 from pydantic import BaseModel
@@ -60,10 +60,10 @@ class ExcelAdapter(Adapter[T]):
         obj: str | Path | bytes,
         /,
         *,
-        many=True,
-        sheet_name=0,
-        **kw,
-    ):
+        many: bool = True,
+        sheet_name: str | int = 0,
+        **kw: Any,
+    ) -> T | list[T]:
         """
         Convert Excel data to Pydantic model instances.
 

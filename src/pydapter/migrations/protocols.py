@@ -4,7 +4,7 @@ pydapter.migrations.protocols - Protocol definitions for migration adapters.
 
 from __future__ import annotations
 
-from typing import ClassVar, Protocol, TypeVar, runtime_checkable
+from typing import Any, ClassVar, Protocol, TypeVar, runtime_checkable
 
 T = TypeVar("T", covariant=True)
 
@@ -16,7 +16,7 @@ class MigrationProtocol(Protocol[T]):
     migration_key: ClassVar[str]
 
     @classmethod
-    def init_migrations(cls, directory: str, **kwargs) -> None:
+    def init_migrations(cls, directory: str, **kwargs: Any) -> None:
         """
         Initialize migration environment in the specified directory.
 
@@ -27,7 +27,9 @@ class MigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
+    def create_migration(
+        cls, message: str, autogenerate: bool = True, **kwargs: Any
+    ) -> str:
         """
         Create a new migration.
 
@@ -42,7 +44,7 @@ class MigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    def upgrade(cls, revision: str = "head", **kwargs) -> None:
+    def upgrade(cls, revision: str = "head", **kwargs: Any) -> None:
         """
         Upgrade to the specified revision.
 
@@ -53,7 +55,7 @@ class MigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    def downgrade(cls, revision: str, **kwargs) -> None:
+    def downgrade(cls, revision: str, **kwargs: Any) -> None:
         """
         Downgrade to the specified revision.
 
@@ -64,7 +66,7 @@ class MigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    def get_current_revision(cls, **kwargs) -> str | None:
+    def get_current_revision(cls, **kwargs: Any) -> str | None:
         """
         Get the current migration revision.
 
@@ -77,7 +79,7 @@ class MigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    def get_migration_history(cls, **kwargs) -> list[dict]:
+    def get_migration_history(cls, **kwargs: Any) -> list[dict]:
         """
         Get the migration history.
 
@@ -97,7 +99,7 @@ class AsyncMigrationProtocol(Protocol[T]):
     migration_key: ClassVar[str]
 
     @classmethod
-    async def init_migrations(cls, directory: str, **kwargs) -> None:
+    async def init_migrations(cls, directory: str, **kwargs: Any) -> None:
         """
         Initialize migration environment in the specified directory.
 
@@ -109,7 +111,7 @@ class AsyncMigrationProtocol(Protocol[T]):
 
     @classmethod
     async def create_migration(
-        cls, message: str, autogenerate: bool = True, **kwargs
+        cls, message: str, autogenerate: bool = True, **kwargs: Any
     ) -> str:
         """
         Create a new migration.
@@ -125,7 +127,7 @@ class AsyncMigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    async def upgrade(cls, revision: str = "head", **kwargs) -> None:
+    async def upgrade(cls, revision: str = "head", **kwargs: Any) -> None:
         """
         Upgrade to the specified revision.
 
@@ -136,7 +138,7 @@ class AsyncMigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    async def downgrade(cls, revision: str, **kwargs) -> None:
+    async def downgrade(cls, revision: str, **kwargs: Any) -> None:
         """
         Downgrade to the specified revision.
 
@@ -147,7 +149,7 @@ class AsyncMigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    async def get_current_revision(cls, **kwargs) -> str | None:
+    async def get_current_revision(cls, **kwargs: Any) -> str | None:
         """
         Get the current migration revision.
 
@@ -160,7 +162,7 @@ class AsyncMigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    async def get_migration_history(cls, **kwargs) -> list[dict]:
+    async def get_migration_history(cls, **kwargs: Any) -> list[dict]:
         """
         Get the migration history.
 

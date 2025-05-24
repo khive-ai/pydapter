@@ -56,7 +56,7 @@ class SyncMigrationAdapter(BaseMigrationAdapter, MigrationProtocol):
     """Base class for synchronous migration adapters."""
 
     @classmethod
-    def init_migrations(cls, directory: str, **kwargs) -> None:
+    def init_migrations(cls, directory: str, **kwargs: Any) -> None:
         """
         Initialize migration environment in the specified directory.
 
@@ -70,7 +70,9 @@ class SyncMigrationAdapter(BaseMigrationAdapter, MigrationProtocol):
         raise NotImplementedError("Subclasses must implement init_migrations")
 
     @classmethod
-    def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
+    def create_migration(
+        cls, message: str, autogenerate: bool = True, **kwargs: Any
+    ) -> str:
         """
         Create a new migration.
 
@@ -88,7 +90,7 @@ class SyncMigrationAdapter(BaseMigrationAdapter, MigrationProtocol):
         raise NotImplementedError("Subclasses must implement create_migration")
 
     @classmethod
-    def upgrade(cls, revision: str = "head", **kwargs) -> None:
+    def upgrade(cls, revision: str = "head", **kwargs: Any) -> None:
         """
         Upgrade to the specified revision.
 
@@ -102,7 +104,7 @@ class SyncMigrationAdapter(BaseMigrationAdapter, MigrationProtocol):
         raise NotImplementedError("Subclasses must implement upgrade")
 
     @classmethod
-    def downgrade(cls, revision: str, **kwargs) -> None:
+    def downgrade(cls, revision: str, **kwargs: Any) -> None:
         """
         Downgrade to the specified revision.
 
@@ -116,7 +118,7 @@ class SyncMigrationAdapter(BaseMigrationAdapter, MigrationProtocol):
         raise NotImplementedError("Subclasses must implement downgrade")
 
     @classmethod
-    def get_current_revision(cls, **kwargs) -> Optional[str]:
+    def get_current_revision(cls, **kwargs: Any) -> Optional[str]:
         """
         Get the current migration revision.
 
@@ -132,7 +134,7 @@ class SyncMigrationAdapter(BaseMigrationAdapter, MigrationProtocol):
         raise NotImplementedError("Subclasses must implement get_current_revision")
 
     @classmethod
-    def get_migration_history(cls, **kwargs) -> list[dict[str, Any]]:
+    def get_migration_history(cls, **kwargs: Any) -> list[dict[str, Any]]:
         """
         Get the migration history.
 
@@ -152,7 +154,7 @@ class AsyncMigrationAdapter(BaseMigrationAdapter, AsyncMigrationProtocol):
     """Base class for asynchronous migration adapters."""
 
     @classmethod
-    async def init_migrations(cls, directory: str, **kwargs) -> None:
+    async def init_migrations(cls, directory: str, **kwargs: Any) -> None:
         """
         Initialize migration environment in the specified directory.
 
@@ -167,7 +169,7 @@ class AsyncMigrationAdapter(BaseMigrationAdapter, AsyncMigrationProtocol):
 
     @classmethod
     async def create_migration(
-        cls, message: str, autogenerate: bool = True, **kwargs
+        cls, message: str, autogenerate: bool = True, **kwargs: Any
     ) -> str:
         """
         Create a new migration.
@@ -186,7 +188,7 @@ class AsyncMigrationAdapter(BaseMigrationAdapter, AsyncMigrationProtocol):
         raise NotImplementedError("Subclasses must implement create_migration")
 
     @classmethod
-    async def upgrade(cls, revision: str = "head", **kwargs) -> None:
+    async def upgrade(cls, revision: str = "head", **kwargs: Any) -> None:
         """
         Upgrade to the specified revision.
 
@@ -200,7 +202,7 @@ class AsyncMigrationAdapter(BaseMigrationAdapter, AsyncMigrationProtocol):
         raise NotImplementedError("Subclasses must implement upgrade")
 
     @classmethod
-    async def downgrade(cls, revision: str, **kwargs) -> None:
+    async def downgrade(cls, revision: str, **kwargs: Any) -> None:
         """
         Downgrade to the specified revision.
 
@@ -214,7 +216,7 @@ class AsyncMigrationAdapter(BaseMigrationAdapter, AsyncMigrationProtocol):
         raise NotImplementedError("Subclasses must implement downgrade")
 
     @classmethod
-    async def get_current_revision(cls, **kwargs) -> Optional[str]:
+    async def get_current_revision(cls, **kwargs: Any) -> Optional[str]:
         """
         Get the current migration revision.
 
@@ -230,7 +232,7 @@ class AsyncMigrationAdapter(BaseMigrationAdapter, AsyncMigrationProtocol):
         raise NotImplementedError("Subclasses must implement get_current_revision")
 
     @classmethod
-    async def get_migration_history(cls, **kwargs) -> list[dict[str, Any]]:
+    async def get_migration_history(cls, **kwargs: Any) -> list[dict[str, Any]]:
         """
         Get the migration history.
 

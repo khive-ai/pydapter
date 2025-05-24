@@ -49,7 +49,9 @@ class Adapter(Protocol[T]):
     obj_key: ClassVar[str]
 
     @classmethod
-    def from_obj(cls, subj_cls: type[T], obj: Any, /, *, many: bool = False, **kw):
+    def from_obj(
+        cls, subj_cls: type[T], obj: Any, /, *, many: bool = False, **kw: Any
+    ) -> T | list[T]:
         """
         Convert from external format to Pydantic model instances.
 
@@ -65,7 +67,7 @@ class Adapter(Protocol[T]):
         ...
 
     @classmethod
-    def to_obj(cls, subj: T | list[T], /, *, many: bool = False, **kw):
+    def to_obj(cls, subj: T | list[T], /, *, many: bool = False, **kw: Any) -> Any:
         """
         Convert from Pydantic model instances to external format.
 
@@ -144,7 +146,9 @@ class AdapterRegistry:
                 f"No adapter registered for '{obj_key}'", obj_key=obj_key
             ) from exc
 
-    def adapt_from(self, subj_cls: type[T], obj, *, obj_key: str, **kw):
+    def adapt_from(
+        self, subj_cls: type[T], obj: Any, *, obj_key: str, **kw: Any
+    ) -> T | list[T]:
         """
         Convenience method to convert from external format to Pydantic model.
 
@@ -175,7 +179,7 @@ class AdapterRegistry:
                 f"Error adapting from {obj_key}", original_error=str(exc)
             ) from exc
 
-    def adapt_to(self, subj, *, obj_key: str, **kw):
+    def adapt_to(self, subj: Any, *, obj_key: str, **kw: Any) -> Any:
         """
         Convenience method to convert from Pydantic model to external format.
 
@@ -261,7 +265,7 @@ class Adaptable:
         cls._registry().register(adapter_cls)
 
     @classmethod
-    def adapt_from(cls, obj, *, obj_key: str, **kw):
+    def adapt_from(cls, obj: Any, *, obj_key: str, **kw: Any) -> Any:
         """
         Create model instance(s) from external data format.
 
@@ -275,7 +279,7 @@ class Adaptable:
         """
         return cls._registry().adapt_from(cls, obj, obj_key=obj_key, **kw)
 
-    def adapt_to(self, *, obj_key: str, **kw):
+    def adapt_to(self, *, obj_key: str, **kw: Any) -> Any:
         """
         Convert this model instance to external data format.
 

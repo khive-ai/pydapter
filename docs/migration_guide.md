@@ -44,6 +44,24 @@ pip install "pydapter[migrations-all]"
 pip install "pydapter[all]"
 ```
 
+## Core System
+
+The core adapter system remains unchanged in its API and functionality. The main
+changes are related to import paths and enhanced error handling. If you're using
+the core system directly, no code changes are required beyond updating import
+statements.
+
+## Fields System
+
+The fields system has been integrated from the experimental `dev/` directory
+with enhanced validation and protocol integration. Field definitions and usage
+patterns remain the same, with improved type safety and documentation.
+
+## Protocols and Fields
+
+The protocols and fields systems now work together seamlessly, with protocols
+leveraging pre-defined field definitions for consistency and reusability.
+
 ## Updating Import Statements
 
 ### Protocols Module

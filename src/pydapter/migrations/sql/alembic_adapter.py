@@ -38,7 +38,7 @@ class AlembicAdapter(SyncMigrationAdapter):
         self.alembic_cfg = None
 
     @classmethod
-    def init_migrations(cls, directory: str, **kwargs) -> None:
+    def init_migrations(cls, directory: str, **kwargs: Any) -> None:
         """
         Initialize migration environment in the specified directory.
 
@@ -190,7 +190,7 @@ datefmt = %H:%M:%S
                 f.write(env_content)
 
     def create_migration(
-        self, message: str, autogenerate: bool = True, **kwargs
+        self, message: str, autogenerate: bool = True, **kwargs: Any
     ) -> str:
         """
         Create a new migration.
@@ -235,7 +235,7 @@ datefmt = %H:%M:%S
                 original_error=str(exc),
             ) from exc
 
-    def upgrade(self, revision: str = "head", **kwargs) -> None:
+    def upgrade(self, revision: str = "head", **kwargs: Any) -> None:
         """
         Upgrade to the specified revision.
 
@@ -265,7 +265,7 @@ datefmt = %H:%M:%S
                 original_error=str(exc),
             ) from exc
 
-    def downgrade(self, revision: str, **kwargs) -> None:
+    def downgrade(self, revision: str, **kwargs: Any) -> None:
         """
         Downgrade to the specified revision.
 
@@ -295,7 +295,7 @@ datefmt = %H:%M:%S
                 original_error=str(exc),
             ) from exc
 
-    def get_current_revision(self, **kwargs) -> Optional[str]:
+    def get_current_revision(self, **kwargs: Any) -> Optional[str]:
         """
         Get the current revision.
 
@@ -338,7 +338,7 @@ datefmt = %H:%M:%S
                 original_error=exc,
             ) from exc
 
-    def get_migration_history(self, **kwargs) -> list[dict]:
+    def get_migration_history(self, **kwargs: Any) -> list[dict]:
         """
         Get the migration history.
 

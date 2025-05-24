@@ -4,7 +4,7 @@ DataFrame & Series adapters (require `pandas`).
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import pandas as pd
 from pydantic import BaseModel
@@ -53,7 +53,9 @@ class DataFrameAdapter(Adapter[T]):
     obj_key = "pd.DataFrame"
 
     @classmethod
-    def from_obj(cls, subj_cls: type[T], obj: pd.DataFrame, /, *, many=True, **kw):
+    def from_obj(
+        cls, subj_cls: type[T], obj: pd.DataFrame, /, *, many: bool = True, **kw: Any
+    ) -> T | list[T]:
         """
         Convert DataFrame to Pydantic model instances.
 
@@ -71,7 +73,9 @@ class DataFrameAdapter(Adapter[T]):
         return subj_cls.model_validate(obj.iloc[0].to_dict(), **kw)
 
     @classmethod
-    def to_obj(cls, subj: T | list[T], /, *, many=True, **kw) -> pd.DataFrame:
+    def to_obj(
+        cls, subj: T | list[T], /, *, many: bool = True, **kw: Any
+    ) -> pd.DataFrame:
         """
         Convert Pydantic model instances to pandas DataFrame.
 
@@ -123,7 +127,9 @@ class SeriesAdapter(Adapter[T]):
     obj_key = "pd.Series"
 
     @classmethod
-    def from_obj(cls, subj_cls: type[T], obj: pd.Series, /, *, many=False, **kw):
+    def from_obj(
+        cls, subj_cls: type[T], obj: pd.Series, /, *, many: bool = False, **kw: Any
+    ) -> T:
         """
         Convert pandas Series to Pydantic model instance.
 
@@ -144,7 +150,9 @@ class SeriesAdapter(Adapter[T]):
         return subj_cls.model_validate(obj.to_dict(), **kw)
 
     @classmethod
-    def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> pd.Series:
+    def to_obj(
+        cls, subj: T | list[T], /, *, many: bool = False, **kw: Any
+    ) -> pd.Series:
         if many or isinstance(subj, list):
             raise ValueError("SeriesAdapter supports single records only.")
         return pd.Series(subj.model_dump(), **kw)

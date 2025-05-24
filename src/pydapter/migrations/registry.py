@@ -2,7 +2,7 @@
 pydapter.migrations.registry - Registry for migration adapters.
 """
 
-from typing import Optional, TypeVar
+from typing import Any, Optional, TypeVar
 
 from pydapter.exceptions import AdapterNotFoundError, ConfigurationError
 from pydapter.migrations.exceptions import (
@@ -64,7 +64,9 @@ class MigrationRegistry:
 
     # Convenience methods for migration operations
 
-    def init_migrations(self, migration_key: str, directory: str, **kwargs) -> None:
+    def init_migrations(
+        self, migration_key: str, directory: str, **kwargs: Any
+    ) -> None:
         """
         Initialize migrations for the specified adapter.
 
@@ -90,7 +92,7 @@ class MigrationRegistry:
             ) from exc
 
     def create_migration(
-        self, migration_key: str, message: str, autogenerate: bool = True, **kwargs
+        self, migration_key: str, message: str, autogenerate: bool = True, **kwargs: Any
     ) -> str:
         """
         Create a migration for the specified adapter.
@@ -121,7 +123,9 @@ class MigrationRegistry:
                 original_error=str(exc),
             ) from exc
 
-    def upgrade(self, migration_key: str, revision: str = "head", **kwargs) -> None:
+    def upgrade(
+        self, migration_key: str, revision: str = "head", **kwargs: Any
+    ) -> None:
         """
         Upgrade migrations for the specified adapter.
 
@@ -146,7 +150,7 @@ class MigrationRegistry:
                 original_error=str(exc),
             ) from exc
 
-    def downgrade(self, migration_key: str, revision: str, **kwargs) -> None:
+    def downgrade(self, migration_key: str, revision: str, **kwargs: Any) -> None:
         """
         Downgrade migrations for the specified adapter.
 
@@ -171,7 +175,7 @@ class MigrationRegistry:
                 original_error=str(exc),
             ) from exc
 
-    def get_current_revision(self, migration_key: str, **kwargs) -> Optional[str]:
+    def get_current_revision(self, migration_key: str, **kwargs: Any) -> Optional[str]:
         """
         Get the current revision for the specified adapter.
 
@@ -197,7 +201,7 @@ class MigrationRegistry:
                 original_error=exc,
             ) from exc
 
-    def get_migration_history(self, migration_key: str, **kwargs) -> list[dict]:
+    def get_migration_history(self, migration_key: str, **kwargs: Any) -> list[dict]:
         """
         Get the migration history for the specified adapter.
 
@@ -272,7 +276,7 @@ class AsyncMigrationRegistry:
     # Convenience methods for async migration operations
 
     async def init_migrations(
-        self, migration_key: str, directory: str, **kwargs
+        self, migration_key: str, directory: str, **kwargs: Any
     ) -> None:
         """
         Initialize migrations for the specified adapter.
@@ -299,7 +303,7 @@ class AsyncMigrationRegistry:
             ) from exc
 
     async def create_migration(
-        self, migration_key: str, message: str, autogenerate: bool = True, **kwargs
+        self, migration_key: str, message: str, autogenerate: bool = True, **kwargs: Any
     ) -> str:
         """
         Create a migration for the specified adapter.
@@ -331,7 +335,7 @@ class AsyncMigrationRegistry:
             ) from exc
 
     async def upgrade(
-        self, migration_key: str, revision: str = "head", **kwargs
+        self, migration_key: str, revision: str = "head", **kwargs: Any
     ) -> None:
         """
         Upgrade migrations for the specified adapter.
@@ -357,7 +361,7 @@ class AsyncMigrationRegistry:
                 original_error=str(exc),
             ) from exc
 
-    async def downgrade(self, migration_key: str, revision: str, **kwargs) -> None:
+    async def downgrade(self, migration_key: str, revision: str, **kwargs: Any) -> None:
         """
         Downgrade migrations for the specified adapter.
 
@@ -382,7 +386,9 @@ class AsyncMigrationRegistry:
                 original_error=str(exc),
             ) from exc
 
-    async def get_current_revision(self, migration_key: str, **kwargs) -> Optional[str]:
+    async def get_current_revision(
+        self, migration_key: str, **kwargs: Any
+    ) -> Optional[str]:
         """
         Get the current revision for the specified adapter.
 
@@ -408,7 +414,9 @@ class AsyncMigrationRegistry:
                 original_error=exc,
             ) from exc
 
-    async def get_migration_history(self, migration_key: str, **kwargs) -> list[dict]:
+    async def get_migration_history(
+        self, migration_key: str, **kwargs: Any
+    ) -> list[dict]:
         """
         Get the migration history for the specified adapter.
 
