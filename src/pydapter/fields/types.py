@@ -177,7 +177,10 @@ class Field:
             def nullable_validator(cls, v):
                 if v is None:
                     return v
-                return original_validator(cls, v)
+                # Type guard: we know original_validator is not Undefined here
+                if original_validator is not Undefined:
+                    return original_validator(cls, v)
+                return v
 
             new_validator = nullable_validator
 
@@ -207,12 +210,16 @@ class Field:
             def listable_validator(cls, v):
                 if isinstance(v, list):
                     # Validate each item in the list
-                    return [original_validator(cls, item) for item in v]
+                    if original_validator is not Undefined:
+                        return [original_validator(cls, item) for item in v]
+                    return v
                 else:
                     # Single value - validate directly (only if not strict)
                     if strict:
                         raise ValueError("Expected a list")
-                    return original_validator(cls, v)
+                    if original_validator is not Undefined:
+                        return original_validator(cls, v)
+                    return v
 
             new_validator = listable_validator
 
