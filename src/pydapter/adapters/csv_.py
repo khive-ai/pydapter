@@ -1,3 +1,11 @@
+"""
+CSV Adapter for Pydantic Models.
+
+This module provides the CsvAdapter class for converting between Pydantic models
+and CSV data formats. It supports reading from CSV files or strings and writing
+Pydantic models to CSV format.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -15,6 +23,36 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class CsvAdapter(Adapter[T]):
+    """
+    Adapter for converting between Pydantic models and CSV data.
+
+    This adapter handles CSV files and strings, providing methods to:
+    - Parse CSV data into Pydantic model instances
+    - Convert Pydantic models to CSV format
+    - Handle various CSV dialects and formatting options
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("csv")
+        DEFAULT_CSV_KWARGS: Default CSV parsing parameters
+
+    Example:
+        ```python
+        from pydantic import BaseModel
+        from pydapter.adapters.csv_ import CsvAdapter
+
+        class Person(BaseModel):
+            name: str
+            age: int
+
+        # Parse CSV data
+        csv_data = "name,age\\nJohn,30\\nJane,25"
+        people = CsvAdapter.from_obj(Person, csv_data, many=True)
+
+        # Convert to CSV
+        csv_output = CsvAdapter.to_obj(people)
+        ```
+    """
+
     obj_key = "csv"
 
     # Default CSV dialect settings

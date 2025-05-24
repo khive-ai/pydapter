@@ -21,12 +21,70 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class QdrantAdapter(Adapter[T]):
+    """
+    Qdrant vector database adapter for converting between Pydantic models and vector embeddings.
+
+    This adapter provides methods to:
+    - Search for similar vectors and convert results to Pydantic models
+    - Insert Pydantic models as vector points into Qdrant collections
+    - Handle vector similarity operations and metadata filtering
+    - Support for both cloud and self-hosted Qdrant instances
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("qdrant")
+
+    Example:
+        ```python
+        from pydantic import BaseModel
+        from pydapter.extras.qdrant_ import QdrantAdapter
+
+        class Document(BaseModel):
+            id: str
+            text: str
+            embedding: list[float]
+            category: str
+
+        # Search for similar vectors
+        search_config = {
+            "url": "http://localhost:6333",
+            "collection_name": "documents",
+            "query_vector": [0.1, 0.2, 0.3, ...],  # 768-dim vector
+            "limit": 10,
+            "score_threshold": 0.8
+        }
+        similar_docs = QdrantAdapter.from_obj(Document, search_config, many=True)
+
+        # Insert documents with vectors
+        insert_config = {
+            "url": "http://localhost:6333",
+            "collection_name": "documents"
+        }
+        new_docs = [Document(
+            id="doc1",
+            text="Sample text",
+            embedding=[0.1, 0.2, 0.3, ...],
+            category="tech"
+        )]
+        QdrantAdapter.to_obj(new_docs, insert_config, many=True)
+        ```
+    """
+
     obj_key = "qdrant"
 
-    # helper
-    # helper
     @staticmethod
     def _client(url: str | None):
+        """
+        Create a Qdrant client with proper error handling.
+
+        Args:
+            url: Qdrant server URL or None for in-memory instance
+
+        Returns:
+            QdrantClient instance
+
+        Raises:
+            ConnectionError: If connection cannot be established
+        """
         try:
             return QdrantClient(url=url) if url else QdrantClient(":memory:")
         except UnexpectedResponse as e:

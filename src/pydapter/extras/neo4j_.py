@@ -21,11 +21,65 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class Neo4jAdapter(Adapter[T]):
+    """
+    Neo4j graph database adapter for converting between Pydantic models and Neo4j nodes/relationships.
+
+    This adapter provides methods to:
+    - Execute Cypher queries and convert results to Pydantic models
+    - Create nodes and relationships from Pydantic models
+    - Handle Neo4j connection management and error handling
+    - Support for complex graph operations and traversals
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("neo4j")
+
+    Example:
+        ```python
+        from pydantic import BaseModel
+        from pydapter.extras.neo4j_ import Neo4jAdapter
+        from neo4j import basic_auth
+
+        class Person(BaseModel):
+            name: str
+            age: int
+            city: str
+
+        # Query from Neo4j
+        query_config = {
+            "url": "bolt://localhost:7687",
+            "auth": basic_auth("neo4j", "password"),
+            "query": "MATCH (p:Person) WHERE p.age >= 18 RETURN p.name, p.age, p.city"
+        }
+        people = Neo4jAdapter.from_obj(Person, query_config, many=True)
+
+        # Create nodes in Neo4j
+        create_config = {
+            "url": "bolt://localhost:7687",
+            "auth": basic_auth("neo4j", "password"),
+            "query": "CREATE (p:Person {name: $name, age: $age, city: $city})"
+        }
+        new_people = [Person(name="John", age=30, city="NYC")]
+        Neo4jAdapter.to_obj(new_people, create_config, many=True)
+        ```
+    """
+
     obj_key = "neo4j"
 
     @classmethod
     def _create_driver(cls, url: str, auth=None) -> neo4j.Driver:
-        """Create a Neo4j driver with error handling."""
+        """
+        Create a Neo4j driver with proper error handling.
+
+        Args:
+            url: Neo4j connection URL (e.g., "bolt://localhost:7687")
+            auth: Authentication tuple or None for no auth
+
+        Returns:
+            neo4j.Driver instance
+
+        Raises:
+            ConnectionError: If connection cannot be established or auth fails
+        """
         try:
             if auth:
                 return GraphDatabase.driver(url, auth=auth)

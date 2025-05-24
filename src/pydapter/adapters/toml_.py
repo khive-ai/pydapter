@@ -1,3 +1,11 @@
+"""
+TOML Adapter for Pydantic Models.
+
+This module provides the TomlAdapter class for converting between Pydantic models
+and TOML data formats. It supports reading from TOML files or strings and writing
+Pydantic models to TOML format.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,6 +22,11 @@ T = TypeVar("T", bound=BaseModel)
 
 
 def _ensure_list(d):
+    """
+    Helper function to ensure data is in list format when many=True.
+
+    This handles TOML's structure where arrays might be nested in sections.
+    """
     if isinstance(d, list):
         return d
     if isinstance(d, dict) and len(d) == 1 and isinstance(next(iter(d.values())), list):
@@ -22,6 +35,50 @@ def _ensure_list(d):
 
 
 class TomlAdapter(Adapter[T]):
+    """
+    Adapter for converting between Pydantic models and TOML data.
+
+    This adapter handles TOML files and strings, providing methods to:
+    - Parse TOML data into Pydantic model instances
+    - Convert Pydantic models to TOML format
+    - Handle both single objects and arrays of objects
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("toml")
+
+    Example:
+        ```python
+        from pydantic import BaseModel
+        from pydapter.adapters.toml_ import TomlAdapter
+
+        class Person(BaseModel):
+            name: str
+            age: int
+
+        # Parse TOML data
+        toml_data = '''
+        name = "John"
+        age = 30
+        '''
+        person = TomlAdapter.from_obj(Person, toml_data)
+
+        # Parse TOML array
+        toml_array = '''
+        [[people]]
+        name = "John"
+        age = 30
+
+        [[people]]
+        name = "Jane"
+        age = 25
+        '''
+        people = TomlAdapter.from_obj(Person, toml_array, many=True)
+
+        # Convert to TOML
+        toml_output = TomlAdapter.to_obj(person)
+        ```
+    """
+
     obj_key = "toml"
 
     @classmethod

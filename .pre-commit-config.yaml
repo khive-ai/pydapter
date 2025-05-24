@@ -17,14 +17,22 @@ repos:
           "--no-sort-keys",
         ] # Autofix formatting, don't sort keys [3]
 
-  # Deno for Markdown formatting
-  - repo: https://github.com/nozaq/pre-commit-deno
-    rev: 0.1.0 # Specify the desired Deno hook version [1]
+  # Markdownlint for Markdown validation
+  - repo: local
     hooks:
-      - id: deno-fmt
-        # deno fmt automatically formats JS, TS, JSON, and Markdown [1].
-        # Limit this hook to only Markdown files to avoid conflict with other formatters.
+      - id: markdownlint
+        name: Markdown lint
+        entry: markdownlint
+        language: node
         files: \.(md|markdown)$
+        additional_dependencies: ['markdownlint-cli@0.45.0']
+      - id: markdown-link-check
+        name: Markdown link check
+        entry: markdown-link-check
+        language: node
+        files: \.(md|markdown)$
+        additional_dependencies: ['markdown-link-check@3.13.7']
+        args: ['--config', '.markdownlinkcheck.json']
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2

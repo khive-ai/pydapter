@@ -27,6 +27,52 @@ __all__ = (
 
 
 class AsyncMongoAdapter(AsyncAdapter[T]):
+    """
+    Asynchronous MongoDB adapter for converting between Pydantic models and MongoDB documents.
+
+    This adapter provides async methods to:
+    - Query MongoDB collections asynchronously and convert documents to Pydantic models
+    - Insert Pydantic models as documents into MongoDB collections asynchronously
+    - Handle async MongoDB operations using Motor (async MongoDB driver)
+    - Support for various async MongoDB operations (find, insert, update, delete)
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("async_mongo")
+
+    Example:
+        ```python
+        import asyncio
+        from pydantic import BaseModel
+        from pydapter.extras.async_mongo_ import AsyncMongoAdapter
+
+        class User(BaseModel):
+            name: str
+            email: str
+            age: int
+
+        async def main():
+            # Query from MongoDB
+            query_config = {
+                "url": "mongodb://localhost:27017",
+                "database": "myapp",
+                "collection": "users",
+                "filter": {"age": {"$gte": 18}}
+            }
+            users = await AsyncMongoAdapter.from_obj(User, query_config, many=True)
+
+            # Insert to MongoDB
+            insert_config = {
+                "url": "mongodb://localhost:27017",
+                "database": "myapp",
+                "collection": "users"
+            }
+            new_users = [User(name="John", email="john@example.com", age=30)]
+            await AsyncMongoAdapter.to_obj(new_users, insert_config, many=True)
+
+        asyncio.run(main())
+        ```
+    """
+
     obj_key = "async_mongo"
 
     @classmethod

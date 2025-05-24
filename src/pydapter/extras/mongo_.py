@@ -26,10 +26,64 @@ __all__ = (
 
 
 class MongoAdapter(Adapter[T]):
+    """
+    MongoDB adapter for converting between Pydantic models and MongoDB documents.
+
+    This adapter provides methods to:
+    - Query MongoDB collections and convert documents to Pydantic models
+    - Insert Pydantic models as documents into MongoDB collections
+    - Handle MongoDB connection management and error handling
+    - Support for various MongoDB operations (find, insert, update, delete)
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("mongo")
+
+    Example:
+        ```python
+        from pydantic import BaseModel
+        from pydapter.extras.mongo_ import MongoAdapter
+
+        class User(BaseModel):
+            name: str
+            email: str
+            age: int
+
+        # Query from MongoDB
+        query_config = {
+            "url": "mongodb://localhost:27017",
+            "database": "myapp",
+            "collection": "users",
+            "filter": {"age": {"$gte": 18}}
+        }
+        users = MongoAdapter.from_obj(User, query_config, many=True)
+
+        # Insert to MongoDB
+        insert_config = {
+            "url": "mongodb://localhost:27017",
+            "database": "myapp",
+            "collection": "users"
+        }
+        new_users = [User(name="John", email="john@example.com", age=30)]
+        MongoAdapter.to_obj(new_users, insert_config, many=True)
+        ```
+    """
+
     obj_key = "mongo"
 
     @classmethod
     def _client(cls, url: str) -> pymongo.MongoClient:
+        """
+        Create a MongoDB client with proper error handling.
+
+        Args:
+            url: MongoDB connection string
+
+        Returns:
+            pymongo.MongoClient instance
+
+        Raises:
+            ConnectionError: If connection cannot be established
+        """
         try:
             return pymongo.MongoClient(url, serverSelectionTimeoutMS=5000)
         except pymongo.errors.ConfigurationError as e:

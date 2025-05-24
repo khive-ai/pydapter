@@ -83,25 +83,29 @@ sample_docs = [
     Document(
         id="doc1",
         title="Introduction to Machine Learning",
-        content="Machine learning is a field of artificial intelligence that uses statistical techniques to give computer systems the ability to learn from data.",
+        content="Machine learning is a field of artificial intelligence that uses "
+                "statistical techniques to give computer systems the ability to learn from data.",
         tags=["ML", "AI", "Data Science"]
     ),
     Document(
         id="doc2",
         title="Deep Learning Fundamentals",
-        content="Deep learning is a subset of machine learning that uses neural networks with many layers to analyze various factors of data.",
+        content="Deep learning is a subset of machine learning that uses neural networks "
+                "with many layers to analyze various factors of data.",
         tags=["Deep Learning", "Neural Networks", "AI"]
     ),
     Document(
         id="doc3",
         title="Natural Language Processing",
-        content="NLP combines computational linguistics and AI to enable computers to understand, interpret, and generate human language.",
+        content="NLP combines computational linguistics and AI to enable computers to "
+                "understand, interpret, and generate human language.",
         tags=["NLP", "AI", "Linguistics"]
     ),
     Document(
         id="doc4",
         title="Computer Vision",
-        content="Computer vision is a field of AI that trains computers to interpret and understand visual data from the world around us.",
+        content="Computer vision is a field of AI that trains computers to interpret and "
+                "understand visual data from the world around us.",
         tags=["Computer Vision", "AI", "Image Processing"]
     ),
 ]
@@ -198,25 +202,29 @@ sample_docs = [
     Document(
         id="doc1",
         title="Introduction to Machine Learning",
-        content="Machine learning is a field of artificial intelligence that uses statistical techniques to give computer systems the ability to learn from data.",
+        content="Machine learning is a field of artificial intelligence that uses "
+                "statistical techniques to give computer systems the ability to learn from data.",
         tags=["ML", "AI", "Data Science"]
     ),
     Document(
         id="doc2",
         title="Deep Learning Fundamentals",
-        content="Deep learning is a subset of machine learning that uses neural networks with many layers to analyze various factors of data.",
+        content="Deep learning is a subset of machine learning that uses neural networks "
+                "with many layers to analyze various factors of data.",
         tags=["Deep Learning", "Neural Networks", "AI"]
     ),
     Document(
         id="doc3",
         title="Natural Language Processing",
-        content="NLP combines computational linguistics and AI to enable computers to understand, interpret, and generate human language.",
+        content="NLP combines computational linguistics and AI to enable computers to "
+                "understand, interpret, and generate human language.",
         tags=["NLP", "AI", "Linguistics"]
     ),
     Document(
         id="doc4",
         title="Computer Vision",
-        content="Computer vision is a field of AI that trains computers to interpret and understand visual data from the world around us.",
+        content="Computer vision is a field of AI that trains computers to interpret and "
+                "understand visual data from the world around us.",
         tags=["Computer Vision", "AI", "Image Processing"]
     ),
 ]
@@ -323,7 +331,8 @@ sample_products = [
     Product(
         id="p1",
         name="Premium Wireless Headphones",
-        description="Noise-cancelling wireless headphones with 30-hour battery life and premium sound quality.",
+        description="Noise-cancelling wireless headphones with 30-hour battery life and "
+                   "premium sound quality.",
         price=299.99,
         category="Electronics",
         brand="SoundMaster",
@@ -332,7 +341,8 @@ sample_products = [
     Product(
         id="p2",
         name="Ultra-Slim Laptop",
-        description="Lightweight laptop with 15-inch display, 16GB RAM, and 512GB SSD. Perfect for productivity on the go.",
+        description="Lightweight laptop with 15-inch display, 16GB RAM, and 512GB SSD. "
+                   "Perfect for productivity on the go.",
         price=1299.99,
         category="Electronics",
         brand="TechPro",
@@ -341,7 +351,8 @@ sample_products = [
     Product(
         id="p3",
         name="Smart Fitness Watch",
-        description="Track your fitness goals with this advanced smartwatch featuring heart rate monitoring, GPS, and sleep tracking.",
+        description="Track your fitness goals with this advanced smartwatch featuring "
+                   "heart rate monitoring, GPS, and sleep tracking.",
         price=199.99,
         category="Wearables",
         brand="FitTech",
@@ -350,7 +361,8 @@ sample_products = [
     Product(
         id="p4",
         name="Wireless Earbuds",
-        description="Compact wireless earbuds with crystal clear sound, water resistance, and 24-hour battery life with the charging case.",
+        description="Compact wireless earbuds with crystal clear sound, water resistance, "
+                   "and 24-hour battery life with the charging case.",
         price=129.99,
         category="Electronics",
         brand="SoundMaster",
@@ -359,7 +371,8 @@ sample_products = [
     Product(
         id="p5",
         name="Professional DSLR Camera",
-        description="High-end DSLR camera with 24MP sensor, 4K video recording, and professional-grade image quality.",
+        description="High-end DSLR camera with 24MP sensor, 4K video recording, and "
+                   "professional-grade image quality.",
         price=1499.99,
         category="Photography",
         brand="OptixPro",
@@ -412,7 +425,7 @@ class ProductSearchSystem:
             {
                 "collection": self.collection_name,
                 "query_vector": query_embedding,
-                "top_k": top_k * 3 if filters else top_k,  # Get more results to allow for filtering
+                "top_k": top_k * 3 if filters else top_k,  # Get more results for filtering
                 "url": self.url
             },
             obj_key="async_qdrant",
@@ -660,7 +673,8 @@ async def demo_high_dim_vectors():
     doc = Document(
         id="highdim1",
         title="High-Dimensional Vector Example",
-        content="This document has a higher-dimensional embedding vector for better semantic search accuracy."
+        content="This document has a higher-dimensional embedding vector for better "
+               "semantic search accuracy."
     ).generate_embedding()
 
     print(f"Generated embedding with {len(doc.embedding)} dimensions")
@@ -771,7 +785,7 @@ class DocumentSearchEngine:
             {
                 "collection": self.collection_name,
                 "query_vector": query_embedding,
-                "top_k": top_k * 3 if filters else top_k,  # Get more results when filtering
+                "top_k": top_k * 3 if filters else top_k,  # Get more results for filtering
                 "url": self.url
             },
             obj_key="async_qdrant",
@@ -860,7 +874,8 @@ async def main():
         Document(
             id="doc1",
             title="Introduction to Vector Databases",
-            content="Vector databases store high-dimensional vectors and enable semantic search based on similarity rather than exact matching.",
+            content="Vector databases store high-dimensional vectors and enable semantic "
+                   "search based on similarity rather than exact matching.",
             author="Jane Smith",
             date="2023-01-15",
             source="TechBlog",
@@ -869,7 +884,8 @@ async def main():
         Document(
             id="doc2",
             title="Machine Learning Fundamentals",
-            content="Machine learning algorithms learn patterns from data without being explicitly programmed. They improve with experience.",
+            content="Machine learning algorithms learn patterns from data without being "
+                   "explicitly programmed. They improve with experience.",
             author="John Doe",
             date="2023-02-20",
             source="AI Journal",
@@ -878,7 +894,8 @@ async def main():
         Document(
             id="doc3",
             title="Natural Language Processing Techniques",
-            content="NLP enables computers to understand human language by processing, analyzing, and generating text data.",
+            content="NLP enables computers to understand human language by processing, "
+                   "analyzing, and generating text data.",
             author="Jane Smith",
             date="2023-03-10",
             source="AI Journal",
@@ -887,7 +904,8 @@ async def main():
         Document(
             id="doc4",
             title="Semantic Search Implementation",
-            content="Implementing semantic search requires converting text to vector embeddings and finding similar vectors efficiently.",
+            content="Implementing semantic search requires converting text to vector "
+                   "embeddings and finding similar vectors efficiently.",
             author="Alex Johnson",
             date="2023-04-05",
             source="TechBlog",
@@ -896,7 +914,8 @@ async def main():
         Document(
             id="doc5",
             title="Vector Database Comparison",
-            content="Comparing popular vector databases like Qdrant, Pinecone, and Milvus for semantic search applications.",
+            content="Comparing popular vector databases like Qdrant, Pinecone, and Milvus "
+                   "for semantic search applications.",
             author="Chris Williams",
             date="2023-05-12",
             source="Database Review",

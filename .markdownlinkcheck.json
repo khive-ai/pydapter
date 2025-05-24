@@ -1,0 +1,52 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^https://localhost"
+    },
+    {
+      "pattern": "^http://127.0.0.1"
+    },
+    {
+      "pattern": "^https://127.0.0.1"
+    }
+  ],
+  "replacementPatterns": [
+    {
+      "pattern": "^/",
+      "replacement": "{{BASEURL}}/"
+    }
+  ],
+  "httpHeaders": [
+    {
+      "urls": [
+        "https://github.com",
+        "https://api.github.com"
+      ],
+      "headers": {
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "pydapter-docs-link-checker"
+      }
+    }
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "aliveStatusCodes": [
+    200,
+    206,
+    301,
+    302,
+    303,
+    307,
+    308,
+    400,
+    401,
+    403,
+    405,
+    999
+  ]
+}

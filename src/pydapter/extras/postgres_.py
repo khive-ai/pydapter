@@ -15,6 +15,46 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class PostgresAdapter(SQLAdapter[T]):
+    """
+    PostgreSQL-specific adapter extending SQLAdapter with PostgreSQL optimizations.
+
+    This adapter provides:
+    - PostgreSQL-specific connection handling and error messages
+    - Default PostgreSQL connection string
+    - Enhanced error handling for common PostgreSQL issues
+    - Support for pgvector when vector columns are present
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("postgres")
+        DEFAULT: Default PostgreSQL connection string
+
+    Example:
+        ```python
+        from pydantic import BaseModel
+        from pydapter.extras.postgres_ import PostgresAdapter
+
+        class User(BaseModel):
+            id: int
+            name: str
+            email: str
+
+        # Query with custom connection
+        query_config = {
+            "query": "SELECT id, name, email FROM users WHERE active = true",
+            "engine_url": "postgresql+psycopg://user:pass@localhost/mydb"
+        }
+        users = PostgresAdapter.from_obj(User, query_config, many=True)
+
+        # Insert with default connection
+        insert_config = {
+            "table": "users",
+            "engine_url": "postgresql+psycopg://user:pass@localhost/mydb"
+        }
+        new_users = [User(id=1, name="John", email="john@example.com")]
+        PostgresAdapter.to_obj(new_users, insert_config, many=True)
+        ```
+    """
+
     obj_key = "postgres"
     DEFAULT = "postgresql+psycopg://user:pass@localhost/db"
 

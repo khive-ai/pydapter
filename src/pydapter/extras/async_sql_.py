@@ -20,11 +20,67 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class AsyncSQLAdapter(AsyncAdapter[T]):
+    """
+    Asynchronous SQL adapter using SQLAlchemy 2.x asyncio for database operations.
+
+    This adapter provides async methods to:
+    - Execute SQL queries asynchronously and convert results to Pydantic models
+    - Insert Pydantic models as rows into database tables asynchronously
+    - Support for various async SQL databases through SQLAlchemy
+    - Handle connection pooling and async context management
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("async_sql")
+
+    Example:
+        ```python
+        import asyncio
+        import sqlalchemy as sa
+        from pydantic import BaseModel
+        from pydapter.extras.async_sql_ import AsyncSQLAdapter
+
+        class User(BaseModel):
+            id: int
+            name: str
+            email: str
+
+        async def main():
+            # Query from database
+            query_config = {
+                "engine_url": "postgresql+asyncpg://user:pass@localhost/db",
+                "query": "SELECT id, name, email FROM users WHERE active = true"
+            }
+            users = await AsyncSQLAdapter.from_obj(User, query_config, many=True)
+
+            # Insert to database
+            insert_config = {
+                "engine_url": "postgresql+asyncpg://user:pass@localhost/db",
+                "table": "users"
+            }
+            new_users = [User(id=1, name="John", email="john@example.com")]
+            await AsyncSQLAdapter.to_obj(new_users, insert_config, many=True)
+
+        asyncio.run(main())
+        ```
+    """
+
     obj_key = "async_sql"
 
-    # helpers
     @staticmethod
     def _table(meta: sa.MetaData, name: str) -> sa.Table:
+        """
+        Helper method to get a SQLAlchemy Table object for async operations.
+
+        Args:
+            meta: SQLAlchemy MetaData instance
+            name: Name of the table to load
+
+        Returns:
+            SQLAlchemy Table object
+
+        Raises:
+            ResourceError: If table is not found or cannot be accessed
+        """
         try:
             # In SQLAlchemy 2.x, we should use the connection directly
             return sa.Table(name, meta, autoload_with=meta.bind)

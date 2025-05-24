@@ -75,6 +75,7 @@ nav:
       - PostgreSQL: postgres_adapter.md
       - Neo4j: neo4j_adapter.md
       - Qdrant: qdrant_adapter.md
+      - SQL Model: sql_model_adapter.md
   - Optional Modules:
       - Protocols: protocols.md
       - Migrations: migrations.md
@@ -83,6 +84,7 @@ nav:
       - Using Migrations: tutorials/using_migrations.md
   - API Reference:
       - Core: api/core.md
+      - Fields: api/fields.md
       - Adapters: api/adapters.md
       - Extras: api/extras.md
       - Protocols: api/protocols.md

@@ -44,6 +44,24 @@ pip install "pydapter[migrations-all]"
 pip install "pydapter[all]"
 ```
 
+## Core System
+
+The core adapter system remains unchanged in its API and functionality. The main
+changes are related to import paths and enhanced error handling. If you're using
+the core system directly, no code changes are required beyond updating import
+statements.
+
+## Fields System
+
+The fields system has been integrated from the experimental `dev/` directory
+with enhanced validation and protocol integration. Field definitions and usage
+patterns remain the same, with improved type safety and documentation.
+
+## Protocols and Fields
+
+The protocols and fields systems now work together seamlessly, with protocols
+leveraging pre-defined field definitions for consistency and reusability.
+
 ## Updating Import Statements
 
 ### Protocols Module
@@ -88,8 +106,9 @@ For a transitional period, the modules in the `dev/` directory will continue to
 work by re-exporting from the new locations. However, you will see deprecation
 warnings:
 
-```
-DeprecationWarning: Importing from dev.protocols is deprecated and will be removed in a future version. Please use pydapter.protocols instead.
+```text
+DeprecationWarning: Importing from dev.protocols is deprecated and will be
+removed in a future version. Please use pydapter.protocols instead.
 ```
 
 It's recommended to update your import statements as soon as possible to avoid
@@ -100,8 +119,9 @@ issues when the backward compatibility is removed in a future version.
 If you try to import from the new modules without installing the required
 dependencies, you'll get a clear error message:
 
-```
-ImportError: The 'protocols' feature requires the 'typing_extensions' package. Install it with: pip install pydapter[protocols]
+```text
+ImportError: The 'protocols' feature requires the 'typing_extensions' package.
+Install it with: pip install pydapter[protocols]
 ```
 
 This helps guide you to install the correct dependencies.

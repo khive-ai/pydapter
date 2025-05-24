@@ -7,11 +7,14 @@ guidelines and instructions for contributing to the project.
 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
+
    ```bash
    git clone https://github.com/your-username/pydapter.git
    cd pydapter
    ```
+
 3. Set up a development environment:
+
    ```bash
    # Using uv (recommended)
    uv pip install -e ".[dev,all]"
@@ -19,7 +22,9 @@ guidelines and instructions for contributing to the project.
    # Or using pip
    pip install -e ".[dev,all]"
    ```
+
 4. Install pre-commit hooks:
+
    ```bash
    pre-commit install
    ```
@@ -27,6 +32,7 @@ guidelines and instructions for contributing to the project.
 ## Development Workflow
 
 1. Create a new branch for your feature or bugfix:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -34,16 +40,19 @@ guidelines and instructions for contributing to the project.
 2. Make your changes, following the project's coding standards
 
 3. Run the CI script locally to ensure all tests pass:
+
    ```bash
    python scripts/ci.py
    ```
 
 4. Commit your changes using conventional commit messages:
+
    ```bash
    git commit -m "feat: add new feature"
    ```
 
 5. Push your branch to your fork:
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -60,6 +69,7 @@ The project uses a comprehensive CI system that runs:
 - Unit tests (using pytest)
 - Integration tests (using pytest)
 - Coverage reporting
+- Documentation validation (using markdownlint and markdown-link-check)
 
 You can run the CI script locally with various options:
 
@@ -70,8 +80,11 @@ python scripts/ci.py
 # Skip integration tests (which require Docker)
 python scripts/ci.py --skip-integration
 
+# Run only documentation validation
+python scripts/ci.py --only docs
+
 # Run only linting and formatting checks
-python scripts/ci.py --skip-unit --skip-integration --skip-type-check --skip-coverage
+python scripts/ci.py --skip-unit --skip-integration --skip-coverage --skip-docs
 
 # Run tests in parallel
 python scripts/ci.py --parallel 4
@@ -108,14 +121,65 @@ uv run pytest --cov=pydapter
 
 ## Documentation
 
-Documentation is written in Markdown and built with MkDocs. To preview the
-documentation locally:
+Documentation is written in Markdown and built with MkDocs using a hybrid approach
+that combines auto-generated API references with enhanced manual content.
+
+### Documentation Standards
+
+All documentation must follow these standards:
+
+1. **Markdown Quality**: All markdown files must pass `markdownlint` validation
+2. **Link Integrity**: All internal and external links must be valid
+3. **API Documentation**: Use the hybrid approach with enhanced manual content
+4. **Code Examples**: Include working code examples with proper syntax highlighting
+5. **Cross-References**: Link related concepts and maintain navigation consistency
+
+### Validation Tools
+
+The project uses automated validation tools:
+
+- **markdownlint**: Ensures consistent markdown formatting
+- **markdown-link-check**: Validates all links in documentation
+- **Pre-commit hooks**: Automatic validation before commits
+
+### Writing Documentation
+
+When contributing documentation:
+
+1. **API Reference**: Follow the pattern established in `docs/api/protocols.md` and
+   `docs/api/core.md`
+2. **Manual Enhancement**: Add examples, best practices, and cross-references beyond
+   basic API extraction
+3. **User Personas**: Consider different user needs (new users, API users, contributors)
+4. **Code Examples**: Provide complete, runnable examples
+5. **Navigation**: Ensure proper cross-linking between related sections
+
+### Documentation Workflow
 
 ```bash
+# Preview documentation locally
 uv run mkdocs serve
+
+# Validate documentation
+python scripts/ci.py --only docs
+
+# Check specific files
+markdownlint docs/**/*.md
+markdown-link-check docs/api/core.md --config .markdownlinkcheck.json
+
+# Fix common issues automatically (when possible)
+markdownlint --fix docs/**/*.md
 ```
 
-Then open http://127.0.0.1:8000/ in your browser.
+### Documentation Structure
+
+- `docs/api/`: API reference documentation (hybrid approach)
+- `docs/tutorials/`: Step-by-step guides
+- `docs/`: General guides and concepts
+- Examples should be complete and testable
+- Cross-references should use relative links
+
+Then open http://127.0.0.1:8000/ in your browser to preview changes.
 
 ## Pull Request Process
 
