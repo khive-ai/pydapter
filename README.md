@@ -3,7 +3,9 @@
 [![PyPI version](https://img.shields.io/pypi/v/pydapter.svg)](https://pypi.org/project/pydapter/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/pydapter?color=blue)
 ![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)
-[docs](https://khive-ai.github.io/pydapter/)
+[![License](https://img.shields.io/github/license/ohdearquant/pydapter.svg)](https://github.com/ohdearquant/pydapter/blob/main/LICENSE)
+
+- docs: [https://khive-ai.github.io/pydapter/](https://khive-ai.github.io/pydapter/)
 
 Pydapter is a lightweight, type-safe adapter toolkit for Pydantic that enables
 seamless conversion between Pydantic models and various data formats and storage
