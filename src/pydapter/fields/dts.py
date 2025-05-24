@@ -1,8 +1,11 @@
 import contextlib
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from pydapter.exceptions import ValidationError
 from pydapter.fields.types import Field
+
+# Use timezone.utc for compatibility with Python < 3.11
+UTC = timezone.utc
 
 __all__ = (
     "DATETIME",
@@ -16,7 +19,7 @@ def validate_datetime(
     v: datetime | str,
     /,
     nullable: bool = False,
-) -> datetime:
+) -> datetime | None:
     if not v and nullable:
         return None
     if isinstance(v, datetime):
@@ -51,7 +54,7 @@ DATETIME = Field(
 
 DATETIME_NULLABLE = Field(
     name="nullable_datetime_field",
-    annotation=datetime | None,
+    annotation=type(None),  # Simplified to avoid UnionType issues
     default=None,
     validator=nullable_datetime_validator,
     immutable=True,

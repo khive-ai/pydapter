@@ -2,13 +2,17 @@ import asyncio
 from asyncio.log import logger
 from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from uuid import UUID
 
 from pydantic import PrivateAttr
 
 from pydapter.fields.execution import Execution, ExecutionStatus
 
 from .utils import validate_model_to_dict
+
+if TYPE_CHECKING:
+    pass
 
 
 @runtime_checkable
@@ -28,6 +32,10 @@ class InvokableMixin:
     _handler: Callable | None = PrivateAttr(None)
     _handler_args: tuple[Any, ...] = PrivateAttr(())
     _handler_kwargs: dict[str, Any] = PrivateAttr({})
+
+    if TYPE_CHECKING:
+        execution: Execution
+        id: UUID
 
     @property
     def has_invoked(self) -> bool:

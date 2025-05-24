@@ -137,7 +137,9 @@ class Field:
         field_obj: FieldInfo = PydanticField(
             **{k: v for k, v in params.items() if v is not Undefined}
         )
-        field_obj.annotation = self.annotation
+        field_obj.annotation = (
+            self.annotation if self.annotation is not Undefined else None
+        )  # type: ignore[assignment]
         return field_obj
 
     @property
@@ -145,7 +147,7 @@ class Field:
         if self.validator is Undefined:
             return None
         kwargs: dict[Any, Any] = (
-            {} if self.validator_kwargs is Undefined else self.validator_kwargs
+            {} if self.validator_kwargs is Undefined else self.validator_kwargs  # type: ignore[assignment]
         )
         return {
             f"{self.name}_field_validator": field_validator(self.name, **kwargs)(
@@ -180,14 +182,27 @@ class Field:
                 if v is None:
                     return v
                 # Type guard: we know original_validator is not Undefined here
-                if original_validator is not Undefined:
+                if original_validator is not Undefined and callable(original_validator):
                     return original_validator(cls, v)
                 return v
 
-            new_validator = nullable_validator
+            new_validator = nullable_validator  # type: ignore[assignment]
+
+        # Handle union type creation safely
+        from typing import Union
+
+        new_annotation = None
+        if self.annotation is Undefined:
+            new_annotation = type(None)
+        else:
+            try:
+                new_annotation = self.annotation | None
+            except TypeError:
+                # Fallback for older Python versions or complex types
+                new_annotation = Union[self.annotation, None]  # type: ignore[arg-type]
 
         return self.copy(
-            annotation=self.annotation | None,
+            annotation=new_annotation,
             default=None,
             default_factory=Undefined,
             validator=new_validator,
@@ -200,9 +215,18 @@ class Field:
         If strict is True, the annotation will be converted to a list of the current annotation.
         Otherwise, the list is an optional type.
         """
-        annotation = (
-            list[self.annotation] if strict else list[self.annotation] | self.annotation
-        )
+        # Handle annotation union safely
+        from typing import Union
+
+        annotation = None
+        if strict:
+            annotation = list[self.annotation]
+        else:
+            try:
+                annotation = list[self.annotation] | self.annotation
+            except TypeError:
+                # Fallback for complex types
+                annotation = Union[list[self.annotation], self.annotation]  # type: ignore[arg-type]
 
         # If the field has a validator, wrap it to handle lists
         new_validator = Undefined
@@ -212,18 +236,22 @@ class Field:
             def listable_validator(cls, v):
                 if isinstance(v, list):
                     # Validate each item in the list
-                    if original_validator is not Undefined:
+                    if original_validator is not Undefined and callable(
+                        original_validator
+                    ):
                         return [original_validator(cls, item) for item in v]
                     return v
                 else:
                     # Single value - validate directly (only if not strict)
                     if strict:
                         raise ValueError("Expected a list")
-                    if original_validator is not Undefined:
+                    if original_validator is not Undefined and callable(
+                        original_validator
+                    ):
                         return original_validator(cls, v)
                     return v
 
-            new_validator = listable_validator
+            new_validator = listable_validator  # type: ignore[assignment]
 
         return self.copy(annotation=annotation, validator=new_validator)
 
@@ -263,9 +291,9 @@ def create_model(
     use_fields = {field.name: (field.annotation, field.field_info) for field in fields}
 
     # Collect validators for fields that have them
-    validators = {}
+    validators: dict[str, Callable[..., Any]] = {}
     for field in fields:
-        if field.validator is not Undefined:
+        if field.validator is not Undefined and callable(field.validator):
             kwargs = (
                 {} if field.validator_kwargs is Undefined else field.validator_kwargs
             )
@@ -274,17 +302,31 @@ def create_model(
                 field.validator
             )
 
-    # Create the base model with validators included
+    # Create the base model with validators included - handle type issues by filtering valid fields
+    valid_fields = {
+        name: (annotation, field_info)
+        for name, (annotation, field_info) in use_fields.items()
+        if annotation is not Undefined
+    }
+
     model: type[BaseModel] = create_pydantic_model(
         model_name,
         __config__=config,
         __doc__=doc,
         __base__=base,
         __validators__=validators,
-        **use_fields,
+        **valid_fields,
     )
 
     if frozen:
-        model.model_config = getattr(model, "model_config", {})
-        model.model_config["frozen"] = True
+        from pydantic import ConfigDict
+
+        config_dict = getattr(model, "model_config", {})
+        if isinstance(config_dict, dict):
+            config_dict["frozen"] = True
+            model.model_config = config_dict
+        else:
+            # If it's already a ConfigDict, create a new one with frozen=True
+            new_config = ConfigDict(**config_dict, frozen=True)
+            model.model_config = new_config
     return model

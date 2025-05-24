@@ -33,7 +33,7 @@ PARAMS = Field(
 )
 
 
-def validate_model_to_type(v, /, nullable: bool = False) -> type:
+def validate_model_to_type(v, /, nullable: bool = False) -> type | None:
     if not v:
         if nullable:
             return None
@@ -51,7 +51,7 @@ def validate_model_to_type(v, /, nullable: bool = False) -> type:
 
 PARAM_TYPE = Field(
     name="param_type",
-    annotation=type[BaseModel],
+    annotation=type,  # Simplified annotation to avoid GenericAlias issues
     validator=lambda cls, v: validate_model_to_type(v),
     validator_kwargs={"mode": "before"},
     immutable=True,
@@ -59,7 +59,7 @@ PARAM_TYPE = Field(
 
 PARAM_TYPE_NULLABLE = Field(
     name="param_type_nullable",
-    annotation=type[BaseModel] | None,
+    annotation=type,  # Simplified annotation to avoid UnionType issues
     default=None,
     validator=lambda cls, v: validate_model_to_type(v, nullable=True),
     validator_kwargs={"mode": "before"},

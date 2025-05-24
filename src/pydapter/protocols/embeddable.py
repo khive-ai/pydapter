@@ -1,8 +1,11 @@
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel
 
 from pydapter.fields.types import Embedding
+
+if TYPE_CHECKING:
+    pass
 
 
 @runtime_checkable
@@ -13,6 +16,9 @@ class Embeddable(Protocol):
 
 class EmbeddableMixin:
     """Mixin class for embedding functionality."""
+
+    if TYPE_CHECKING:
+        embedding: Embedding
 
     @property
     def n_dim(self) -> int:
@@ -27,7 +33,7 @@ class EmbeddableMixin:
         return parse_embedding_response(x)
 
 
-def parse_embedding_response(x):
+def parse_embedding_response(x) -> list[float] | Any:
     # parse openai response
     if (
         isinstance(x, BaseModel)
@@ -37,10 +43,10 @@ def parse_embedding_response(x):
     ):
         return x.data[0].embedding
 
-    if isinstance(x, list | tuple):
+    if isinstance(x, (list, tuple)):
         if len(x) > 0 and all(isinstance(i, float) for i in x):
-            return x
-        if len(x) == 1 and isinstance(x[0], dict | BaseModel):
+            return x  # type: ignore[return-value]
+        if len(x) == 1 and isinstance(x[0], (dict, BaseModel)):
             return parse_embedding_response(x[0])
 
     # parse dict response
@@ -56,4 +62,4 @@ def parse_embedding_response(x):
         if "embedding" in x:
             return parse_embedding_response(x["embedding"])
 
-    return x
+    return x  # type: ignore[return-value]

@@ -194,7 +194,7 @@ class MigrationRegistry:
             raise MigrationError(
                 f"Failed to get current revision for '{migration_key}'",
                 adapter=migration_key,
-                original_error=str(exc),
+                original_error=exc,
             ) from exc
 
     def get_migration_history(self, migration_key: str, **kwargs) -> list[dict]:
@@ -220,7 +220,7 @@ class MigrationRegistry:
             raise MigrationError(
                 f"Failed to get migration history for '{migration_key}'",
                 adapter=migration_key,
-                original_error=str(exc),
+                original_error=exc,
             ) from exc
 
 
@@ -405,7 +405,7 @@ class AsyncMigrationRegistry:
             raise MigrationError(
                 f"Failed to get current async revision for '{migration_key}'",
                 adapter=migration_key,
-                original_error=str(exc),
+                original_error=exc,
             ) from exc
 
     async def get_migration_history(self, migration_key: str, **kwargs) -> list[dict]:
@@ -431,5 +431,5 @@ class AsyncMigrationRegistry:
             raise MigrationError(
                 f"Failed to get async migration history for '{migration_key}'",
                 adapter=migration_key,
-                original_error=str(exc),
+                original_error=exc,
             ) from exc

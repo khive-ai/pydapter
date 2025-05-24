@@ -1,4 +1,5 @@
 import contextlib
+from typing import Union
 from uuid import UUID, uuid4
 
 from pydapter.exceptions import ValidationError
@@ -13,7 +14,7 @@ __all__ = (
 )
 
 
-def validate_uuid(v: UUID | str, /, nullable: bool = False) -> UUID:
+def validate_uuid(v: UUID | str, /, nullable: bool = False) -> UUID | None:
     if not v and nullable:
         return None
     if isinstance(v, UUID):
@@ -27,7 +28,7 @@ def serialize_uuid(v: UUID, /) -> str:
     return str(v)
 
 
-def uuid_validator(cls, v) -> UUID:
+def uuid_validator(cls, v) -> UUID | None:
     return validate_uuid(v)
 
 
@@ -57,7 +58,7 @@ ID_MUTABLE = Field(
 
 ID_NULLABLE = Field(
     name="nullable_id",
-    annotation=UUID | None,
+    annotation=Union[UUID, None],  # Use Union to avoid UnionType issues
     default=None,
     validator=lambda cls, v: validate_uuid(v, nullable=True),
     immutable=True,

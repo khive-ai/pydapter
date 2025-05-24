@@ -1,7 +1,10 @@
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from uuid import UUID
 
 from pydantic import field_serializer
+
+if TYPE_CHECKING:
+    pass
 
 __all__ = ("Identifiable",)
 
@@ -13,6 +16,9 @@ class Identifiable(Protocol):
 
 class IdentifiableMixin:
     """Base class for objects with a unique identifier"""
+
+    if TYPE_CHECKING:
+        id: UUID
 
     @field_serializer("id")
     def _serialize_ids(self, v: UUID) -> str:

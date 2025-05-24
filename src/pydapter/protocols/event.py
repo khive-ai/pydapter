@@ -19,10 +19,12 @@ from pydapter.fields import (
     Field,
     create_model,
 )
+from pydapter.protocols.cryptographical import sha256_of_obj
 from pydapter.protocols.embeddable import EmbeddableMixin
 from pydapter.protocols.identifiable import IdentifiableMixin
 from pydapter.protocols.invokable import InvokableMixin
 from pydapter.protocols.temporal import TemporalMixin
+from pydapter.protocols.types import Log
 
 BASE_EVENT_FIELDS = [
     ID_FROZEN.copy(name="id"),
@@ -41,9 +43,17 @@ BASE_EVENT_FIELDS = [
     Field(
         name="event_type",
         annotation=str | None,
+        default=None,
         validator=lambda cls, x: cls.__name__,
         title="Event Type",
         description="Type of the event",
+    ),
+    Field(
+        name="sha256",
+        annotation=str | None,
+        default=None,
+        title="SHA256 Hash",
+        description="SHA256 hash of the content",
     ),
 ]
 
@@ -77,6 +87,68 @@ class Event(
                 self.updated_at = self.execution.updated_at
         else:
             self.updated_at = datetime.now(tz=timezone.utc)
+
+    def hash_content(self) -> None:
+        """Hash the content using SHA-256."""
+        if self.content is None:
+            raise ValueError("Content is not set.")
+        self.sha256 = sha256_of_obj(self.content)
+
+    def to_log(self, event_type: str | None = None, hash_content: bool = False) -> Log:
+        """Convert the event to a log entry."""
+        # Use provided event_type or fall back to the event's event_type or class name
+        log_event_type = (
+            event_type or getattr(self, "event_type", None) or self.__class__.__name__
+        )
+
+        # Prepare content - use existing content or create from request/response
+        if self.content is not None:
+            content = (
+                self.content
+                if isinstance(self.content, str)
+                else json.dumps(self.content)
+            )
+        else:
+            content_dict = {
+                "request": self.request,
+                "response": self.execution.response,
+            }
+            content = json.dumps(content_dict)
+            # Set the content on the event so it can be hashed
+            self.content = content
+
+        # Hash content if requested
+        sha256_value = None
+        if hash_content:
+            self.hash_content()
+            sha256_value = getattr(self, "sha256", None)
+
+        # Create metadata
+        metadata = {
+            "execution_status": self.execution.status.value
+            if hasattr(self.execution.status, "value")
+            else str(self.execution.status),
+            "execution_duration": self.execution.duration,
+        }
+
+        if self.execution.error:
+            metadata["error"] = self.execution.error
+
+        return Log(
+            id=str(self.id),
+            event_type=log_event_type,
+            content=content,
+            embedding=self.embedding if self.embedding else [],  # Default to empty list
+            metadata=metadata,
+            created_at=self.created_at.isoformat() if self.created_at else None,
+            updated_at=self.updated_at.isoformat() if self.updated_at else None,
+            duration=self.execution.duration,
+            status=self.execution.status.value
+            if hasattr(self.execution.status, "value")
+            else str(self.execution.status),
+            error=self.execution.error,
+            sha256=sha256_value,
+        )
 
 
 # overall needs more logging
@@ -160,7 +232,13 @@ def as_event(
                         # some logging on embedding failure
                         pass
 
-                    if not isinstance(embed_response, Embedding):
+                    # Check if the response is already a valid embedding (list of floats)
+                    if isinstance(embed_response, list) and all(
+                        isinstance(x, (int, float)) for x in embed_response
+                    ):
+                        event.embedding = embed_response
+                    else:
+                        # Try to parse the response
                         try:
                             event.embedding = EmbeddableMixin.parse_embedding_response(
                                 embed_response
