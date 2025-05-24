@@ -1,6 +1,6 @@
 # test_field_core.py
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 import pytest
@@ -261,7 +261,7 @@ class TestDateTimeFields:
 
     def test_validate_datetime_with_datetime_object(self):
         """validate_datetime should accept datetime objects"""
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         result = validate_datetime(now)
         assert result == now
         assert isinstance(result, datetime)
@@ -305,7 +305,7 @@ class TestDateTimeFields:
         """Test datetime serialization"""
         from pydapter.fields.dts import datetime_serializer
 
-        dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)
+        dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
         serialized = datetime_serializer(dt)
         assert serialized == "2024-01-15T10:30:00+00:00"
         assert isinstance(serialized, str)
