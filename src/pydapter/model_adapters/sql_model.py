@@ -291,16 +291,6 @@ class SQLModelAdapter:
         return False
 
     # ---------- SQLAlchemy ➜ Pydantic ----------------------------------------
-    _SQL_TO_PY: dict[type, type] = {
-        Integer: int,
-        Float: float,
-        Boolean: bool,
-        String: str,
-        LargeBinary: bytes,
-        DateTime: datetime,
-        Date: date,
-        Time: time,
-    }
 
     @classmethod
     def sql_model_to_pydantic(

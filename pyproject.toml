@@ -1,119 +1,146 @@
 [project]
 name            = "pydapter"
-version         = "0.2.0"
+version         = "0.2.1"
 description     = "Tiny trait + adapter toolkit for pydantic models"
 readme          = "README.md"
 requires-python = ">=3.10"
 authors         = [{ name = "HaiyangLi", email = "quantocean.li@gmail.com" }]
 dependencies = [
+    "orjson>=3.10.18",
     "pydantic>=2.6",
     "toml>=0.10.0",
 ]
 
 [dependency-groups]
 dev = [
-    # Documentation
+    "pydapter[docs]",
+    "pydapter[lint]",
+    "pydapter[test]",
+    "pydapter[performance]",
+    "pydapter[utils]",
+]
+
+[project.optional-dependencies]
+docs = [
     "mkdocs>=1.5.0",
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.24.0",
     "pymdown-extensions>=10.7.0",
-    "mkdocs-autorefs>=0.5.0",
+    "mkdocs-autorefs>=1.4.0",
     "types-toml>=0.10.8",
     "pandas-stubs>=2.2.3",
+]
 
-    # linting
+lint = [
     "black>=25.1.0",
     "isort>=6.0.1",
     "pre-commit>=4.2.0",
     "ruff>=0.11.11",
     "bandit>=1.7.5",
-    "khive>=0.3.3",
-
-    # pytest
-    "pytest>=8.3.5",
-    "pytest-cov>=6.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-benchmark>=5.0.0",
-    "pytest-timeout>=2.1.0",
-    "pytest-mock>=3.11.0",
-    "pytest-xdist>=3.3.0",  # Parallel test execution
-    "pytest-watch>=4.2.0",  # Watch mode
-
-    # test container
-    "testcontainers[mongodb,postgres,qdrant, weaviate]>=3.7.0",
-
-    # property based testing
-    "hypothesis>=6.131.25",
-    "hypothesis-jsonschema>=0.23.0",
-
-    # Mutation testing
-    "mutmut>=3.3.0",
-
-    # Performance profiling
-    "py-spy>=0.3.14",
-    "memory-profiler>=0.61.0",
-
-    # Test data generation
-    "faker>=37.3.0",
-    "factory-boy>=3.3.0",
-
-    # Async testing utilities
-    "anyio>=4.9.0",
-    "trio>=0.22.0",
-
-    # Additional utilities
-    "python-dotenv>=1.1.0",
-    "colorama>=0.4.6",  # Colored test output
 ]
 
-[project.optional-dependencies]
+test = [
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-benchmark>=5.0.0",
+    "pytest-timeout>=2.1.0",
+    "pytest-mock>=3.10.0",
+    "pytest-xdist>=3.3.0",
+    "pytest-watch>=4.2.0",
+    "testcontainers[mongodb,postgres,qdrant, weaviate]>=3.7.0",
+    "hypothesis>=6.131.25",
+    "hypothesis-jsonschema>=0.23.0",
+    "mutmut>=3.3.0",
+    "faker>=37.3.0",
+    "factory-boy>=3.3.0",
+    "anyio>=4.9.0",
+    "trio>=0.22.0",
+]
 
-pandas    = ["pandas>=2.2"]
-excel     = ["pandas>=2.2", "xlsxwriter>=3.2", "openpyxl>=3.1.5"]
-sql       = ["sqlalchemy>=2.0"]
-postgres  = ["sqlalchemy>=2.0", "psycopg[binary]>=3", "asyncpg>=0.29", "greenlet>=3.0.0", "psycopg2-binary>=2.9.10"]
-pgvector  = ["pgvector>=0.4.1"]
-mongo     = ["pymongo>=4.7"]
-weaviate  = ["weaviate-client>=4.4", "weaviate>=0.1.2"]
-neo4j     = ["neo4j>=5.19"]
-motor     = ["motor>=3"]
-qdrant    = ["qdrant-client>=1.14"]
-aiohttp   = ["aiohttp>=3.11.10"]
+performance = [
+    "py-spy>=0.3.14",
+    "memory-profiler>=0.61.0",
+]
 
-migrations-core = []  # No additional dependencies beyond pydantic
+utils = [
+    "python-dotenv>=1.1.0",
+    "colorama>=0.4.6", # Colored test output
+    "ipykernel>=6.29.5",
+]
+
+pandas = [
+    "pandas>=2.2",
+]
+
+excel = [
+    "pydapter[pandas]",
+    "xlsxwriter>=3.2",
+    "openpyxl>=3.1.5",
+]
+
+sql = [
+    "sqlalchemy[asyncio]>=2.0",
+]
+
+postgres = [
+    "pydapter[sql]",
+    "psycopg[binary]>=3",
+    "greenlet>=3.0.0",
+    "psycopg2-binary>=2.9.10",
+    "asyncpg>=0.29",
+]
+
+pgvector = [
+    "pydapter[postgres]",
+    "pgvector>=0.4.1",
+]
+
+mongo = [
+    "pymongo>=4.7",
+]
+
+weaviate = [
+    "weaviate-client>=4.4",
+    "weaviate>=0.1.2",
+]
+
+neo4j = [
+    "neo4j>=5.19",
+]
+
+motor = [
+    "motor>=3",
+]
+
+qdrant = [
+    "qdrant-client>=1.14",
+]
+
+aiohttp = [
+    "aiohttp>=3.11.10",
+]
 
 migrations-sql = [
-    "sqlalchemy>=2.0",
+    "pydapter[sql]",
     "alembic>=1.11.0",
-    "sqlalchemy[asyncio]>=2.0; python_version >= '3.7'",
 ]
 
 # Combined dependencies
 migrations = [
-    "pydapter[migrations-core]",
     "pydapter[migrations-sql]",
 ]
 
-# ----------------------------------
 all = [
-    "pandas>=2.2",
-    "xlsxwriter>=3.2",
-    "sqlalchemy>=2.0",
-    "psycopg2-binary>=2.9.10",
-    "psycopg[binary]>=3",
-    "asyncpg>=0.29",
-    "greenlet>=3.0.0",
-    "pymongo>=4.7",
-    "weaviate-client>=4.4",
-    "weaviate>=0.1.2",
-    "neo4j>=5.19",
-    "motor>=3",
-    "qdrant-client>=1.14",
-    "aiohttp>=3.11.10",
-    "openpyxl>=3.1.5",
-    "pgvector>=0.4.1",
-    "alembic>=1.11.0",
-    "sqlalchemy[asyncio]>=2.0; python_version >= '3.7'",
+    "pydapter[excel]",
+    "pydapter[pgvector]",
+    "pydapter[mongo]",
+    "pydapter[weaviate]",
+    "pydapter[neo4j]",
+    "pydapter[motor]",
+    "pydapter[qdrant]",
+    "pydapter[aiohttp]",
+    "pydapter[migrations]",
 ]
 
 [tool.black]

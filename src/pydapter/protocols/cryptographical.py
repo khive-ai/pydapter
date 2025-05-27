@@ -11,7 +11,7 @@ class Cryptographical(Protocol):
     sha256: str | None = None
 
 
-class CryptographicalMixin(Cryptographical):
+class CryptographicalMixin:
     def hash_content(self) -> None:
         if self.content is None:
             raise ValueError("Content is not set.")
