@@ -8,7 +8,7 @@ the primary database.
 
 ## Architecture Pattern
 
-```
+```text
 Models (Protocols) → Adapters (DB-specific) → Registry (Unified Interface)
 ```
 
@@ -48,13 +48,13 @@ from pydapter.async_core import AsyncAdapter
 
 class AsyncPostgresUserAdapter(AsyncAdapter[User]):
     obj_key = "postgres_user"
-    
+
     @classmethod
     async def from_obj(cls, subj_cls: type[User], obj: dict, /, *, many=False, **kw):
         conn_string = obj["connection_string"]
         # Query logic here
         pass
-    
+
     @classmethod
     async def to_obj(cls, subj: User | list[User], /, *, many=False, **kw):
         # Insert/update logic here
@@ -79,7 +79,7 @@ class UserRepository:
     def __init__(self, registry: AsyncAdapterRegistry, default_adapter: str = "postgres_user"):
         self.registry = registry
         self.default_adapter = default_adapter
-    
+
     async def get_by_id(self, user_id: UUID, adapter_key: str = None) -> User | None:
         adapter_key = adapter_key or self.default_adapter
         query_config = {
@@ -88,7 +88,7 @@ class UserRepository:
             "params": [user_id]
         }
         return await self.registry.adapt_from(User, query_config, obj_key=adapter_key)
-    
+
     async def create(self, user: User, adapter_key: str = None) -> User:
         adapter_key = adapter_key or self.default_adapter
         config = {
@@ -96,7 +96,7 @@ class UserRepository:
             "table": "users"
         }
         return await self.registry.adapt_to(user, obj_key=adapter_key, **config)
-    
+
     def _get_connection_string(self, adapter_key: str) -> str:
         # Configuration lookup
         pass
@@ -109,25 +109,25 @@ class UserService:
     def __init__(self, user_repo: UserRepository, post_repo: PostRepository):
         self.user_repo = user_repo
         self.post_repo = post_repo
-    
+
     async def create_user_with_welcome_post(self, name: str, email: str) -> tuple[User, Post]:
         # Create user in primary database (PostgreSQL)
-        user = User(id=uuid4(), name=name, email=email, 
+        user = User(id=uuid4(), name=name, email=email,
                    created_at=datetime.now(), updated_at=datetime.now())
         created_user = await self.user_repo.create(user)
-        
+
         # Create welcome post
         welcome_post = Post(
             id=uuid4(), title="Welcome!", content=f"Welcome {name}!",
             author_id=created_user.id, created_at=datetime.now(), updated_at=datetime.now()
         )
         created_post = await self.post_repo.create(welcome_post)
-        
+
         # Optionally replicate to other databases for analytics
         await self._replicate_to_analytics(created_user)
-        
+
         return created_user, created_post
-    
+
     async def _replicate_to_analytics(self, user: User):
         """Replicate user data to analytics database (e.g., MongoDB)"""
         try:
@@ -159,24 +159,24 @@ DATABASE_CONFIG = {
 # Registry setup
 async def create_registry() -> AsyncAdapterRegistry:
     registry = AsyncAdapterRegistry()
-    
+
     # Register all adapters
     registry.register(AsyncPostgresUserAdapter)
     registry.register(AsyncMongoUserAdapter)
     registry.register(AsyncNeo4jUserAdapter)
     # ... register adapters for other models
-    
+
     return registry
 
 # Application factory
 async def create_app():
     registry = await create_registry()
-    
+
     user_repo = UserRepository(registry, default_adapter="postgres_user")
     post_repo = PostRepository(registry, default_adapter="postgres_post")
-    
+
     user_service = UserService(user_repo, post_repo)
-    
+
     return user_service
 ```
 
@@ -212,15 +212,15 @@ async def get_user(
         "mongo": "mongo_user",
         "neo4j": "neo4j_user"
     }
-    
+
     user = await service.user_repo.get_by_id(
-        user_id, 
+        user_id,
         adapter_key=adapter_map.get(source, "postgres_user")
     )
-    
+
     if not user:
         raise HTTPException(404, "User not found")
-    
+
     return user.model_dump()
 ```
 
@@ -253,12 +253,12 @@ async def get_user(
 async def get_user_with_recommendations(self, user_id: UUID):
     # Get user from primary database
     user = await self.user_repo.get_by_id(user_id, "postgres_user")
-    
+
     # Get recommendations from graph database
     recommendations = await self.recommendation_service.get_for_user(
         user_id, adapter_key="neo4j_recommendation"
     )
-    
+
     return {"user": user, "recommendations": recommendations}
 ```
 
@@ -272,9 +272,9 @@ async def sync_user_across_databases(self, user: User):
         self.user_repo.create(user, "mongo_user"),
         self.user_repo.create(user, "neo4j_user"),
     ]
-    
+
     results = await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     # Handle partial failures
     for i, result in enumerate(results):
         if isinstance(result, Exception):

@@ -73,7 +73,7 @@ Follow [Creating Adapters](creating-adapters.md) for data transformations:
 ```python
 class YamlAdapter(Adapter[T]):
     obj_key = "yaml"
-    
+
     @classmethod
     def from_obj(cls, subj_cls: type[T], obj: str, /, *, many=False, **kw):
         data = yaml.safe_load(obj)
@@ -87,7 +87,7 @@ Use [Async Patterns](async-patterns.md) for async data sources:
 ```python
 class ApiAdapter(AsyncAdapter[T]):
     obj_key = "api"
-    
+
     @classmethod
     async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=False, **kw):
         async with aiohttp.ClientSession() as session:
@@ -148,7 +148,7 @@ output = registry.adapt_to(user, obj_key="yaml")
 class UserRepository:
     def __init__(self, registry: AsyncAdapterRegistry):
         self.registry = registry
-    
+
     async def get_by_id(self, user_id: UUID) -> User | None:
         config = {"query": "SELECT * FROM users WHERE id = $1", "params": [user_id]}
         return await self.registry.adapt_from(User, config, obj_key="postgres")
@@ -246,7 +246,7 @@ class AuditableMixin:
 # Connection pooling for database adapters
 class PooledDBAdapter(AsyncAdapter[T]):
     _pool: asyncpg.Pool = None
-    
+
     @classmethod
     async def _get_pool(cls):
         if cls._pool is None:
@@ -256,11 +256,11 @@ class PooledDBAdapter(AsyncAdapter[T]):
 # Concurrent processing
 async def process_multiple_sources(sources: list[dict]) -> list[T]:
     semaphore = asyncio.Semaphore(5)  # Limit concurrency
-    
+
     async def process_one(source):
         async with semaphore:
             return await SomeAdapter.from_obj(MyModel, source)
-    
+
     results = await asyncio.gather(*[process_one(s) for s in sources])
     return [r for r in results if r is not None]
 ```

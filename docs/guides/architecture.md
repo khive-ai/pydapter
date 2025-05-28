@@ -28,10 +28,10 @@ class IdentifiableMixin:
 ```python
 class Adapter(Protocol[T]):
     obj_key: ClassVar[str]
-    
+
     @classmethod
     def from_obj(cls, subj_cls: type[T], obj: Any, /, *, many=False, **kw) -> T | list[T]: ...
-    
+
     @classmethod
     def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> Any: ...
 ```

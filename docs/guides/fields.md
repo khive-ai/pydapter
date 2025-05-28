@@ -131,7 +131,7 @@ USERNAME_FIELD = Field(
 def create_table_schema(model_class):
     for field_name, field_info in model_class.model_fields.items():
         extra = field_info.json_schema_extra or {}
-        
+
         if extra.get("db_index"):
             print(f"CREATE INDEX ON {field_name}")
         if extra.get("vector_dim"):
@@ -144,7 +144,7 @@ def create_table_schema(model_class):
 def create_string_field(name: str, max_length: int = None):
     """Factory for string fields with optional length validation"""
     validator = lambda cls, v: v[:max_length] if max_length and v else v
-    
+
     return Field(
         name=name,
         annotation=str,
@@ -212,7 +212,7 @@ def test_field_composition():
     base = Field(name="test", annotation=str)
     nullable = base.as_nullable()
     listable = base.as_listable()
-    
+
     assert nullable.annotation != base.annotation  # Should be Union[str, None]
     assert base.name == nullable.name == listable.name
 ```

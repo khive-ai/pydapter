@@ -12,12 +12,12 @@ T = TypeVar("T", bound=BaseModel)
 
 class MyAdapter(Adapter[T]):
     obj_key: ClassVar[str] = "my_format"
-    
+
     @classmethod
     def from_obj(cls, subj_cls: type[T], obj: Any, /, *, many=False, **kw) -> T | list[T]:
         """Convert from external format to model"""
         pass
-    
+
     @classmethod
     def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> Any:
         """Convert from model to external format"""
@@ -31,26 +31,26 @@ from pydapter.exceptions import ParseError, ValidationError as AdapterValidation
 
 class YamlAdapter(Adapter[T]):
     obj_key = "yaml"
-    
+
     @classmethod
     def from_obj(cls, subj_cls: type[T], obj: str | Path, /, *, many=False, **kw):
         try:
             # Handle input types
             text = obj.read_text() if isinstance(obj, Path) else obj
-            
+
             # Parse format
             data = yaml.safe_load(text)
-            
+
             # Validate and convert
             if many:
                 return [subj_cls.model_validate(item) for item in data]
             return subj_cls.model_validate(data)
-            
+
         except yaml.YAMLError as e:
             raise ParseError(f"Invalid YAML: {e}", source=str(obj)[:100])
         except ValidationError as e:
             raise AdapterValidationError(f"Validation failed: {e}", errors=e.errors())
-    
+
     @classmethod
     def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> str:
         items = subj if isinstance(subj, list) else [subj]
@@ -87,7 +87,7 @@ except Exception as e:
 ```python
 class DatabaseAdapter(Adapter[T]):
     DEFAULT_CONFIG = {"batch_size": 1000, "timeout": 30}
-    
+
     @classmethod
     def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=False, **kw):
         config = {**cls.DEFAULT_CONFIG, **kw}
@@ -101,7 +101,7 @@ class DatabaseAdapter(Adapter[T]):
 def to_obj(cls, subj: T | list[T], /, *, many=False, **kw):
     for field_name, field_info in subj.model_fields.items():
         extra = field_info.json_schema_extra or {}
-        
+
         # Use field metadata for custom formatting
         if extra.get("db_column"):
             # Map to different column name
@@ -116,15 +116,15 @@ from pydapter.async_core import AsyncAdapter
 
 class HttpApiAdapter(AsyncAdapter[T]):
     obj_key = "http_api"
-    
+
     @classmethod
     async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=False, **kw):
         url = obj["url"]
-        
+
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 data = await response.json()
-        
+
         if many:
             return [subj_cls.model_validate(item) for item in data]
         return subj_cls.model_validate(data)
@@ -140,7 +140,7 @@ class TestMyAdapter:
         external = MyAdapter.to_obj(original)
         restored = MyAdapter.from_obj(MyModel, external)
         assert restored == original
-    
+
     def test_error_handling(self):
         with pytest.raises(ParseError):
             MyAdapter.from_obj(MyModel, "invalid_data")

@@ -24,12 +24,12 @@ from pydapter.async_core import AsyncAdapter
 
 class MyAsyncAdapter(AsyncAdapter[T]):
     obj_key = "my_async_format"
-    
+
     @classmethod
     async def from_obj(cls, subj_cls: type[T], obj: Any, /, *, many=False, **kw) -> T | list[T]:
         # Async operations (HTTP, database, etc.)
         pass
-    
+
     @classmethod
     async def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> Any:
         # Async output operations
@@ -67,16 +67,16 @@ instance = await MyModel.adapt_from_async(data, obj_key="my_async_format")
 ```python
 class RestApiAdapter(AsyncAdapter[T]):
     obj_key = "rest_api"
-    
+
     @classmethod
     async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=False, **kw):
         url = f"{obj['base_url']}/{obj['endpoint']}"
-        
+
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 response.raise_for_status()
                 data = await response.json()
-        
+
         if many:
             items = data.get("items", data) if isinstance(data, dict) else data
             return [subj_cls.model_validate(item) for item in items]
@@ -88,7 +88,7 @@ class RestApiAdapter(AsyncAdapter[T]):
 ```python
 class AsyncPostgresAdapter(AsyncAdapter[T]):
     obj_key = "async_postgres"
-    
+
     @classmethod
     async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=False, **kw):
         conn = await asyncpg.connect(obj["connection_string"])
@@ -108,24 +108,24 @@ class AsyncPostgresAdapter(AsyncAdapter[T]):
 ```python
 class ConcurrentAdapter(AsyncAdapter[T]):
     obj_key = "concurrent"
-    
+
     @classmethod
     async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=False, **kw):
         sources = obj["sources"]
         max_concurrent = kw.get("max_concurrent", 5)
-        
+
         semaphore = asyncio.Semaphore(max_concurrent)
-        
+
         async def fetch_one(source):
             async with semaphore:
                 # Fetch from individual source
                 return await SomeAdapter.from_obj(subj_cls, source)
-        
+
         results = await asyncio.gather(
             *[fetch_one(source) for source in sources],
             return_exceptions=True
         )
-        
+
         # Filter successful results
         successful = [r for r in results if not isinstance(r, Exception)]
         return successful if many else (successful[0] if successful else None)
@@ -170,7 +170,7 @@ class TimeoutAwareAdapter(AsyncAdapter[T]):
     @classmethod
     async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=False, **kw):
         timeout_seconds = kw.get("timeout", 30)
-        
+
         try:
             async with asyncio.timeout(timeout_seconds):
                 return await cls._fetch_data(obj, subj_cls)
@@ -185,7 +185,7 @@ class RetryableAdapter(AsyncAdapter[T]):
     @classmethod
     async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=False, **kw):
         max_retries = kw.get("max_retries", 3)
-        
+
         for attempt in range(max_retries + 1):
             try:
                 return await cls._attempt_fetch(subj_cls, obj)
@@ -205,12 +205,12 @@ class TestAsyncAdapters:
         respx_mock.get("http://api.example.com/data").mock(
             return_value=httpx.Response(200, json={"name": "test"})
         )
-        
+
         result = await RestApiAdapter.from_obj(
             MyModel, {"base_url": "http://api.example.com", "endpoint": "data"}
         )
         assert result.name == "test"
-    
+
     async def test_timeout_handling(self):
         with pytest.raises(ParseError, match="timed out"):
             await TimeoutAwareAdapter.from_obj(MyModel, config, timeout=0.1)

@@ -70,7 +70,7 @@ class Document(BaseModel, IdentifiableMixin, TemporalMixin, EmbeddableMixin):
     updated_at: datetime
     content: str | None = None
     embedding: list[float] = Field(default_factory=list)
-    
+
     # Domain fields
     title: str
 ```

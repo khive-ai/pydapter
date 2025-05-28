@@ -9,11 +9,11 @@ from pydapter.protocols import Identifiable, Temporal
 
 def test_protocol_compliance():
     model = MyModel(id=uuid4(), created_at=datetime.now(), updated_at=datetime.now())
-    
+
     # Runtime protocol checks
     assert isinstance(model, Identifiable)
     assert isinstance(model, Temporal)
-    
+
     # Test mixin functionality
     original_updated = model.updated_at
     model.update_timestamp()
@@ -28,10 +28,10 @@ def test_protocol_compliance():
 def test_adapter_roundtrip():
     """Test data survives roundtrip conversion"""
     original = MyModel(name="test", value=42)
-    
+
     external = MyAdapter.to_obj(original)
     restored = MyAdapter.from_obj(MyModel, external)
-    
+
     assert restored.name == original.name
     assert restored.value == original.value
 ```
@@ -43,7 +43,7 @@ def test_adapter_error_handling():
     """Test error scenarios"""
     with pytest.raises(ParseError, match="Invalid format"):
         MyAdapter.from_obj(MyModel, "invalid_data")
-    
+
     with pytest.raises(ValidationError):
         MyAdapter.from_obj(MyModel, {"missing": "required_fields"})
 ```
@@ -57,7 +57,7 @@ async def test_async_adapter(respx_mock):
     respx_mock.get("http://api.example.com/data").mock(
         return_value=httpx.Response(200, json={"name": "test"})
     )
-    
+
     result = await MyAsyncAdapter.from_obj(MyModel, {"url": "http://api.example.com/data"})
     assert result.name == "test"
 ```
@@ -69,11 +69,11 @@ def test_registry_operations():
     """Test adapter registry functionality"""
     registry = AdapterRegistry()
     registry.register(MyAdapter)
-    
+
     # Test retrieval
     adapter = registry.get("my_adapter")
     assert adapter == MyAdapter
-    
+
     # Test missing adapter
     with pytest.raises(AdapterNotFoundError):
         registry.get("nonexistent")
@@ -141,11 +141,11 @@ def test_all_error_scenarios():
     # Empty input
     with pytest.raises(ParseError, match="Empty.*content"):
         MyAdapter.from_obj(MyModel, "")
-    
+
     # Invalid format
     with pytest.raises(ParseError, match="Invalid.*format"):
         MyAdapter.from_obj(MyModel, "invalid_format")
-    
+
     # Validation failure
     with pytest.raises(ValidationError):
         MyAdapter.from_obj(MyModel, {"missing_required_field": True})
@@ -164,7 +164,7 @@ class TestAsyncOperations:
         ]
         results = await asyncio.gather(*tasks)
         assert len(results) == 10
-    
+
     async def test_timeout_handling(self):
         """Test timeout scenarios"""
         with pytest.raises(ParseError, match="timed out"):
