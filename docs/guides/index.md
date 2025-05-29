@@ -3,32 +3,86 @@
 ## Overview
 
 Pydapter is a protocol-driven data transformation framework that emphasizes
-**stateless adapters**, **composable protocols**, and **type safety**. These
-guides help LLM developers understand and extend the framework effectively.
+**stateless adapters**, **composable protocols**, **type safety**, and now a
+**comprehensive field system** for building robust models.
 
-## Quick Navigation
+## 🏗️ Field System (New in v0.2.3)
+
+The field system provides powerful tools for model creation:
+
+### Core Field Guides
+
+- **[Fields Overview](fields.md)** - Advanced field descriptors, composition
+  methods, and field templates
+- **[Field Families](field-families.md)** - Pre-built field collections for
+  common patterns (Entity, Audit, Soft Delete)
+- **[Best Practices](fields-and-protocols-patterns.md)** - Comprehensive
+  patterns for using fields with protocols
+
+### Quick Example
+
+```python
+from pydapter.fields import DomainModelBuilder, FieldTemplate
+from pydapter.protocols import (
+    create_protocol_model_class,
+    IDENTIFIABLE,
+    TEMPORAL
+)
+
+# Build models with field families
+User = (
+    DomainModelBuilder("User")
+    .with_entity_fields(timezone_aware=True)  # id, created_at, updated_at
+    .with_audit_fields()                      # created_by, updated_by, version
+    .add_field("email", FieldTemplate(base_type=str))
+    .build()
+)
+
+# Or create protocol-compliant models with behaviors
+User = create_protocol_model_class(
+    "User",
+    IDENTIFIABLE,
+    TEMPORAL,
+    email=FieldTemplate(base_type=str)
+)
+
+user = User(email="test@example.com")
+user.update_timestamp()  # Method from TemporalMixin
+```
+
+## 🔌 Protocol System
+
+Enhanced with type-safe constants and factory functions:
+
+### Protocol Guides
+
+- **[Protocols Overview](protocols.md)** - Deep dive into protocol system and
+  mixins
+- **[Protocol Patterns](fields-and-protocols-patterns.md)** - Common usage
+  patterns and best practices
+
+### What's New
+
+- **Type-Safe Constants**: Use `IDENTIFIABLE`, `TEMPORAL` instead of strings
+- **Factory Functions**: `create_protocol_model_class()` for one-step model creation
+- **Mixin Helpers**: `combine_with_mixins()` to add behaviors to existing models
+
+## 🏛️ Architecture & Implementation
 
 ### Core Concepts
 
-- **[Architecture](architecture.md)**: Protocol-driven design, stateless
+- **[Architecture](architecture.md)** - Protocol-driven design, stateless
   adapters, dual sync/async APIs
-- **[Protocols](protocols.md)**: Identifiable, Temporal, Embeddable protocols
-  with mixins
-- **[Fields](fields.md)**: Advanced field descriptors, composition methods,
-  adapter integration
+- **[Creating Adapters](creating-adapters.md)** - Custom adapter patterns,
+  error handling, metadata integration
+- **[Async Patterns](async-patterns.md)** - Async adapters, concurrency
+  control, resource management
 
-### Implementation Guides
+### Testing & Examples
 
-- **[Creating Adapters](creating-adapters.md)**: Custom adapter patterns, error
-  handling, metadata integration
-- **[Async Patterns](async-patterns.md)**: Async adapters, concurrency control,
-  resource management
-- **[Testing Strategies](testing-strategies.md)**: Protocol testing, adapter
+- **[Testing Strategies](testing-strategies.md)** - Protocol testing, adapter
   testing, async testing patterns
-
-### End-to-End Examples
-
-- **[Multi-Database Backend](end-to-end-backend.md)**: Building backends with
+- **[End-to-End Backend](end-to-end-backend.md)** - Building backends with
   PostgreSQL, MongoDB, Neo4j
 
 ## Getting Started Flow

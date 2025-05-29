@@ -16,18 +16,24 @@ protocols to create consistent, type-safe models for database operations.
 Protocols define behavioral contracts. Use protocol-specific field families to ensure
 your models can leverage protocol functionality.
 
+**Important Note**: The `create_protocol_model` function provides **structural
+compliance** by adding the required fields for protocols. It does NOT add behavioral
+methods from protocol mixins. If you need methods like `update_timestamp()` from
+`TemporalMixin`, you must explicitly inherit from the mixin classes (see examples below).
+
 ## Pattern 1: Basic Entity with Protocols
 
 For most database entities, combine Identifiable and Temporal protocols:
 
 ```python
 from pydapter.fields import create_protocol_model, FieldTemplate
+from pydapter.protocols import IDENTIFIABLE, TEMPORAL
 
-# Simple entity
+# Simple entity (structure only)
 User = create_protocol_model(
     "User",
-    "identifiable",
-    "temporal",
+    IDENTIFIABLE,
+    TEMPORAL,
     # Add domain-specific fields
     username=FieldTemplate(base_type=str, max_length=50),
     email=FieldTemplate(base_type=str),
@@ -35,7 +41,21 @@ User = create_protocol_model(
 )
 
 # The model now has: id, created_at, updated_at, username, email, is_active
-# And can be used with any adapter that expects Identifiable/Temporal protocols
+# But NO behavioral methods yet
+
+# For full protocol compliance with methods, use create_protocol_model_class:
+from pydapter.protocols import create_protocol_model_class
+
+User = create_protocol_model_class(
+    "User",
+    IDENTIFIABLE,
+    TEMPORAL,
+    username=FieldTemplate(base_type=str, max_length=50),
+    email=FieldTemplate(base_type=str),
+    is_active=FieldTemplate(base_type=bool, default=True)
+)
+
+# Now has both fields AND methods like update_timestamp()
 ```
 
 ## Pattern 2: Versioned Entities with Audit Trail
@@ -120,33 +140,36 @@ async def search_similar(adapter, query_embedding):
 
 ## Pattern 5: Event Sourcing
 
-For event-driven architectures using the complete Event protocol:
+For event-driven architectures, use the Event class directly:
 
 ```python
-from pydapter.fields import create_protocol_model, FieldTemplate
-from pydapter.fields.execution import Execution
+from pydapter.protocols import Event
+from pydantic import Field
 
-# EVENT_COMPLETE includes all event-related fields
-UserEvent = create_protocol_model(
-    "UserEvent",
-    "event",  # Includes: id, created_at, updated_at, event_type, content,
-              # request, embedding, sha256, execution
-    user_id=FieldTemplate(base_type=str),
-    action=FieldTemplate(base_type=str),
-    details=FieldTemplate(
-        base_type=dict,
-        default_factory=dict
-    )
-)
+# Extend the Event class for custom event types
+class UserEvent(Event):
+    user_id: str = Field(..., description="User identifier")
+    action: str = Field(..., description="Action performed")
+    details: dict = Field(default_factory=dict, description="Additional details")
 
 # Create events
 login_event = UserEvent(
+    handler=lambda: None,  # Required by Event
+    handler_arg=(),
+    handler_kwargs={},
     event_type="user.login",
     user_id="user123",
     action="login",
     content={"ip": "192.168.1.1", "user_agent": "..."},
     request={"endpoint": "/api/login", "method": "POST"}
 )
+
+# The Event class includes all protocol behaviors:
+# - IdentifiableMixin
+# - TemporalMixin
+# - EmbeddableMixin
+# - InvokableMixin
+# - CryptographicalMixin
 ```
 
 ## Pattern 6: Custom Protocol Combinations
@@ -177,7 +200,48 @@ Task = create_protocol_model(
 )
 ```
 
-## Pattern 7: Validation Patterns
+## Pattern 7: Adding Behavioral Methods to Protocol Models
+
+To get both structural fields AND behavioral methods from protocols:
+
+```python
+from pydapter.fields import FieldTemplate
+from pydapter.protocols import (
+    IDENTIFIABLE, TEMPORAL,
+    create_protocol_model_class,
+    combine_with_mixins,
+    create_protocol_model
+)
+
+# Option 1: Use create_protocol_model_class (recommended)
+User = create_protocol_model_class(
+    "User",
+    IDENTIFIABLE,
+    TEMPORAL,
+    username=FieldTemplate(base_type=str, max_length=50),
+    email=FieldTemplate(base_type=str)
+)
+
+# Option 2: Use combine_with_mixins
+# First create structure
+UserStructure = create_protocol_model(
+    "UserStructure",
+    IDENTIFIABLE,
+    TEMPORAL,
+    username=FieldTemplate(base_type=str, max_length=50),
+    email=FieldTemplate(base_type=str)
+)
+# Then add behaviors
+User = combine_with_mixins(UserStructure, IDENTIFIABLE, TEMPORAL, name="User")
+
+# Both options give you fields AND methods
+user = User(username="john_doe", email="john@example.com")
+user.update_timestamp()  # Method from TemporalMixin
+print(user.created_at)   # Field from protocol
+print(user.updated_at)   # Updated by the method call
+```
+
+## Pattern 8: Validation Patterns
 
 Use pre-built validation patterns for common field types:
 

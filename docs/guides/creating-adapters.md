@@ -2,7 +2,7 @@
 
 ## Adapter Interface
 
-All adapters implement the [`Adapter`](../../src/pydapter/core.py:21) protocol:
+All adapters implement the `Adapter` protocol:
 
 ```python
 from pydapter.core import Adapter
