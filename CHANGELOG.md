@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.3 - 2025-05-29
+
+### Added
+
+- **Field Families and Common Patterns Library** (Issue #114): Introduced a
+  comprehensive field system with:
+  - `FieldTemplate`: Reusable field definitions with flexible naming
+  - `FieldFamilies`: Core database pattern collections (ENTITY, SOFT_DELETE, AUDIT)
+  - `DomainModelBuilder`: Fluent API for building models with method chaining
+  - `ProtocolFieldFamilies`: Field sets that ensure protocol compliance
+  - `ValidationPatterns`: Common regex patterns and constraint builders
+  - `create_protocol_model()`: Function to create protocol-compliant models
+
+### Fixed
+
+- Fixed import organization issues (E402 errors)
+- Updated tests to reflect simplified field families
+- Fixed email validation test expectations
+- Updated documentation to align with new architecture
+
 ## 0.2.0 - 2025-05-24
 
 ### Highlights

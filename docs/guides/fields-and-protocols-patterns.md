@@ -1,16 +1,20 @@
 # Fields and Protocols: Best Usage Patterns
 
-This guide demonstrates the best practices for using pydapter's field system with protocols to create consistent, type-safe models for database operations.
+This guide demonstrates the best practices for using pydapter's field system with
+protocols to create consistent, type-safe models for database operations.
 
 ## Core Concepts
 
 ### 1. Field Templates vs Direct Fields
+
 - **Field Templates**: Reusable definitions that can create fields with different names
 - **Protocol Families**: Pre-defined field sets that match protocol requirements
 - **Field Families**: Logical groupings for common database patterns
 
 ### 2. Protocol Alignment
-Protocols define behavioral contracts. Use protocol-specific field families to ensure your models can leverage protocol functionality.
+
+Protocols define behavioral contracts. Use protocol-specific field families to ensure
+your models can leverage protocol functionality.
 
 ## Pattern 1: Basic Entity with Protocols
 
@@ -95,7 +99,7 @@ from pydapter.fields import create_protocol_model, FieldTemplate
 Document = create_protocol_model(
     "Document",
     "identifiable",
-    "temporal", 
+    "temporal",
     "embeddable",  # Adds embedding field
     title=FieldTemplate(base_type=str),
     content=FieldTemplate(base_type=str),
@@ -125,7 +129,7 @@ from pydapter.fields.execution import Execution
 # EVENT_COMPLETE includes all event-related fields
 UserEvent = create_protocol_model(
     "UserEvent",
-    "event",  # Includes: id, created_at, updated_at, event_type, content, 
+    "event",  # Includes: id, created_at, updated_at, event_type, content,
               # request, embedding, sha256, execution
     user_id=FieldTemplate(base_type=str),
     action=FieldTemplate(base_type=str),
@@ -250,12 +254,14 @@ SearchableProduct = (
 ## Best Practices
 
 ### 1. Choose the Right Pattern
+
 - **Simple CRUD**: Use `create_protocol_model` with "identifiable" and "temporal"
 - **Audit Requirements**: Add audit fields with `.with_audit_fields()`
 - **Soft Delete**: Use `.with_soft_delete()` for logical deletion
 - **Event Sourcing**: Use the "event" protocol for complete event tracking
 
 ### 2. Protocol Selection Guidelines
+
 ```python
 # Minimal entity
 Model = create_protocol_model("Model", "identifiable")
@@ -271,6 +277,7 @@ Model = create_protocol_model("Model", "event")
 ```
 
 ### 3. Field Template Reuse
+
 ```python
 # Define common templates once
 from pydapter.fields import FieldTemplate
@@ -300,7 +307,7 @@ Invoice = create_protocol_model(
 )
 
 Payment = create_protocol_model(
-    "Payment", 
+    "Payment",
     "identifiable",
     "temporal",
     amount=MONEY,
@@ -309,6 +316,7 @@ Payment = create_protocol_model(
 ```
 
 ### 4. Timezone Awareness
+
 Always specify timezone awareness explicitly:
 
 ```python
@@ -320,6 +328,7 @@ Model = create_protocol_model("Model", "temporal", timezone_aware=False)
 ```
 
 ### 5. Composing Complex Models
+
 For complex requirements, combine approaches:
 
 ```python
@@ -377,4 +386,5 @@ User = create_protocol_model(
 )
 ```
 
-This approach ensures protocol compliance while maintaining flexibility for domain-specific needs.
+This approach ensures protocol compliance while maintaining flexibility for
+domain-specific needs.

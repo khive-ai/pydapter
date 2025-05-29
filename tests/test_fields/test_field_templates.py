@@ -205,7 +205,9 @@ class TestCommonTemplates:
 
             # Valid email
             instance = TestModel(email="TEST@EXAMPLE.COM")
-            assert instance.email == "test@example.com"  # Should be lowercased
+            assert (
+                instance.email == "TEST@example.com"
+            )  # EmailStr normalizes domain only
 
             # Invalid email
             with pytest.raises(ValidationError):
