@@ -2,237 +2,275 @@
 
 ## Field System Overview
 
-Pydapter extends Pydantic fields with:
+Pydapter provides a comprehensive field system built on top of Pydantic v2 that includes:
 
-- Advanced descriptors
-- Composition methods (`as_nullable()`, `as_listable()`)
-- Pre-configured fields for common patterns
-- Metadata for adapter integration
+- **Field Templates**: Reusable field definitions with flexible naming
+- **Common Templates**: Pre-configured templates for common field types
+  (IDs, timestamps, etc.)
+- **Field Families**: Logical groupings of fields for database patterns
+- **Protocol Families**: Field sets that match pydapter protocol requirements
+- **Validation Patterns**: Common regex patterns and constraint builders
+- **Domain Model Builder**: Fluent API for creating models
 
-## Core Field Class
+## Field Templates
 
-```python
-from pydapter.fields import Field
-
-# Basic field definition
-name_field = Field(
-    name="name",
-    annotation=str,
-    description="User's full name",
-    validator=lambda cls, v: v.strip() if v else v
-)
-```
-
-## Pre-configured Fields
-
-### Essential Fields
-
-- **`ID_FROZEN`**: Immutable UUID field
-- **`ID_NULLABLE`**: Optional UUID field
-- **`DATETIME`**: Timezone-aware datetime with ISO serialization
-- **`DATETIME_NULLABLE`**: Optional datetime field
-- **`EMBEDDING`**: Vector embedding field with validation
-- **`EXECUTION`**: Execution tracking field
-
-### Usage Pattern
+Field templates are reusable field definitions that can be customized for different contexts:
 
 ```python
-from pydapter.fields import ID_FROZEN, DATETIME, EMBEDDING
+from pydapter.fields import FieldTemplate
 
-class Document(BaseModel):
-    id: UUID = ID_FROZEN.field_info
-    created_at: datetime = DATETIME.field_info
-    embedding: list[float] = EMBEDDING.field_info
-```
-
-## Field Composition
-
-### Nullable Transformation
-
-```python
-email_field = Field(name="email", annotation=str, validator=validate_email)
-optional_email = email_field.as_nullable()
-
-class User(BaseModel):
-    email: str = email_field.field_info
-    backup_email: str | None = optional_email.field_info
-```
-
-### List Transformation
-
-```python
-tag_field = Field(name="tag", annotation=str, validator=lambda cls, v: v.lower())
-tags_field = tag_field.as_listable()          # Accepts single value or list
-strict_tags = tag_field.as_listable(strict=True)  # Only accepts lists
-```
-
-## Custom Field Patterns
-
-### Domain-Specific Fields
-
-```python
-CURRENCY_AMOUNT = Field(
-    name="amount",
-    annotation=Decimal,
-    validator=lambda cls, v: validate_positive_decimal(v),
-    description="Positive currency amount",
-    json_schema_extra={"format": "decimal", "multipleOf": 0.01}
+# Define a reusable template
+name_template = FieldTemplate(
+    base_type=str,
+    description="Name field",
+    min_length=1,
+    max_length=100
 )
 
-PERCENTAGE = Field(
-    name="percentage",
-    annotation=float,
-    validator=lambda cls, v: max(0.0, min(100.0, float(v))),
-    json_schema_extra={"minimum": 0, "maximum": 100}
-)
-```
+# Use in models with different field names
+from pydapter.fields import create_model
 
-### Field Families
-
-```python
-# Base field
-EMAIL_BASE = Field(name="email", annotation=str, validator=validate_email)
-
-# Variations
-EMAIL_REQUIRED = EMAIL_BASE
-EMAIL_OPTIONAL = EMAIL_BASE.as_nullable()
-EMAIL_LIST = EMAIL_BASE.as_listable()
-```
-
-## Adapter Integration
-
-### Metadata for Database Adapters
-
-```python
-VECTOR_FIELD = Field(
-    name="embedding",
-    annotation=list[float],
-    json_schema_extra={
-        "vector_dim": 768,
-        "distance_metric": "cosine",
-        "db_index_type": "hnsw"
-    }
-)
-
-USERNAME_FIELD = Field(
-    name="username",
-    annotation=str,
-    json_schema_extra={
-        "db_index": True,
-        "db_unique": True,
-        "db_column": "user_name"
+User = create_model(
+    "User",
+    fields={
+        "username": name_template.create_field("username"),
+        "full_name": name_template.create_field("full_name")
     }
 )
 ```
 
-### Accessing Field Metadata
+## Common Field Templates
+
+Pydapter provides pre-configured templates for common field types:
 
 ```python
-def create_table_schema(model_class):
-    for field_name, field_info in model_class.model_fields.items():
-        extra = field_info.json_schema_extra or {}
+from pydapter.fields import (
+    ID_TEMPLATE,
+    CREATED_AT_TEMPLATE,
+    UPDATED_AT_TEMPLATE,
+    EMAIL_TEMPLATE,
+    URL_TEMPLATE,
+    JSON_TEMPLATE,
+    TAGS_TEMPLATE
+)
 
-        if extra.get("db_index"):
-            print(f"CREATE INDEX ON {field_name}")
-        if extra.get("vector_dim"):
-            print(f"CREATE VECTOR COLUMN dimension={extra['vector_dim']}")
+# Using templates in model creation
+fields = {
+    "id": ID_TEMPLATE.create_field("id"),
+    "email": EMAIL_TEMPLATE.create_field("email"),
+    "website": URL_TEMPLATE.create_field("website"),
+    "tags": TAGS_TEMPLATE.create_field("tags")
+}
+
+User = create_model("User", fields=fields)
 ```
 
-## Dynamic Field Creation
+## Field Families
+
+Field families are logical groupings of fields for common database patterns:
 
 ```python
-def create_string_field(name: str, max_length: int = None):
-    """Factory for string fields with optional length validation"""
-    validator = lambda cls, v: v[:max_length] if max_length and v else v
+from pydapter.fields import FieldFamilies, create_field_dict, create_model
 
-    return Field(
-        name=name,
-        annotation=str,
-        validator=validator if max_length else None,
-        json_schema_extra={"maxLength": max_length} if max_length else {}
+# Core families available:
+# - ENTITY: id, created_at, updated_at
+# - ENTITY_TZ: Same but with timezone-aware timestamps
+# - SOFT_DELETE: deleted_at, is_deleted
+# - AUDIT: created_by, updated_by, version
+
+# Combine families to create models
+fields = create_field_dict(
+    FieldFamilies.ENTITY,
+    FieldFamilies.AUDIT,
+    FieldFamilies.SOFT_DELETE
+)
+
+AuditedEntity = create_model("AuditedEntity", fields=fields)
+```
+
+## Domain Model Builder
+
+The DomainModelBuilder provides a fluent API for creating models:
+
+```python
+from pydapter.fields import DomainModelBuilder, FieldTemplate
+
+# Build a model with method chaining
+TrackedEntity = (
+    DomainModelBuilder("TrackedEntity")
+    .with_entity_fields(timezone_aware=True)
+    .with_soft_delete(timezone_aware=True)
+    .with_audit_fields()
+    .add_field("name", FieldTemplate(
+        base_type=str,
+        description="Entity name",
+        max_length=100
+    ))
+    .add_field("status", FieldTemplate(
+        base_type=str,
+        default="active",
+        description="Entity status"
+    ))
+    .build()
+)
+```
+
+## Protocol Field Families
+
+For models that need to implement pydapter protocols:
+
+```python
+from pydapter.fields import create_protocol_model, FieldTemplate
+
+# Create a model implementing multiple protocols
+Document = create_protocol_model(
+    "Document",
+    "identifiable",    # Adds id field
+    "temporal",        # Adds created_at, updated_at
+    "embeddable",      # Adds embedding field
+    "cryptographical", # Adds sha256 field
+    timezone_aware=True,
+    # Add custom fields
+    title=FieldTemplate(base_type=str, description="Document title"),
+    content=FieldTemplate(base_type=str, description="Document content")
+)
+```
+
+## Validation Patterns
+
+Use pre-built validation patterns for common field types:
+
+```python
+from pydapter.fields import (
+    ValidationPatterns,
+    create_pattern_template,
+    create_range_template
+)
+
+# Use pre-defined patterns
+slug_field = create_pattern_template(
+    ValidationPatterns.SLUG,
+    description="URL-friendly slug",
+    error_message="Must contain only lowercase letters, numbers, and hyphens"
+)
+
+phone_field = create_pattern_template(
+    ValidationPatterns.US_PHONE,
+    description="US phone number"
+)
+
+# Create range-constrained fields
+percentage = create_range_template(
+    float,
+    ge=0,
+    le=100,
+    description="Percentage value"
+)
+
+age = create_range_template(
+    int,
+    ge=0,
+    le=150,
+    description="Person's age"
+)
+```
+
+## Field Template Modifiers
+
+Field templates support transformation methods:
+
+```python
+from pydapter.fields import ID_TEMPLATE, EMAIL_TEMPLATE
+
+# Make fields nullable
+nullable_id = ID_TEMPLATE.as_nullable()
+optional_email = EMAIL_TEMPLATE.as_nullable()
+
+# Copy with modifications
+custom_id = ID_TEMPLATE.copy(
+    description="Custom identifier",
+    frozen=False  # Make it mutable
+)
+
+# Change field properties
+long_description = FieldTemplate(
+    base_type=str,
+    max_length=1000
+).copy(max_length=2000)
+```
+
+## Complete Example
+
+Here's a comprehensive example combining the field system features:
+
+```python
+from pydapter.fields import (
+    DomainModelBuilder,
+    FieldTemplate,
+    create_protocol_model,
+    create_pattern_template,
+    ValidationPatterns
+)
+
+# 1. Using DomainModelBuilder
+BlogPost = (
+    DomainModelBuilder("BlogPost")
+    .with_entity_fields(timezone_aware=True)
+    .with_soft_delete()
+    .with_audit_fields()
+    .add_field("title", FieldTemplate(
+        base_type=str,
+        description="Post title",
+        max_length=200
+    ))
+    .add_field("slug", create_pattern_template(
+        ValidationPatterns.SLUG,
+        description="URL slug"
+    ))
+    .add_field("content", FieldTemplate(
+        base_type=str,
+        description="Post content"
+    ))
+    .build()
+)
+
+# 2. Using Protocol Models
+EmbeddableDocument = create_protocol_model(
+    "EmbeddableDocument",
+    "identifiable",
+    "temporal",
+    "embeddable",
+    title=FieldTemplate(base_type=str),
+    content=FieldTemplate(base_type=str),
+    tags=FieldTemplate(
+        base_type=list[str],
+        default_factory=list
     )
+)
 
-# Usage
-title_field = create_string_field("title", max_length=100)
-description_field = create_string_field("description", max_length=500)
+# 3. Custom field family
+custom_family = {
+    "name": FieldTemplate(base_type=str, max_length=100),
+    "email": EMAIL_TEMPLATE,
+    "is_active": FieldTemplate(base_type=bool, default=True)
+}
+
+CustomModel = (
+    DomainModelBuilder("CustomModel")
+    .with_entity_fields()
+    .with_family(custom_family)
+    .build()
+)
 ```
 
-## Key Tips for LLM Developers
+## Key Design Principles
 
-### 1. Field Reuse Strategy
+1. **Templates over instances**: Field templates can be reused across multiple fields
+2. **Composition over inheritance**: Build complex models by combining families
+3. **Protocol alignment**: Use protocol families for models that implement
+   pydapter protocols
+4. **Validation patterns**: Leverage pre-built patterns for common validation needs
+5. **Fluent API**: Use method chaining for readable model construction
 
-```python
-# Create fields module for your domain
-# fields.py
-USER_ID = ID_FROZEN.copy(name="user_id")
-CREATED_AT = DATETIME.copy(name="created_at")
-PRICE = Field(name="price", annotation=Decimal, validator=validate_positive)
-
-# Use across models
-class User(BaseModel):
-    id: UUID = USER_ID.field_info
-    created_at: datetime = CREATED_AT.field_info
-
-class Order(BaseModel):
-    id: UUID = ID_FROZEN.field_info  # or create ORDER_ID variant
-    user_id: UUID = USER_ID.field_info
-    total: Decimal = PRICE.field_info
-```
-
-### 2. Composition Over Duplication
-
-```python
-# Base field
-BASE_TEXT = Field(name="text", annotation=str, validator=lambda cls, v: v.strip())
-
-# Composed variations
-TITLE = BASE_TEXT.copy(name="title", description="Title text")
-OPTIONAL_DESCRIPTION = BASE_TEXT.copy(name="description").as_nullable()
-TAG_LIST = BASE_TEXT.as_listable(strict=True)
-```
-
-### 3. Validation Patterns
-
-```python
-def validate_email(cls, v):
-    if v and "@" not in v:
-        raise ValueError("Invalid email format")
-    return v
-
-def validate_positive(cls, v):
-    if v is not None and v < 0:
-        raise ValueError("Must be positive")
-    return v
-```
-
-### 4. Testing Field Behavior
-
-```python
-def test_field_composition():
-    base = Field(name="test", annotation=str)
-    nullable = base.as_nullable()
-    listable = base.as_listable()
-
-    assert nullable.annotation != base.annotation  # Should be Union[str, None]
-    assert base.name == nullable.name == listable.name
-```
-
-### 5. Common Caveats
-
-- **Field copying**: Use `.copy()` to avoid modifying original fields
-- **Validator scope**: Validators receive `(cls, value)`, not just `value`
-- **Composition order**: `as_nullable().as_listable()` vs
-  `as_listable().as_nullable()`
-- **Metadata inheritance**: `json_schema_extra` is preserved through composition
-
-### 6. Integration with Protocols
-
-```python
-class StandardEntity(BaseModel, IdentifiableMixin, TemporalMixin):
-    id: UUID = ID_FROZEN.field_info
-    created_at: datetime = DATETIME.field_info
-    updated_at: datetime = DATETIME.field_info
-```
-
-The field system provides a powerful foundation for creating reusable, validated
-field definitions that integrate seamlessly with pydapter's adapter ecosystem.
+The field system provides a foundation for creating consistent, validated data
+models that integrate seamlessly with pydapter's adapter ecosystem.
