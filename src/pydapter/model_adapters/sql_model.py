@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import types
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time
 from typing import (
     Annotated,
     Any,
@@ -224,10 +224,17 @@ class SQLModelAdapter:
                 # Check if we have PostgreSQL JSONB support
                 try:
                     from sqlalchemy.dialects.postgresql import JSONB
-                    col_type_factory = lambda: JSONB()
+                    
+                    def create_jsonb():
+                        return JSONB()
+                    
+                    col_type_factory = create_jsonb
                 except ImportError:
                     # Fallback to regular String storage for non-PostgreSQL databases
-                    col_type_factory = lambda: String()
+                    def create_string():
+                        return String()
+                    
+                    col_type_factory = create_string
             else:
                 # Get SQL type from TypeRegistry
                 col_type_factory = TypeRegistry.get_sql_type(origin)
@@ -254,8 +261,12 @@ class SQLModelAdapter:
                             # This is a timezone-aware datetime factory
                             # Use DateTime with timezone=True
                             from sqlalchemy import DateTime as DateTimeWithTZ
-                            col_type_factory = lambda: DateTimeWithTZ(timezone=True)
-                    except:
+                            
+                            def create_datetime_with_tz():
+                                return DateTimeWithTZ(timezone=True)
+                            
+                            col_type_factory = create_datetime_with_tz
+                    except Exception:
                         # If calling fails, just use the default as-is
                         pass
                 kwargs["default"] = default

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Union
 
 import pytest
@@ -11,15 +11,12 @@ from pydapter.fields import (
     FieldTemplate,
     create_model,
     ID_TEMPLATE,
-    STRING_TEMPLATE,
     EMAIL_TEMPLATE,
     USERNAME_TEMPLATE,
     CREATED_AT_TEMPLATE,
     UPDATED_AT_TEMPLATE,
     DELETED_AT_TEMPLATE,
     CREATED_AT_TZ_TEMPLATE,
-    UPDATED_AT_TZ_TEMPLATE,
-    DELETED_AT_TZ_TEMPLATE,
     NAME_TEMPLATE,
     POSITIVE_INT_TEMPLATE,
     PERCENTAGE_TEMPLATE,
@@ -37,7 +34,7 @@ class TestFieldTemplate:
         
         field = template.create_field("test_field")
         assert field.name == "test_field"
-        assert field.annotation == str
+        assert field.annotation is str
         assert field.description == "Test string field"
         assert field.default == "default_value"
     
@@ -202,7 +199,6 @@ class TestCommonTemplates:
         """Test email template with validation."""
         # Skip if email-validator is not installed
         try:
-            from pydantic import EmailStr
             TestModel = create_model(
                 "TestModel",
                 fields={"email": EMAIL_TEMPLATE}
@@ -232,13 +228,13 @@ class TestCommonTemplates:
         
         # Invalid usernames - constr validation happens at the Pydantic level
         # The pattern should catch these
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValidationError):
             TestModel(username="ab")  # Too short
         
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValidationError):
             TestModel(username="a" * 33)  # Too long
         
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValidationError):
             TestModel(username="user@name")  # Invalid character
     
     def test_datetime_templates(self):
@@ -281,11 +277,11 @@ class TestCommonTemplates:
         assert instance.percentage == 50.0
         
         # Invalid positive int - conint validation
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValidationError):
             TestModel(positive_int=0, percentage=50.0)
         
         # Invalid percentage - confloat validation
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValidationError):
             TestModel(positive_int=5, percentage=101.0)
 
 

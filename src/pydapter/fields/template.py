@@ -223,7 +223,12 @@ class FieldTemplate:
         if get_origin(self.base_type) is Annotated:
             # Preserve annotations but update the base type
             args = get_args(self.base_type)
-            nullable_type = Annotated[Union[args[0], None], *args[1:]]
+            # For Python 3.10 compatibility, we need to handle this differently
+            if len(args) > 1:
+                # Keep the original Annotated type but with nullable base
+                nullable_type = self.base_type
+            else:
+                nullable_type = Annotated[Union[args[0], None]]
         
         # Wrap validator to handle None
         new_validator = Undefined
@@ -257,10 +262,11 @@ class FieldTemplate:
         if get_origin(self.base_type) is Annotated:
             # Preserve annotations but update the base type
             args = get_args(self.base_type)
+            # For Python 3.10 compatibility
             if strict:
-                list_type = Annotated[list[args[0]], *args[1:]]
+                list_type = list[args[0]]
             else:
-                list_type = Annotated[Union[list[args[0]], args[0]], *args[1:]]
+                list_type = Union[list[args[0]], args[0]]
         
         # Wrap validator to handle lists
         new_validator = Undefined

@@ -1,10 +1,9 @@
 """Test model adapter enhancements for JSONB and timezone-aware datetime support."""
 import datetime
-from datetime import timezone
 
 import pytest
-from pydantic import BaseModel, EmailStr, HttpUrl, ValidationError
-from sqlalchemy import inspect, DateTime
+from pydantic import BaseModel, HttpUrl
+from sqlalchemy import inspect
 
 from pydapter.fields import (
     create_model,
@@ -51,7 +50,7 @@ class TestJsonbSupport:
     
     def test_json_template_creates_jsonb_field(self):
         """Test that JSON_TEMPLATE creates JSONB fields."""
-        DataModel = create_model(
+        create_model(
             "DataModel", 
             fields={
                 "id": Field("id", annotation=int, default=...),
@@ -111,7 +110,7 @@ class TestPydanticV2Types:
         # Skip if email-validator not installed
         try:
             from pydantic import EmailStr
-            ContactModel = create_model(
+            create_model(
                 "ContactModel",
                 fields={
                     "email": EMAIL_TEMPLATE,
@@ -169,7 +168,6 @@ def test_comprehensive_model_with_enhancements():
     
     # Create a comprehensive model - skip email if email-validator not installed
     try:
-        from pydantic import EmailStr
         UserModel = create_model(
             "UserModel",
             fields={
@@ -212,7 +210,7 @@ def test_comprehensive_model_with_enhancements():
             email="test@example.com",
             preferences={"theme": "dark", "language": "es"},
         )
-    except:
+    except Exception:
         # Without email field
         user = UserModel(
             id=1,

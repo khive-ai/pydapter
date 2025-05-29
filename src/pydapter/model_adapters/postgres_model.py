@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ipaddress
+from datetime import datetime
 from typing import Any, Callable, get_args, get_origin
 
 from pydantic import BaseModel
@@ -370,14 +371,17 @@ class PostgresModelAdapter(SQLModelAdapter):
                 if callable(default) and origin is datetime:
                     # Test if this is a timezone-aware datetime factory
                     try:
-                        from datetime import datetime, timezone
                         test_val = default()
                         if isinstance(test_val, datetime) and test_val.tzinfo is not None:
                             # This is a timezone-aware datetime factory
                             # Use TIMESTAMPTZ for PostgreSQL
                             from sqlalchemy import DateTime
-                            col_type_factory = lambda: DateTime(timezone=True)
-                    except:
+                            
+                            def create_datetime_with_tz():
+                                return DateTime(timezone=True)
+                            
+                            col_type_factory = create_datetime_with_tz
+                    except Exception:
                         # If calling fails, just use the default as-is
                         pass
                 kwargs["default"] = default
