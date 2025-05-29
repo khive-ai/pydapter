@@ -2576,7 +2576,7 @@ wheels = [
 
 [[package]]
 name = "pydapter"
-version = "0.2.2"
+version = "0.2.3"
 source = { editable = "." }
 dependencies = [
     { name = "orjson" },
@@ -2708,19 +2708,19 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiohttp", marker = "extra == 'aiohttp'", specifier = ">=3.11.10" },
-    { name = "alembic", marker = "extra == 'migrations-sql'", specifier = ">=1.11.0" },
+    { name = "aiohttp", marker = "extra == 'aiohttp'", specifier = ">=3.12.0" },
+    { name = "alembic", marker = "extra == 'migrations-sql'", specifier = ">=1.10.0" },
     { name = "anyio", marker = "extra == 'test'", specifier = ">=4.9.0" },
-    { name = "asyncpg", marker = "extra == 'postgres'", specifier = ">=0.29" },
+    { name = "asyncpg", marker = "extra == 'postgres'", specifier = ">=0.28" },
     { name = "bandit", marker = "extra == 'lint'", specifier = ">=1.7.5" },
     { name = "black", marker = "extra == 'lint'", specifier = ">=25.1.0" },
-    { name = "colorama", marker = "extra == 'utils'", specifier = ">=0.4.6" },
+    { name = "colorama", marker = "extra == 'utils'", specifier = ">=0.4.0" },
     { name = "factory-boy", marker = "extra == 'test'", specifier = ">=3.3.0" },
     { name = "faker", marker = "extra == 'test'", specifier = ">=37.3.0" },
     { name = "greenlet", marker = "extra == 'postgres'", specifier = ">=3.0.0" },
-    { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.131.25" },
+    { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.130.0" },
     { name = "hypothesis-jsonschema", marker = "extra == 'test'", specifier = ">=0.23.0" },
-    { name = "ipykernel", marker = "extra == 'utils'", specifier = ">=6.29.5" },
+    { name = "ipykernel", marker = "extra == 'utils'", specifier = ">=6.0.0" },
     { name = "isort", marker = "extra == 'lint'", specifier = ">=6.0.1" },
     { name = "memory-profiler", marker = "extra == 'performance'", specifier = ">=0.61.0" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.5.0" },
@@ -2729,16 +2729,16 @@ requires-dist = [
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.24.0" },
     { name = "motor", marker = "extra == 'motor'", specifier = ">=3" },
     { name = "mutmut", marker = "extra == 'test'", specifier = ">=3.3.0" },
-    { name = "neo4j", marker = "extra == 'neo4j'", specifier = ">=5.19" },
-    { name = "openpyxl", marker = "extra == 'excel'", specifier = ">=3.1.5" },
+    { name = "neo4j", marker = "extra == 'neo4j'", specifier = ">=5.20" },
+    { name = "openpyxl", marker = "extra == 'excel'", specifier = ">=3.0.0" },
     { name = "orjson", specifier = ">=3.10.18" },
-    { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.2" },
+    { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.0" },
     { name = "pandas-stubs", marker = "extra == 'docs'", specifier = ">=2.2.3" },
-    { name = "pgvector", marker = "extra == 'pgvector'", specifier = ">=0.4.1" },
+    { name = "pgvector", marker = "extra == 'pgvector'", specifier = ">=0.4.0" },
     { name = "pre-commit", marker = "extra == 'lint'", specifier = ">=4.2.0" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'postgres'", specifier = ">=3" },
-    { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = ">=2.9.10" },
-    { name = "py-spy", marker = "extra == 'performance'", specifier = ">=0.3.14" },
+    { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = ">=2.8.0" },
+    { name = "py-spy", marker = "extra == 'performance'", specifier = ">=0.4.0" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydapter", extras = ["aiohttp"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["excel"], marker = "extra == 'all'" },
@@ -2755,7 +2755,7 @@ requires-dist = [
     { name = "pydapter", extras = ["sql"], marker = "extra == 'postgres'" },
     { name = "pydapter", extras = ["weaviate"], marker = "extra == 'all'" },
     { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = ">=10.7.0" },
-    { name = "pymongo", marker = "extra == 'mongo'", specifier = ">=4.7" },
+    { name = "pymongo", marker = "extra == 'mongo'", specifier = ">=4.10" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.5" },
     { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=1.0.0" },
     { name = "pytest-benchmark", marker = "extra == 'test'", specifier = ">=5.0.0" },
@@ -2765,7 +2765,7 @@ requires-dist = [
     { name = "pytest-watch", marker = "extra == 'test'", specifier = ">=4.2.0" },
     { name = "pytest-xdist", marker = "extra == 'test'", specifier = ">=3.3.0" },
     { name = "python-dotenv", marker = "extra == 'utils'", specifier = ">=1.1.0" },
-    { name = "qdrant-client", marker = "extra == 'qdrant'", specifier = ">=1.14" },
+    { name = "qdrant-client", marker = "extra == 'qdrant'", specifier = ">=1.10" },
     { name = "ruff", marker = "extra == 'lint'", specifier = ">=0.11.11" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'sql'", specifier = ">=2.0" },
     { name = "testcontainers", extras = ["mongodb", "postgres", "qdrant", "weaviate"], marker = "extra == 'test'", specifier = ">=3.7.0" },
@@ -2773,19 +2773,13 @@ requires-dist = [
     { name = "trio", marker = "extra == 'test'", specifier = ">=0.22.0" },
     { name = "types-toml", marker = "extra == 'docs'", specifier = ">=0.10.8" },
     { name = "weaviate", marker = "extra == 'weaviate'", specifier = ">=0.1.2" },
-    { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.4" },
-    { name = "xlsxwriter", marker = "extra == 'excel'", specifier = ">=3.2" },
+    { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.10" },
+    { name = "xlsxwriter", marker = "extra == 'excel'", specifier = ">=3.0" },
 ]
 provides-extras = ["docs", "lint", "test", "performance", "utils", "pandas", "excel", "sql", "postgres", "pgvector", "mongo", "weaviate", "neo4j", "motor", "qdrant", "aiohttp", "migrations-sql", "migrations", "all"]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "pydapter", extras = ["docs"] },
-    { name = "pydapter", extras = ["lint"] },
-    { name = "pydapter", extras = ["performance"] },
-    { name = "pydapter", extras = ["test"] },
-    { name = "pydapter", extras = ["utils"] },
-]
+dev = [{ name = "pydapter", extras = ["docs", "lint", "test", "performance", "utils"] }]
 
 [[package]]
 name = "pygments"
