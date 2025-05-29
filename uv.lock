@@ -686,6 +686,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a2/55/8f8cab2afd404cf578136ef2cc5dfb50baa1761b68c9da1fb1e4eed343c9/docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491", size = 25901, upload-time = "2014-06-16T11:18:57.406Z" }
 
 [[package]]
+name = "email-validator"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dnspython" },
+    { name = "idna" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/48/ce/13508a1ec3f8bb981ae4ca79ea40384becc868bfae97fd1c942bb3a001b1/email_validator-2.2.0.tar.gz", hash = "sha256:cb690f344c617a714f22e66ae771445a1ceb46821152df8e165c5f9a364582b7", size = 48967, upload-time = "2024-06-20T11:30:30.034Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/ee/bf0adb559ad3c786f12bcbc9296b3f5675f529199bef03e2df281fa1fadb/email_validator-2.2.0-py3-none-any.whl", hash = "sha256:561977c2d73ce3611850a06fa56b414621e0c8faa9d66f2611407d87465da631", size = 33521, upload-time = "2024-06-20T11:30:28.248Z" },
+]
+
+[[package]]
 name = "et-xmlfile"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2592,6 +2605,7 @@ all = [
     { name = "aiohttp" },
     { name = "alembic" },
     { name = "asyncpg" },
+    { name = "email-validator" },
     { name = "greenlet" },
     { name = "motor" },
     { name = "neo4j" },
@@ -2615,6 +2629,9 @@ docs = [
     { name = "pandas-stubs" },
     { name = "pymdown-extensions" },
     { name = "types-toml" },
+]
+email = [
+    { name = "email-validator" },
 ]
 excel = [
     { name = "openpyxl" },
@@ -2715,6 +2732,7 @@ requires-dist = [
     { name = "bandit", marker = "extra == 'lint'", specifier = ">=1.7.5" },
     { name = "black", marker = "extra == 'lint'", specifier = ">=25.1.0" },
     { name = "colorama", marker = "extra == 'utils'", specifier = ">=0.4.0" },
+    { name = "email-validator", marker = "extra == 'email'", specifier = ">=2.0.0" },
     { name = "factory-boy", marker = "extra == 'test'", specifier = ">=3.3.0" },
     { name = "faker", marker = "extra == 'test'", specifier = ">=37.3.0" },
     { name = "greenlet", marker = "extra == 'postgres'", specifier = ">=3.0.0" },
@@ -2741,6 +2759,7 @@ requires-dist = [
     { name = "py-spy", marker = "extra == 'performance'", specifier = ">=0.4.0" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydapter", extras = ["aiohttp"], marker = "extra == 'all'" },
+    { name = "pydapter", extras = ["email"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["excel"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["migrations"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["migrations-sql"], marker = "extra == 'migrations'" },
@@ -2776,7 +2795,7 @@ requires-dist = [
     { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.10" },
     { name = "xlsxwriter", marker = "extra == 'excel'", specifier = ">=3.0" },
 ]
-provides-extras = ["docs", "lint", "test", "performance", "utils", "pandas", "excel", "sql", "postgres", "pgvector", "mongo", "weaviate", "neo4j", "motor", "qdrant", "aiohttp", "migrations-sql", "migrations", "all"]
+provides-extras = ["docs", "lint", "test", "performance", "utils", "pandas", "excel", "sql", "postgres", "pgvector", "mongo", "weaviate", "neo4j", "motor", "qdrant", "aiohttp", "email", "migrations-sql", "migrations", "all"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pydapter", extras = ["docs", "lint", "test", "performance", "utils"] }]
