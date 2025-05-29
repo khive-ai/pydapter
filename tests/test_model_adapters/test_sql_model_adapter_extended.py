@@ -82,8 +82,8 @@ def test_register_type_mapping():
     SQLModelAdapter.register_type_mapping(
         python_type=CustomType,
         sql_type_factory=lambda: CustomSQLType(),
-        python_to_sql=lambda x: str(x),
-        sql_to_python=lambda x: CustomType(),
+        python_to_sql=lambda value: str(value),
+        sql_to_python=lambda _: CustomType(),
     )
 
     # Verify the mapping was registered

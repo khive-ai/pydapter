@@ -204,7 +204,7 @@ def test_sql_to_pydantic_unsupported_type():
             return unsupported_table
 
     # Mock the inspect function to return our columns
-    def mock_inspect(cls):
+    def mock_inspect(_):
         class MockInspector:
             columns = [
                 Column("id", Integer, primary_key=True),

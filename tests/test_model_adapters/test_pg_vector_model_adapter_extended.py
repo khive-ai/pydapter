@@ -89,7 +89,7 @@ def test_validate_vector_dimensions_edge_cases():
 
 
 @pytest.mark.skipif(not VECTOR_AVAILABLE, reason="pgvector not installed")
-def test_create_index_invalid_type(mocker):
+def test_create_index_invalid_type():
     """Test create_index with invalid index type."""
     EmbSQL = PGVectorModelAdapter.pydantic_model_to_sql(EmbeddingSchema)
 
