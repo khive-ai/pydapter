@@ -443,11 +443,12 @@ class TestModelCreation:
 
     def test_create_basic_model(self):
         """Test creating a simple model from fields"""
-        fields = [
-            Field(name="id", annotation=UUID, default_factory=uuid4),
-            Field(name="name", annotation=str),
-            Field(name="age", annotation=int, default=0),
-        ]
+
+        fields = {
+            "id": ID_FROZEN,
+            "name": Field(name="name", annotation=str),
+            "age": Field(name="age", annotation=int, default=0),
+        }
 
         Model = create_model("TestModel", fields=fields)
 
@@ -465,7 +466,9 @@ class TestModelCreation:
                 raise ValueError("Must be positive")
             return v
 
-        fields = [Field(name="count", annotation=int, validator=validate_positive)]
+        fields = {
+            "count": Field(name="count", annotation=int, validator=validate_positive),
+        }
 
         Model = create_model("TestModel", fields=fields)
 
