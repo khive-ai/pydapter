@@ -141,6 +141,7 @@ class TestPydanticV2Types:
             from pydantic import EmailStr
 
             class ProfileModel(BaseModel):
+                id: int = Field(..., description="Profile ID")
                 email: EmailStr
                 website: HttpUrl
 
