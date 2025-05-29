@@ -11,7 +11,18 @@
   - `DomainModelBuilder`: Fluent API for building models with method chaining
   - `ProtocolFieldFamilies`: Field sets that ensure protocol compliance
   - `ValidationPatterns`: Common regex patterns and constraint builders
-  - `create_protocol_model()`: Function to create protocol-compliant models
+  - `create_protocol_model()`: Function to create protocol-compliant models (structure only)
+- **Protocol Enhancements**:
+  - Added protocol constants (`IDENTIFIABLE`, `TEMPORAL`, etc.) for type-safe protocol selection
+  - Added `create_protocol_model_class()`: Factory function that creates models with both
+    structural fields AND behavioral methods in one step
+  - Added `combine_with_mixins()`: Helper to easily add protocol behaviors to existing models
+
+### Changed
+
+- **BREAKING**: Removed "event" from the protocol system in `ProtocolFieldFamilies`.
+  The `Event` class remains available but is no longer part of the protocol
+  selection system since it's a concrete class, not a protocol interface.
 
 ### Fixed
 
@@ -19,6 +30,7 @@
 - Updated tests to reflect simplified field families
 - Fixed email validation test expectations
 - Updated documentation to align with new architecture
+- Fixed SQLAlchemy primary key mapping issue in test_model_adapter_enhancements.py
 
 ## 0.2.0 - 2025-05-24
 
