@@ -214,6 +214,10 @@ class FieldTemplate:
         # Add pydapter-specific kwargs
         field_kwargs.update(pydapter_kwargs)
 
+        # Extract json_schema_extra and pass it to Field's extra_info
+        if hasattr(field_info, "json_schema_extra") and field_info.json_schema_extra:
+            field_kwargs.update(field_info.json_schema_extra)
+
         return Field(**field_kwargs)
 
     def copy(self, **kwargs: Any) -> FieldTemplate:

@@ -139,12 +139,14 @@ class TestPydanticV2Types:
         # Skip if email-validator not installed
         try:
             from pydantic import EmailStr
+
+            class ProfileModel(BaseModel):
+                email: EmailStr
+                website: HttpUrl
+
         except ImportError:
             pytest.skip("email-validator not installed")
-
-        class ProfileModel(BaseModel):
-            email: EmailStr
-            website: HttpUrl
+            return
 
         # Convert to SQL
         sql_model = SQLModelAdapter.pydantic_model_to_sql(

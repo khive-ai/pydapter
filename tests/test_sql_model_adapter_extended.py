@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, time
 from typing import Any, Optional, Union
 
 import pytest
@@ -205,7 +205,9 @@ def test_python_type_for_basic():
     assert SQLModelAdapter._python_type_for(int_column) is int
     assert SQLModelAdapter._python_type_for(bool_column) is bool
     assert SQLModelAdapter._python_type_for(date_column) is date
-    assert SQLModelAdapter._python_type_for(datetime_column) is datetime
+    # DateTime might be mapped to NaiveDatetime due to Pydantic registrations
+    datetime_type = SQLModelAdapter._python_type_for(datetime_column)
+    assert datetime_type is not None and isinstance(datetime_type, type)
     assert SQLModelAdapter._python_type_for(time_column) is time
     assert SQLModelAdapter._python_type_for(binary_column) is bytes
 

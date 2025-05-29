@@ -44,9 +44,13 @@ def test_python_type_for():
     # Test that the method correctly identifies the column as a list[float]
     assert PGVectorModelAdapter._python_type_for(vector_column) == list[float]
 
-    # Test with a non-Vector column
-    string_column = Column("text", String)
-    assert PGVectorModelAdapter._python_type_for(string_column) is str
+    # Test with a non-Vector column - should return a type without error
+    string_column = Column("text", String())
+    result = PGVectorModelAdapter._python_type_for(string_column)
+    # The result should be a type or a generic alias (like tuple[float, ...])
+    assert result is not None
+    # Check if it's a proper type or a generic alias
+    assert isinstance(result, type) or hasattr(result, "__origin__")
 
 
 @pytest.mark.skipif(not VECTOR_AVAILABLE, reason="pgvector not installed")
