@@ -429,21 +429,21 @@ def test_field_template_immutability():
 def test_field_name_validation():
     """Test that field names must be valid Python identifiers."""
     template = FieldTemplate(base_type=str)
-    
+
     # Valid names
     assert template.create_field("valid_name").name == "valid_name"
     assert template.create_field("_private").name == "_private"
     assert template.create_field("name123").name == "name123"
-    
+
     # Invalid names
     with pytest.raises(ValueError) as excinfo:
         template.create_field("123invalid")
     assert "not a valid Python identifier" in str(excinfo.value)
-    
+
     with pytest.raises(ValueError) as excinfo:
         template.create_field("invalid-name")
     assert "not a valid Python identifier" in str(excinfo.value)
-    
+
     with pytest.raises(ValueError) as excinfo:
         template.create_field("invalid name")
     assert "not a valid Python identifier" in str(excinfo.value)
@@ -452,16 +452,16 @@ def test_field_name_validation():
 def test_frozen_field_validation():
     """Test that frozen fields cannot be made mutable."""
     frozen_template = FieldTemplate(base_type=str, frozen=True)
-    
+
     # Can't override frozen=True with frozen=False
     with pytest.raises(RuntimeError) as excinfo:
         frozen_template.create_field("test_field", frozen=False)
     assert "Cannot override frozen=True" in str(excinfo.value)
-    
+
     # Can keep it frozen or not specify
     field1 = frozen_template.create_field("field1", frozen=True)
     assert field1.frozen is True
-    
+
     field2 = frozen_template.create_field("field2")  # No override
     assert field2.frozen is True
 
@@ -470,15 +470,15 @@ def test_default_and_default_factory_validation():
     """Test that a field cannot have both default and default_factory."""
     # Template with default
     template1 = FieldTemplate(base_type=str, default="template_default")
-    
+
     # Override with default_factory should fail
     with pytest.raises(ValueError) as excinfo:
         template1.create_field("field1", default_factory=lambda: "factory")
     assert "cannot have both 'default' and 'default_factory'" in str(excinfo.value)
-    
+
     # Template with default_factory
     template2 = FieldTemplate(base_type=list, default_factory=list)
-    
+
     # Override with default should fail
     with pytest.raises(ValueError) as excinfo:
         template2.create_field("field2", default=[])

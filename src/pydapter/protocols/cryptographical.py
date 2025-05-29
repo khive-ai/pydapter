@@ -28,13 +28,7 @@ def sha256_of_obj(obj: Union[dict, str, JsonValue]) -> str:
 
     if isinstance(obj, str):
         return hashlib.sha256(memoryview(obj.encode())).hexdigest()
-    import orjson
 
-    payload: bytes = orjson.dumps(
-        obj,
-        option=(
-            orjson.OPT_SORT_KEYS  # canonical ordering
-            | orjson.OPT_NON_STR_KEYS  # allow int / enum keys if you need them
-        ),
-    )
-    return hashlib.sha256(memoryview(payload)).hexdigest()
+    from .utils import sha256_of_dict
+
+    return sha256_of_dict(obj)
