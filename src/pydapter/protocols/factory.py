@@ -1,6 +1,6 @@
 """Factory functions for creating protocol-compliant models."""
 
-from typing import Any, Type, Union
+from typing import Any, Union
 
 from pydantic import BaseModel
 
@@ -10,7 +10,6 @@ from pydapter.protocols.embeddable import EmbeddableMixin
 from pydapter.protocols.identifiable import IdentifiableMixin
 from pydapter.protocols.invokable import InvokableMixin
 from pydapter.protocols.temporal import TemporalMixin
-
 
 # Mapping of protocol names to actual mixin classes
 _MIXIN_CLASSES = {
@@ -25,9 +24,9 @@ _MIXIN_CLASSES = {
 def create_protocol_model_class(
     name: str,
     *protocols: Union[ProtocolType, str],
-    base_model: Type[BaseModel] = BaseModel,
+    base_model: type[BaseModel] = BaseModel,
     **namespace: Any,
-) -> Type[BaseModel]:
+) -> type[BaseModel]:
     """Create a model class with both structural fields and behavioral methods.
 
     This is a convenience function that combines create_protocol_model (for fields)
@@ -95,10 +94,10 @@ def create_protocol_model_class(
 
 
 def combine_with_mixins(
-    model_class: Type[BaseModel],
+    model_class: type[BaseModel],
     *protocols: Union[ProtocolType, str],
     name: str = None,
-) -> Type[BaseModel]:
+) -> type[BaseModel]:
     """Add protocol mixins to an existing model class.
 
     This is useful when you already have a model with the required fields
