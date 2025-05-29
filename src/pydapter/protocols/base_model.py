@@ -1,7 +1,5 @@
-from pydantic import BaseModel, ConfigDict, field_serializer
-from datetime import datetime
-from typing import Any
-from uuid import UUID
+from pydantic import BaseModel, ConfigDict
+
 
 # Export configured BaseModel for tests and direct use
 class BasePydapterModel(BaseModel):
