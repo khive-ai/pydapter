@@ -143,28 +143,14 @@ class TestCreateProtocolModel:
         assert Model1.model_fields.keys() == Model2.model_fields.keys()
         assert Model1.model_fields.keys() == Model3.model_fields.keys()
 
-    def test_event_protocol(self):
-        """Test creating an event model."""
-        EventModel = create_protocol_model("CustomEvent", "event")
+    def test_invalid_protocol_raises_error(self):
+        """Test that invalid protocol names raise an error."""
+        with pytest.raises(ValueError, match="Unknown protocol: invalid"):
+            create_protocol_model("TestModel", "invalid")
 
-        # Should have all event fields
-        expected_fields = [
-            "id",
-            "created_at",
-            "updated_at",
-            "event_type",
-            "content",
-            "request",
-            "embedding",
-            "sha256",
-            "execution",
-        ]
-
-        for field in expected_fields:
-            assert field in EventModel.model_fields
-
-        # ID should be frozen
-        assert EventModel.model_fields["id"].frozen is True
+        # Event is no longer a valid protocol (use Event class directly)
+        with pytest.raises(ValueError, match="Unknown protocol: event"):
+            create_protocol_model("TestModel", "event")
 
     def test_base_fields(self):
         """Test providing base fields."""
