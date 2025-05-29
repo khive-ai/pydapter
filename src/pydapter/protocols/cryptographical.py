@@ -1,4 +1,4 @@
-from typing import Protocol, Union, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, Union, runtime_checkable
 
 from pydantic import JsonValue
 
@@ -12,6 +12,10 @@ class Cryptographical(Protocol):
 
 
 class CryptographicalMixin:
+    if TYPE_CHECKING:
+        content: JsonValue
+        sha256: str | None
+
     def hash_content(self) -> None:
         if self.content is None:
             raise ValueError("Content is not set.")
