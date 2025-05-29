@@ -18,6 +18,7 @@ class EmbeddableMixin:
     """Mixin class for embedding functionality."""
 
     if TYPE_CHECKING:
+        content: str | None
         embedding: Embedding
 
     @property

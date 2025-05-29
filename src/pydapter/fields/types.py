@@ -118,7 +118,7 @@ class Field:
             "validator": self.validator,
             "validator_kwargs": self.validator_kwargs,
             "alias": self.alias,
-            "extra_info": self.extra_info,
+            **self.extra_info,
         }
 
     @property
@@ -164,7 +164,7 @@ class Field:
         params.update(kwargs)
         return Field(**params)
 
-    def as_nullable(self) -> Field:
+    def as_nullable(self, **kwargs) -> Field:
         """Create a copy of a field descriptor with a nullable annotation and None as default value.
 
         WARNING: the new_field will have no default value, nor default_factory.
@@ -206,9 +206,10 @@ class Field:
             default=None,
             default_factory=Undefined,
             validator=new_validator,
+            **kwargs,
         )
 
-    def as_listable(self, strict: bool = False) -> Field:
+    def as_listable(self, strict: bool = False, **kwargs) -> Field:
         """Create a copy of a field descriptor with a listable annotation.
 
         This method does not check whether the field is already listable.
@@ -253,7 +254,7 @@ class Field:
 
             new_validator = listable_validator  # type: ignore[assignment]
 
-        return self.copy(annotation=annotation, validator=new_validator)
+        return self.copy(annotation=annotation, validator=new_validator, **kwargs)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self, "immutable") and self.immutable:
@@ -266,7 +267,7 @@ def create_model(
     config: dict[str, Any] | None = None,
     doc: str | None = None,
     base: type[BaseModel] | None = None,
-    fields: list[Field] | None = None,
+    fields: list[Field] | dict[str, Field] | None = None,
     frozen: bool = False,
 ):
     """Create a new pydantic model basing on fields and base class.
@@ -285,14 +286,21 @@ def create_model(
             details={"model_name": model_name},
         )
 
-    if fields is None:
-        fields = []
+    _use_fields: list[Field] = [] if isinstance(fields, dict) else fields or []
 
-    use_fields = {field.name: (field.annotation, field.field_info) for field in fields}
+    if isinstance(fields, dict):
+        for name, field in fields.items():
+            if name != field.name:
+                field = field.copy(name=name)
+            _use_fields.append(field)
+
+    use_fields: dict[str, tuple[type, FieldInfo]] = {
+        field.name: (field.annotation, field.field_info) for field in _use_fields
+    }
 
     # Collect validators for fields that have them
     validators: dict[str, Callable[..., Any]] = {}
-    for field in fields:
+    for field in _use_fields:
         if field.validator is not Undefined and callable(field.validator):
             kwargs = (
                 {} if field.validator_kwargs is Undefined else field.validator_kwargs

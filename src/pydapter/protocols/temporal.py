@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from pydantic import field_serializer
 
@@ -16,6 +16,10 @@ class Temporal(Protocol):
 
 
 class TemporalMixin:
+    if TYPE_CHECKING:
+        created_at: datetime
+        updated_at: datetime
+
     def update_timestamp(self) -> None:
         """Update the last updated timestamp to the current time."""
         self.updated_at = datetime.now(timezone.utc)

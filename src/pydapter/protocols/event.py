@@ -19,6 +19,7 @@ from pydapter.fields import (
     Field,
     create_model,
 )
+from pydapter.protocols.base_model import BasePydapterModel
 from pydapter.protocols.cryptographical import sha256_of_obj
 from pydapter.protocols.embeddable import EmbeddableMixin
 from pydapter.protocols.identifiable import IdentifiableMixin
@@ -26,21 +27,21 @@ from pydapter.protocols.invokable import InvokableMixin
 from pydapter.protocols.temporal import TemporalMixin
 from pydapter.protocols.types import Log
 
-BASE_EVENT_FIELDS = [
-    ID_FROZEN.copy(name="id"),
-    DATETIME.copy(name="created_at"),
-    DATETIME.copy(name="updated_at"),
-    EMBEDDING.copy(name="embedding"),
-    EXECUTION.copy(name="execution"),
-    PARAMS.copy(name="request"),
-    Field(
+BASE_EVENT_FIELDS = {
+    "id": ID_FROZEN,
+    "created_at": DATETIME,
+    "updated_at": DATETIME,
+    "embedding": EMBEDDING,
+    "execution": EXECUTION,
+    "request": PARAMS,
+    "content": Field(
         name="content",
         annotation=str | dict | JsonValue | None,
         default=None,
         title="Content",
         description="Content of the event",
     ),
-    Field(
+    "event_type": Field(
         name="event_type",
         annotation=str | None,
         default=None,
@@ -48,19 +49,20 @@ BASE_EVENT_FIELDS = [
         title="Event Type",
         description="Type of the event",
     ),
-    Field(
+    "sha256": Field(
         name="sha256",
         annotation=str | None,
         default=None,
         title="SHA256 Hash",
         description="SHA256 hash of the content",
     ),
-]
+}
 
 _BaseEvent = create_model(
     model_name="BaseEvent",
     doc="Base event model of Pydapter protocol",
     fields=BASE_EVENT_FIELDS,
+    base=BasePydapterModel,
 )
 
 
@@ -125,9 +127,11 @@ class Event(
 
         # Create metadata
         metadata = {
-            "execution_status": self.execution.status.value
-            if hasattr(self.execution.status, "value")
-            else str(self.execution.status),
+            "execution_status": (
+                self.execution.status.value
+                if hasattr(self.execution.status, "value")
+                else str(self.execution.status)
+            ),
             "execution_duration": self.execution.duration,
         }
 
@@ -143,9 +147,11 @@ class Event(
             created_at=self.created_at.isoformat() if self.created_at else None,
             updated_at=self.updated_at.isoformat() if self.updated_at else None,
             duration=self.execution.duration,
-            status=self.execution.status.value
-            if hasattr(self.execution.status, "value")
-            else str(self.execution.status),
+            status=(
+                self.execution.status.value
+                if hasattr(self.execution.status, "value")
+                else str(self.execution.status)
+            ),
             error=self.execution.error,
             sha256=sha256_value,
         )
