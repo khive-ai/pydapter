@@ -6,6 +6,11 @@ enabling easy creation of models that implement specific protocol interfaces.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pydapter.protocols import ProtocolType
+
 from pydapter.fields.common_templates import (
     CREATED_AT_TEMPLATE,
     CREATED_AT_TZ_TEMPLATE,
@@ -111,59 +116,83 @@ ProtocolFieldFamilies.EVENT_COMPLETE["execution"] = _EXECUTION_TEMPLATE
 
 def create_protocol_model(
     name: str,
-    *protocols: str,
+    *protocols: str | ProtocolType,
     timezone_aware: bool = True,
     base_fields: dict[str, FieldTemplate] | None = None,
     **extra_fields: FieldTemplate,
 ) -> type:
-    """Create a model that implements specified protocols.
+    """Create a model with fields required by specified protocols (structural compliance).
 
     This function creates a Pydantic model with fields required by the specified
-    protocols. It automatically includes the appropriate field families and can
-    be extended with custom fields.
+    protocols. It provides STRUCTURAL compliance by including the necessary fields,
+    but does NOT add behavioral methods from protocol mixins.
+
+    Note: This function only adds the fields required by protocols. If you need
+    the behavioral methods (e.g., update_timestamp() from TemporalMixin), you must
+    explicitly inherit from the corresponding mixin classes when defining your
+    final model class.
 
     Args:
         name: Name for the generated model class
         *protocols: Protocol names to implement. Supported values:
-            - "identifiable": Adds id field
-            - "temporal": Adds created_at and updated_at fields
-            - "embeddable": Adds embedding field
-            - "invokable": Adds execution field
-            - "cryptographical": Adds sha256 field
-            - "event": Adds all Event protocol fields
+            - "identifiable" or IDENTIFIABLE: Adds id field
+            - "temporal" or TEMPORAL: Adds created_at and updated_at fields
+            - "embeddable" or EMBEDDABLE: Adds embedding field
+            - "invokable" or INVOKABLE: Adds execution field
+            - "cryptographical" or CRYPTOGRAPHICAL: Adds sha256 field
         timezone_aware: If True, uses timezone-aware datetime fields (default: True)
         base_fields: Optional base field family to start with
         **extra_fields: Additional field templates to include
 
     Returns:
-        A new Pydantic model class with protocol-compliant fields
+        A new Pydantic model class with protocol-compliant fields (structure only)
 
     Examples:
         ```python
-        # Create a model with ID and timestamps
+        from pydapter.protocols import IDENTIFIABLE, TEMPORAL, EMBEDDABLE
+
+        # Create a model with ID and timestamps using constants
         TrackedEntity = create_protocol_model(
             "TrackedEntity",
-            "identifiable",
-            "temporal",
-        )
-
-        # Create an event model with custom fields
-        CustomEvent = create_protocol_model(
-            "CustomEvent",
-            "event",
-            user_id=ID_TEMPLATE,
-            action=FieldTemplate(base_type=str, description="User action"),
+            IDENTIFIABLE,
+            TEMPORAL,
         )
 
         # Create an embeddable document
         Document = create_protocol_model(
             "Document",
-            "identifiable",
-            "temporal",
-            "embeddable",
+            IDENTIFIABLE,
+            TEMPORAL,
+            EMBEDDABLE,
             title=NAME_TEMPLATE,
             content=FieldTemplate(base_type=str),
         )
+
+        # For event-like models, use the Event class directly:
+        from pydapter.protocols import Event
+
+        class CustomEvent(Event):
+            user_id: str
+            action: str
+
+        # To add behavioral methods, inherit from the mixins:
+        from pydapter.protocols import IdentifiableMixin, TemporalMixin
+
+        # First create the structure
+        _UserStructure = create_protocol_model(
+            "UserStructure",
+            "identifiable",
+            "temporal",
+            username=FieldTemplate(base_type=str)
+        )
+
+        # Then add behavioral mixins
+        class User(_UserStructure, IdentifiableMixin, TemporalMixin):
+            pass
+
+        # Now the model has both fields AND methods
+        user = User(username="test")
+        user.update_timestamp()  # Method from TemporalMixin
         ```
     """
     from pydapter.fields.families import create_field_dict
@@ -191,12 +220,10 @@ def create_protocol_model(
             field_families.append(ProtocolFieldFamilies.INVOKABLE)
         elif protocol_lower == "cryptographical":
             field_families.append(ProtocolFieldFamilies.CRYPTOGRAPHICAL)
-        elif protocol_lower == "event":
-            field_families.append(ProtocolFieldFamilies.EVENT_COMPLETE)
         else:
             raise ValueError(
                 f"Unknown protocol: {protocol}. Supported protocols are: "
-                f"identifiable, temporal, embeddable, invokable, cryptographical, event"
+                f"identifiable, temporal, embeddable, invokable, cryptographical"
             )
 
     # Create field dictionary
