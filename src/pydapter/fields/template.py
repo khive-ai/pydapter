@@ -1,18 +1,45 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Annotated, Any, Union, get_args, get_origin
+from typing import TYPE_CHECKING, Annotated, Any, TypeVar, Union, get_args, get_origin
 
 from pydantic import Field as PydanticField
 from pydantic.fields import FieldInfo
 
 from pydapter.fields.types import Field, Undefined, UndefinedType
 
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+T = TypeVar("T")
+
 __all__ = ("FieldTemplate",)
 
 
 class FieldTemplate:
-    """Template for creating reusable field definitions with naming flexibility."""
+    """Template for creating reusable field definitions with naming flexibility.
+
+    FieldTemplate provides a way to define field configurations that can be reused
+    across multiple models with different field names. It supports Pydantic v2
+    Annotated types and provides compositional methods for creating nullable and
+    listable variations.
+
+    Examples:
+        >>> # Create a reusable email field template
+        >>> email_template = FieldTemplate(
+        ...     base_type=EmailStr,
+        ...     description="Email address",
+        ...     title="Email"
+        ... )
+        >>>
+        >>> # Use the template in different models with different names
+        >>> user_email = email_template.create_field("user_email")
+        >>> contact_email = email_template.create_field("contact_email")
+        >>>
+        >>> # Create variations
+        >>> optional_email = email_template.as_nullable()
+        >>> email_list = email_template.as_listable()
+    """
 
     def __init__(
         self,
@@ -64,6 +91,9 @@ class FieldTemplate:
         # Extract Pydantic FieldInfo from Annotated type if present
         self._extract_pydantic_info()
 
+        # Cache for base field info (without overrides)
+        self._base_field_info_cache: FieldInfo | None = None
+
     def _extract_pydantic_info(self) -> None:
         """Extract Pydantic FieldInfo from Annotated base_type."""
         self._extracted_type = self.base_type
@@ -99,9 +129,18 @@ class FieldTemplate:
                     self._extracted_field_info = arg
                     break
 
-    def _merge_field_info(self, **overrides: Any) -> FieldInfo:
-        """Merge FieldInfo from various sources."""
-        # Start with extracted FieldInfo if present
+    def _get_base_field_info(self) -> dict[str, Any]:
+        """Get base field info parameters with caching.
+
+        This method caches the expensive operation of extracting and merging
+        base parameters from extracted FieldInfo and template settings.
+
+        Returns:
+            Dictionary of base field parameters
+        """
+        if hasattr(self, "_base_params_cache"):
+            return self._base_params_cache.copy()
+
         base_params = {}
         if self._extracted_field_info:
             # Extract relevant attributes from existing FieldInfo
@@ -138,6 +177,29 @@ class FieldTemplate:
         }
         base_params.update(template_params)
 
+        # Cache the result
+        self._base_params_cache = base_params.copy()
+        return base_params
+
+    def _merge_field_info(self, **overrides: Any) -> FieldInfo:
+        """Merge FieldInfo from various sources.
+
+        This internal method combines field information from:
+        1. Extracted FieldInfo from Annotated types
+        2. Template-level settings
+        3. Runtime overrides
+
+        The precedence order is: overrides > template settings > extracted FieldInfo
+
+        Args:
+            **overrides: Keyword arguments that override template settings
+
+        Returns:
+            A Pydantic FieldInfo instance with merged settings
+        """
+        # Get base parameters (with caching)
+        base_params = self._get_base_field_info()
+
         # Apply overrides
         base_params.update(overrides)
 
@@ -145,7 +207,60 @@ class FieldTemplate:
         return PydanticField(**base_params)
 
     def create_field(self, name: str, **overrides: Any) -> Field:
-        """Create a Field instance with the given name."""
+        """Create a Field instance with the given name.
+
+        This method creates a new Field instance using the template's configuration
+        combined with any overrides provided. The resulting Field can be used in
+        pydapter's create_model function.
+
+        Args:
+            name: The name for the field. Must be a valid Python identifier.
+            **overrides: Keyword arguments to override template settings.
+                Supported overrides include all Field constructor parameters
+                like default, description, title, validator, etc.
+
+        Returns:
+            A Field instance configured with the template settings and overrides.
+
+        Raises:
+            ValueError: If the field name is not a valid Python identifier.
+            TypeError: If there are conflicts between template settings and overrides.
+            RuntimeError: If attempting to override a frozen field property.
+
+        Examples:
+            >>> template = FieldTemplate(base_type=str, description="A string field")
+            >>> field = template.create_field("username", title="User Name")
+            >>> # field will have description from template and title from override
+        """
+        # Validate field name
+        if not name.isidentifier():
+            raise ValueError(
+                f"Field name '{name}' is not a valid Python identifier. "
+                f"Field names must start with a letter or underscore and contain "
+                f"only letters, numbers, and underscores."
+            )
+
+        # Check for frozen field overrides
+        if self.frozen and "frozen" in overrides and overrides["frozen"] is False:
+            raise RuntimeError(
+                f"Cannot override frozen=True on field '{name}'. "
+                f"Frozen fields cannot be made mutable at runtime."
+            )
+
+        # Validate that both default and default_factory are not provided
+        effective_default = overrides.get("default", self.default)
+        effective_default_factory = overrides.get(
+            "default_factory", self.default_factory
+        )
+
+        if (
+            effective_default is not Undefined
+            and effective_default_factory is not Undefined
+        ):
+            raise ValueError(
+                f"Field '{name}' cannot have both 'default' and 'default_factory'. "
+                f"Please provide only one."
+            )
         # Merge pydapter-specific kwargs
         pydapter_kwargs = {
             "validator": self.validator,
@@ -220,7 +335,7 @@ class FieldTemplate:
 
         return Field(**field_kwargs)
 
-    def copy(self, **kwargs: Any) -> FieldTemplate:
+    def copy(self, **kwargs: Any) -> Self:
         """Create a copy of the template with updated values."""
         params = {
             "base_type": self.base_type,
@@ -240,8 +355,21 @@ class FieldTemplate:
         params.update(kwargs)
         return FieldTemplate(**params)
 
-    def as_nullable(self) -> FieldTemplate:
-        """Create a nullable version of this template."""
+    def as_nullable(self) -> Self:
+        """Create a nullable version of this template.
+
+        Returns a new FieldTemplate where the base type is modified to accept None
+        values. The default value is set to None and any existing default_factory
+        is removed. If the template has a validator, it's wrapped to handle None values.
+
+        Returns:
+            A new FieldTemplate instance that accepts None values
+
+        Examples:
+            >>> int_template = FieldTemplate(base_type=int, default=0)
+            >>> nullable_int = int_template.as_nullable()
+            >>> # nullable_int will have type Union[int, None] with default=None
+        """
         # Create nullable type
         nullable_type = Union[self._extracted_type, None]
         if get_origin(self.base_type) is Annotated:
@@ -275,8 +403,26 @@ class FieldTemplate:
             validator=new_validator,
         )
 
-    def as_listable(self, strict: bool = False) -> FieldTemplate:
-        """Create a listable version of this template."""
+    def as_listable(self, strict: bool = False) -> Self:
+        """Create a listable version of this template.
+
+        Returns a new FieldTemplate where the base type can accept either a single
+        value or a list of values (flexible mode), or only lists (strict mode).
+
+        Args:
+            strict: If True, only lists are accepted. If False (default), both
+                single values and lists are accepted.
+
+        Returns:
+            A new FieldTemplate instance that accepts lists
+
+        Examples:
+            >>> str_template = FieldTemplate(base_type=str)
+            >>> # Flexible mode: accepts "value" or ["value1", "value2"]
+            >>> flexible_list = str_template.as_listable(strict=False)
+            >>> # Strict mode: only accepts ["value1", "value2"]
+            >>> strict_list = str_template.as_listable(strict=True)
+        """
         # Create list type
         if strict:
             list_type = list[self._extracted_type]
