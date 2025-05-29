@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import types
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from typing import (
     Annotated,
     Any,
@@ -78,6 +78,54 @@ class SQLModelAdapter:
         Date: date,
         Time: time,
     }
+
+    # Register Pydantic v2 types at module load time
+    @classmethod 
+    def _init_pydantic_types(cls):
+        """Initialize Pydantic v2 type mappings."""
+        try:
+            from pydantic import EmailStr, HttpUrl, IPvAnyAddress
+            
+            # EmailStr maps to String with appropriate length
+            cls.register_type_mapping(
+                python_type=EmailStr,
+                sql_type_factory=lambda: String(length=255),
+            )
+            
+            # HttpUrl maps to String with URL length  
+            cls.register_type_mapping(
+                python_type=HttpUrl,
+                sql_type_factory=lambda: String(length=2048),
+                python_to_sql=lambda x: str(x),
+                sql_to_python=lambda x: HttpUrl(x) if x else None,
+            )
+            
+            # IP addresses
+            cls.register_type_mapping(
+                python_type=IPvAnyAddress,
+                sql_type_factory=lambda: String(length=45),  # Max IPv6 length
+                python_to_sql=lambda x: str(x),
+            )
+            
+            # Also try to import and register AwareDatetime and NaiveDatetime
+            try:
+                from pydantic import AwareDatetime, NaiveDatetime
+                
+                # Both map to DateTime with timezone support
+                cls.register_type_mapping(
+                    python_type=AwareDatetime,
+                    sql_type_factory=lambda: DateTime(timezone=True),
+                )
+                
+                cls.register_type_mapping(
+                    python_type=NaiveDatetime,
+                    sql_type_factory=lambda: DateTime(timezone=False),
+                )
+            except ImportError:
+                pass
+        except ImportError:
+            # Pydantic types not available
+            pass
 
     @classmethod
     def pydantic_model_to_sql(
@@ -171,22 +219,45 @@ class SQLModelAdapter:
                 ns[name] = mapped_column(col_type, **kwargs)
                 continue
 
-            # Get SQL type from TypeRegistry
-            col_type_factory = TypeRegistry.get_sql_type(origin)
-            if col_type_factory is None:
-                raise TypeConversionError(
-                    f"Unsupported type {origin!r}",
-                    source_type=origin,
-                    target_type=None,
-                    field_name=name,
-                    model_name=model.__name__,
-                )
+            # Check if this is a BaseModel subclass (for JSONB support)
+            if isinstance(origin, type) and issubclass(origin, BaseModel):
+                # Check if we have PostgreSQL JSONB support
+                try:
+                    from sqlalchemy.dialects.postgresql import JSONB
+                    col_type_factory = lambda: JSONB()
+                except ImportError:
+                    # Fallback to regular String storage for non-PostgreSQL databases
+                    col_type_factory = lambda: String()
+            else:
+                # Get SQL type from TypeRegistry
+                col_type_factory = TypeRegistry.get_sql_type(origin)
+                if col_type_factory is None:
+                    raise TypeConversionError(
+                        f"Unsupported type {origin!r}",
+                        source_type=origin,
+                        target_type=None,
+                        field_name=name,
+                        model_name=model.__name__,
+                    )
 
             kwargs: dict[str, Any] = {
                 "nullable": is_nullable or not info.is_required(),
             }
             default = info.default if info.default is not None else info.default_factory
             if default is not None:
+                # Handle timezone-aware datetime defaults
+                if callable(default):
+                    # Test if this is a datetime factory
+                    try:
+                        test_val = default()
+                        if isinstance(test_val, datetime) and test_val.tzinfo is not None:
+                            # This is a timezone-aware datetime factory
+                            # Use DateTime with timezone=True
+                            from sqlalchemy import DateTime as DateTimeWithTZ
+                            col_type_factory = lambda: DateTimeWithTZ(timezone=True)
+                    except:
+                        # If calling fails, just use the default as-is
+                        pass
                 kwargs["default"] = default
 
             if name == pk_field:
@@ -467,3 +538,7 @@ class SQLModelAdapter:
             python_to_sql=python_to_sql,
             sql_to_python=sql_to_python,
         )
+
+
+# Initialize Pydantic types when module loads
+SQLModelAdapter._init_pydantic_types()
