@@ -1,3 +1,12 @@
+from pydapter.protocols.constants import (
+    CRYPTOGRAPHICAL,
+    EMBEDDABLE,
+    IDENTIFIABLE,
+    INVOKABLE,
+    PROTOCOL_MIXINS,
+    TEMPORAL,
+    ProtocolType,
+)
 from pydapter.protocols.cryptographical import (
     Cryptographical,
     CryptographicalMixin,
@@ -5,11 +14,13 @@ from pydapter.protocols.cryptographical import (
 )
 from pydapter.protocols.embeddable import Embeddable, EmbeddableMixin
 from pydapter.protocols.event import Event, as_event
+from pydapter.protocols.factory import combine_with_mixins, create_protocol_model_class
 from pydapter.protocols.identifiable import Identifiable, IdentifiableMixin
 from pydapter.protocols.invokable import Invokable, InvokableMixin
 from pydapter.protocols.temporal import Temporal, TemporalMixin
 
 __all__ = (
+    # Protocol classes
     "Identifiable",
     "IdentifiableMixin",
     "Invokable",
@@ -23,4 +34,16 @@ __all__ = (
     "Cryptographical",
     "CryptographicalMixin",
     "sha256_of_obj",
+    # Protocol constants
+    "ProtocolType",
+    "IDENTIFIABLE",
+    "TEMPORAL",
+    "EMBEDDABLE",
+    "INVOKABLE",
+    "CRYPTOGRAPHICAL",
+    "PROTOCOL_MIXINS",
+    "ProtocolType",
+    # Factory functions
+    "create_protocol_model_class",
+    "combine_with_mixins",
 )

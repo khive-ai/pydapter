@@ -267,7 +267,7 @@ def create_model(
     config: dict[str, Any] | None = None,
     doc: str | None = None,
     base: type[BaseModel] | None = None,
-    fields: list[Field] | dict[str, Field] | None = None,
+    fields: list[Field] | dict[str, Field | Any] | None = None,
     frozen: bool = False,
 ):
     """Create a new pydantic model basing on fields and base class.
@@ -277,7 +277,7 @@ def create_model(
         config (dict[str, Any], optional): Configuration dictionary for the model.
         doc (str, optional): Documentation string for the model.
         base (type[BaseModel], optional): Base class to inherit from.
-        fields (list[Field], optional): List of fields to include in the model.
+        fields (list[Field] | dict[str, Field | FieldTemplate], optional): List of fields or dict of field names to Field/FieldTemplate instances.
         frozen (bool, optional): Whether the model should be immutable (frozen).
     """
     if config and base:
@@ -289,9 +289,23 @@ def create_model(
     _use_fields: list[Field] = [] if isinstance(fields, dict) else fields or []
 
     if isinstance(fields, dict):
-        for name, field in fields.items():
-            if name != field.name:
-                field = field.copy(name=name)
+        # Import here to avoid circular imports
+        from pydapter.fields.template import FieldTemplate
+
+        for name, field_or_template in fields.items():
+            if isinstance(field_or_template, FieldTemplate):
+                # Create Field from FieldTemplate
+                field = field_or_template.create_field(name)
+            elif isinstance(field_or_template, dict):
+                # Handle dict-style field definition
+                field_dict = field_or_template.copy()
+                field_dict["name"] = name
+                field = Field(**field_dict)
+            else:
+                # Assume it's a Field
+                field = field_or_template
+                if hasattr(field, "name") and name != field.name:
+                    field = field.copy(name=name)
             _use_fields.append(field)
 
     use_fields: dict[str, tuple[type, FieldInfo]] = {

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ipaddress
+from datetime import datetime
 from typing import Any, Callable, get_args, get_origin
 
 from pydantic import BaseModel
@@ -344,6 +345,12 @@ class PostgresModelAdapter(SQLModelAdapter):
                     inner = non_none_args[0]
                     anno, origin = inner, get_origin(inner) or inner
 
+            # Check if this is a BaseModel subclass (for JSONB support)
+            if isinstance(origin, type) and issubclass(origin, BaseModel):
+                column, converter = cls.handle_jsonb(name, info, origin)
+                ns[name] = column
+                continue
+
             # Get SQL type from TypeRegistry
             col_type_factory = TypeRegistry.get_sql_type(origin)
             if col_type_factory is None:
@@ -360,6 +367,26 @@ class PostgresModelAdapter(SQLModelAdapter):
             }
             default = info.default if info.default is not None else info.default_factory
             if default is not None:
+                # Handle timezone-aware datetime defaults
+                if callable(default) and origin is datetime:
+                    # Test if this is a timezone-aware datetime factory
+                    try:
+                        test_val = default()
+                        if (
+                            isinstance(test_val, datetime)
+                            and test_val.tzinfo is not None
+                        ):
+                            # This is a timezone-aware datetime factory
+                            # Use TIMESTAMPTZ for PostgreSQL
+                            from sqlalchemy import DateTime
+
+                            def create_datetime_with_tz():
+                                return DateTime(timezone=True)
+
+                            col_type_factory = create_datetime_with_tz
+                    except Exception:
+                        # If calling fails, just use the default as-is
+                        pass
                 kwargs["default"] = default
 
             if name == pk_field:

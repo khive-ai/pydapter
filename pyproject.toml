@@ -1,6 +1,6 @@
 [project]
 name            = "pydapter"
-version         = "0.2.2"
+version         = "0.2.3"
 description     = "Tiny trait + adapter toolkit for pydantic models"
 readme          = "README.md"
 requires-python = ">=3.10"
@@ -13,11 +13,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pydapter[docs]",
-    "pydapter[lint]",
-    "pydapter[test]",
-    "pydapter[performance]",
-    "pydapter[utils]",
+    "pydapter[docs, lint, test, performance, utils]",
 ]
 
 [project.optional-dependencies]
@@ -49,7 +45,7 @@ test = [
     "pytest-xdist>=3.3.0",
     "pytest-watch>=4.2.0",
     "testcontainers[mongodb,postgres,qdrant, weaviate]>=3.7.0",
-    "hypothesis>=6.131.25",
+    "hypothesis>=6.130.0",
     "hypothesis-jsonschema>=0.23.0",
     "mutmut>=3.3.0",
     "faker>=37.3.0",
@@ -59,24 +55,24 @@ test = [
 ]
 
 performance = [
-    "py-spy>=0.3.14",
+    "py-spy>=0.4.0",
     "memory-profiler>=0.61.0",
 ]
 
 utils = [
     "python-dotenv>=1.1.0",
-    "colorama>=0.4.6", # Colored test output
-    "ipykernel>=6.29.5",
+    "colorama>=0.4.0", # Colored test output
+    "ipykernel>=6.0.0",
 ]
 
 pandas = [
-    "pandas>=2.2",
+    "pandas>=2.0",
 ]
 
 excel = [
     "pydapter[pandas]",
-    "xlsxwriter>=3.2",
-    "openpyxl>=3.1.5",
+    "xlsxwriter>=3.0",
+    "openpyxl>=3.0.0",
 ]
 
 sql = [
@@ -87,26 +83,26 @@ postgres = [
     "pydapter[sql]",
     "psycopg[binary]>=3",
     "greenlet>=3.0.0",
-    "psycopg2-binary>=2.9.10",
-    "asyncpg>=0.29",
+    "psycopg2-binary>=2.8.0",
+    "asyncpg>=0.28",
 ]
 
 pgvector = [
     "pydapter[postgres]",
-    "pgvector>=0.4.1",
+    "pgvector>=0.4.0",
 ]
 
 mongo = [
-    "pymongo>=4.7",
+    "pymongo>=4.10",
 ]
 
 weaviate = [
-    "weaviate-client>=4.4",
+    "weaviate-client>=4.10",
     "weaviate>=0.1.2",
 ]
 
 neo4j = [
-    "neo4j>=5.19",
+    "neo4j>=5.20",
 ]
 
 motor = [
@@ -114,16 +110,20 @@ motor = [
 ]
 
 qdrant = [
-    "qdrant-client>=1.14",
+    "qdrant-client>=1.10",
 ]
 
 aiohttp = [
-    "aiohttp>=3.11.10",
+    "aiohttp>=3.12.0",
+]
+
+email = [
+    "email-validator>=2.0.0",
 ]
 
 migrations-sql = [
     "pydapter[sql]",
-    "alembic>=1.11.0",
+    "alembic>=1.10.0",
 ]
 
 # Combined dependencies
@@ -140,6 +140,7 @@ all = [
     "pydapter[motor]",
     "pydapter[qdrant]",
     "pydapter[aiohttp]",
+    "pydapter[email]",
     "pydapter[migrations]",
 ]
 

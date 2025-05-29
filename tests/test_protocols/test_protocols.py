@@ -383,8 +383,7 @@ class TestEventClass:
         assert event._handler == test_function
         assert event._handler_args == (1, 2)
         assert event._handler_kwargs == {"c": 3}
-        # The validator always returns the class name, so it will be "Event"
-        assert event.event_type == "Event"
+        assert event.event_type == "test"
 
     @pytest.mark.asyncio
     async def test_event_invocation(self):

@@ -20,7 +20,7 @@ from pydapter.fields import (
     create_model,
 )
 from pydapter.protocols.base_model import BasePydapterModel
-from pydapter.protocols.cryptographical import sha256_of_obj
+from pydapter.protocols.cryptographical import CryptographicalMixin
 from pydapter.protocols.embeddable import EmbeddableMixin
 from pydapter.protocols.identifiable import IdentifiableMixin
 from pydapter.protocols.invokable import InvokableMixin
@@ -45,7 +45,7 @@ BASE_EVENT_FIELDS = {
         name="event_type",
         annotation=str | None,
         default=None,
-        validator=lambda cls, x: cls.__name__,
+        validator=lambda cls, x: x or cls.__name__,
         title="Event Type",
         description="Type of the event",
     ),
@@ -67,7 +67,12 @@ _BaseEvent = create_model(
 
 
 class Event(
-    _BaseEvent, IdentifiableMixin, InvokableMixin, TemporalMixin, EmbeddableMixin
+    _BaseEvent,
+    IdentifiableMixin,
+    InvokableMixin,
+    TemporalMixin,
+    EmbeddableMixin,
+    CryptographicalMixin,
 ):
     def __init__(
         self,
@@ -90,17 +95,11 @@ class Event(
         else:
             self.updated_at = datetime.now(tz=timezone.utc)
 
-    def hash_content(self) -> None:
-        """Hash the content using SHA-256."""
-        if self.content is None:
-            raise ValueError("Content is not set.")
-        self.sha256 = sha256_of_obj(self.content)
-
     def to_log(self, event_type: str | None = None, hash_content: bool = False) -> Log:
         """Convert the event to a log entry."""
         # Use provided event_type or fall back to the event's event_type or class name
         log_event_type = (
-            event_type or getattr(self, "event_type", None) or self.__class__.__name__
+            event_type or getattr(self, "event_type", None) or type(self).__name__
         )
 
         # Prepare content - use existing content or create from request/response

@@ -66,20 +66,28 @@ plugins:
 nav:
   - Home: index.md
   - Getting Started: getting_started.md
-  - Guides:
+  - Core Concepts:
+      - Fields System:
+          - Overview: guides/fields.md
+          - Field Families: guides/field-families.md
+          - Best Practices: guides/fields-and-protocols-patterns.md
+      - Protocols:
+          - Overview: protocols.md
+          - Protocol Guide: guides/protocols.md
       - Error Handling: error_handling.md
-      - Testing: testing.md
-      - Continuous Integration: ci.md
-      - Migration Guide: migration_guide.md
   - Adapters:
       - PostgreSQL: postgres_adapter.md
       - Neo4j: neo4j_adapter.md
       - Qdrant: qdrant_adapter.md
       - SQL Model: sql_model_adapter.md
-  - Optional Modules:
-      - Protocols: protocols.md
+  - Advanced Topics:
+      - Architecture: guides/architecture.md
+      - Async Patterns: guides/async-patterns.md
+      - Creating Adapters: guides/creating-adapters.md
+      - Testing Strategies: guides/testing-strategies.md
       - Migrations: migrations.md
   - Tutorials:
+      - End-to-End Backend: guides/end-to-end-backend.md
       - Using Protocols: tutorials/using_protocols.md
       - Using Migrations: tutorials/using_migrations.md
   - API Reference:
@@ -89,8 +97,13 @@ nav:
       - Extras: api/extras.md
       - Protocols: api/protocols.md
       - Migrations: api/migrations.md
-  - Contributing: contributing.md
-  - Changelog: changelog.md
+  - Contributing:
+      - Contributing Guide: contributing.md
+      - CI/CD: ci.md
+  - Resources:
+      - Migration Guide: migration_guide.md
+      - Testing: testing.md
+      - Changelog: changelog.md
 
 extra:
   social:

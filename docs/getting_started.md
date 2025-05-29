@@ -1,8 +1,8 @@
-# Exploring Pydapter: A Python Adapter Library
+# Getting Started with Pydapter
 
 Pydapter is a powerful adapter library that lets you easily convert between
-Pydantic models and various data formats. This guide will help you get started
-with the non-database adapters.
+Pydantic models and various data formats. With the new field system (v0.2.3),
+creating robust models is easier than ever!
 
 ## Installation
 
@@ -27,16 +27,49 @@ uv pip install "pydapter[migrations-sql]" # For database schema migrations
 uv pip install "pydapter[all]"
 ```
 
-## Basic Example: Using JsonAdapter
+## Creating Models with the Field System
 
-Let's start with a simple example using the JsonAdapter:
+### Option 1: Using Field Families (New!)
+
+```python
+from pydapter.fields import DomainModelBuilder, FieldTemplate
+from pydapter.protocols import (
+    create_protocol_model_class,
+    IDENTIFIABLE,
+    TEMPORAL
+)
+
+# Build a model with field families
+User = (
+    DomainModelBuilder("User")
+    .with_entity_fields()  # Adds id, created_at, updated_at
+    .add_field("name", FieldTemplate(base_type=str))
+    .add_field("email", FieldTemplate(base_type=str))
+    .add_field("active", FieldTemplate(base_type=bool, default=True))
+    .add_field("tags", FieldTemplate(base_type=list[str], default_factory=list))
+    .build()
+)
+
+# Or create a protocol-compliant model with behaviors
+User = create_protocol_model_class(
+    "User",
+    IDENTIFIABLE,  # Adds id field
+    TEMPORAL,      # Adds created_at, updated_at + update_timestamp() method
+    name=FieldTemplate(base_type=str),
+    email=FieldTemplate(base_type=str),
+    active=FieldTemplate(base_type=bool, default=True),
+    tags=FieldTemplate(base_type=list[str], default_factory=list)
+)
+```
+
+### Option 2: Traditional Pydantic Models
 
 ```python
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List
 from pydapter.adapters.json_ import JsonAdapter
 
-# Define a Pydantic model
+# Define a traditional Pydantic model
 class User(BaseModel):
     id: int
     name: str
@@ -44,12 +77,25 @@ class User(BaseModel):
     active: bool = True
     tags: List[str] = []
 
+```
+
+## Using Adapters
+
+Once you have your models, you can use pydapter's adapters to convert data:
+
+```python
+from pydapter.adapters.json_ import JsonAdapter
+
 # Create some test data
 users = [
     User(id=1, name="Alice", email="alice@example.com", tags=["admin", "staff"]),
     User(id=2, name="Bob", email="bob@example.com", active=False),
     User(id=3, name="Charlie", email="charlie@example.com", tags=["staff"]),
 ]
+
+# If using protocol models with behaviors
+if hasattr(users[0], 'update_timestamp'):
+    users[0].update_timestamp()  # Updates the updated_at field
 
 # Convert models to JSON
 json_data = JsonAdapter.to_obj(users, many=True)
@@ -114,9 +160,18 @@ class Employee(Adaptable, BaseModel):
 
 # Create some sample data
 employees = [
-    Employee(id=1, name="Alice", department="Engineering", salary=85000, hire_date="2020-01-15"),
-    Employee(id=2, name="Bob", department="Marketing", salary=75000, hire_date="2021-03-20"),
-    Employee(id=3, name="Charlie", department="Finance", salary=95000, hire_date="2019-11-01"),
+    Employee(
+        id=1, name="Alice", department="Engineering",
+        salary=85000, hire_date="2020-01-15"
+    ),
+    Employee(
+        id=2, name="Bob", department="Marketing",
+        salary=75000, hire_date="2021-03-20"
+    ),
+    Employee(
+        id=3, name="Charlie", department="Finance",
+        salary=95000, hire_date="2019-11-01"
+    ),
 ]
 
 csv_data = CsvAdapter.to_obj(employees, many=True)
@@ -149,6 +204,7 @@ from typing import List, Dict, Optional
 from pydapter.adapters.toml_ import TomlAdapter
 
 # Define a Pydantic model
+
 class AppConfig(BaseModel):
     app_name: str
     version: str
@@ -157,6 +213,7 @@ class AppConfig(BaseModel):
     allowed_hosts: List[str] = []
 
 # Create a config
+
 config = AppConfig(
     app_name="MyApp",
     version="1.0.0",
@@ -203,10 +260,20 @@ class SalesRecord(BaseModel):
     date: str
 
 # Create a sample DataFrame
+
 df = pd.DataFrame([
-    {"id": 1, "product": "Laptop", "quantity": 2, "price": 999.99, "date": "2023-01-15"},
-    {"id": 2, "product": "Monitor", "quantity": 3, "price": 249.99, "date": "2023-01-20"},
-    {"id": 3, "product": "Mouse", "quantity": 5, "price": 29.99, "date": "2023-01-25"}
+    {
+        "id": 1, "product": "Laptop", "quantity": 2,
+        "price": 999.99, "date": "2023-01-15"
+    },
+    {
+        "id": 2, "product": "Monitor", "quantity": 3,
+        "price": 249.99, "date": "2023-01-20"
+    },
+    {
+        "id": 3, "product": "Mouse", "quantity": 5,
+        "price": 29.99, "date": "2023-01-25"
+    }
 ])
 
 # Convert DataFrame to models
@@ -239,6 +306,7 @@ class Student(BaseModel):
     score: float
 
 # Create some sample data
+
 students = [
     Student(id=1, name="Alice", grade="A", score=92.5),
     Student(id=2, name="Bob", grade="B", score=85.0),
@@ -246,6 +314,7 @@ students = [
 ]
 
 # Convert to Excel and save to file
+
 excel_data = ExcelAdapter.to_obj(students, many=True, sheet_name="Students")
 with open("students.xlsx", "wb") as f:
     f.write(excel_data)
@@ -253,7 +322,10 @@ with open("students.xlsx", "wb") as f:
 print("Excel file saved as 'students.xlsx'")
 
 # Read from Excel file
-loaded_students = ExcelAdapter.from_obj(Student, Path("students.xlsx"), many=True)
+
+loaded_students = ExcelAdapter.from_obj(
+    Student, Path("students.xlsx"), many=True
+)
 print("\nLoaded students:")
 for student in loaded_students:
     print(f"{student.name}: {student.grade} ({student.score})")
@@ -275,17 +347,25 @@ class Product(BaseModel):
     price: float = Field(gt=0.0)  # Must be greater than 0
 
 # Handle parsing errors
+
 try:
     # Try to parse invalid JSON
-    invalid_json = "{ 'id': 1, 'name': 'Laptop', price: 999.99 }"  # Note the missing quotes around 'price'
+    invalid_json = "{ 'id': 1, 'name': 'Laptop', price: 999.99 }"  # Note the
+                                                                   # missing
+                                                                   # quotes
+                                                                   # around
+                                                                   # 'price'
     product = JsonAdapter.from_obj(Product, invalid_json)
 except ParseError as e:
     print(f"Parsing error: {e}")
 
 # Handle validation errors
+
 try:
     # Try to create a model with invalid data
-    valid_json = '{"id": 0, "name": "A", "price": -10.0}'  # All fields violate constraints
+    valid_json = '{"id": 0, "name": "A", "price": -10.0}'  # All fields
+                                                           # violate
+                                                           # constraints
     product = JsonAdapter.from_obj(Product, valid_json)
 except AdapterValidationError as e:
     print(f"Validation error: {e}")
@@ -303,11 +383,13 @@ These protocols allow you to add common capabilities to your models:
 from pydapter.protocols import Identifiable, Temporal
 
 # Define a model with standardized interfaces
+
 class User(Identifiable, Temporal):
     name: str
     email: str
 
 # Create a user
+
 user = User(name="Alice", email="alice@example.com")
 
 # Access standardized properties
@@ -315,6 +397,7 @@ print(f"User ID: {user.id}")  # Automatically generated UUID
 print(f"Created at: {user.created_at}")  # Automatically set timestamp
 
 # Update the timestamp
+
 user.name = "Alicia"
 user.update_timestamp()
 print(f"Updated at: {user.updated_at}")
@@ -333,6 +416,7 @@ from pydapter.migrations import AlembicAdapter
 import mymodels  # Module containing your SQLAlchemy models
 
 # Initialize migrations
+
 AlembicAdapter.init_migrations(
     directory="migrations",
     connection_string="postgresql://user:pass@localhost/mydb",
@@ -340,6 +424,7 @@ AlembicAdapter.init_migrations(
 )
 
 # Create a migration
+
 revision = AlembicAdapter.create_migration(
     message="Create users table",
     autogenerate=True,
@@ -348,6 +433,7 @@ revision = AlembicAdapter.create_migration(
 )
 
 # Apply migrations
+
 AlembicAdapter.upgrade(
     revision="head",
     directory="migrations",
