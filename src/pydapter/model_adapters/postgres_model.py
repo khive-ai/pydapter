@@ -350,7 +350,7 @@ class PostgresModelAdapter(SQLModelAdapter):
                 column, converter = cls.handle_jsonb(name, info, origin)
                 ns[name] = column
                 continue
-                
+
             # Get SQL type from TypeRegistry
             col_type_factory = TypeRegistry.get_sql_type(origin)
             if col_type_factory is None:
@@ -372,14 +372,17 @@ class PostgresModelAdapter(SQLModelAdapter):
                     # Test if this is a timezone-aware datetime factory
                     try:
                         test_val = default()
-                        if isinstance(test_val, datetime) and test_val.tzinfo is not None:
+                        if (
+                            isinstance(test_val, datetime)
+                            and test_val.tzinfo is not None
+                        ):
                             # This is a timezone-aware datetime factory
                             # Use TIMESTAMPTZ for PostgreSQL
                             from sqlalchemy import DateTime
-                            
+
                             def create_datetime_with_tz():
                                 return DateTime(timezone=True)
-                            
+
                             col_type_factory = create_datetime_with_tz
                     except Exception:
                         # If calling fails, just use the default as-is

@@ -80,43 +80,43 @@ class SQLModelAdapter:
     }
 
     # Register Pydantic v2 types at module load time
-    @classmethod 
+    @classmethod
     def _init_pydantic_types(cls):
         """Initialize Pydantic v2 type mappings."""
         try:
             from pydantic import EmailStr, HttpUrl, IPvAnyAddress
-            
+
             # EmailStr maps to String with appropriate length
             cls.register_type_mapping(
                 python_type=EmailStr,
                 sql_type_factory=lambda: String(length=255),
             )
-            
-            # HttpUrl maps to String with URL length  
+
+            # HttpUrl maps to String with URL length
             cls.register_type_mapping(
                 python_type=HttpUrl,
                 sql_type_factory=lambda: String(length=2048),
                 python_to_sql=lambda x: str(x),
                 sql_to_python=lambda x: HttpUrl(x) if x else None,
             )
-            
+
             # IP addresses
             cls.register_type_mapping(
                 python_type=IPvAnyAddress,
                 sql_type_factory=lambda: String(length=45),  # Max IPv6 length
                 python_to_sql=lambda x: str(x),
             )
-            
+
             # Also try to import and register AwareDatetime and NaiveDatetime
             try:
                 from pydantic import AwareDatetime, NaiveDatetime
-                
+
                 # Both map to DateTime with timezone support
                 cls.register_type_mapping(
                     python_type=AwareDatetime,
                     sql_type_factory=lambda: DateTime(timezone=True),
                 )
-                
+
                 cls.register_type_mapping(
                     python_type=NaiveDatetime,
                     sql_type_factory=lambda: DateTime(timezone=False),
@@ -224,16 +224,16 @@ class SQLModelAdapter:
                 # Check if we have PostgreSQL JSONB support
                 try:
                     from sqlalchemy.dialects.postgresql import JSONB
-                    
+
                     def create_jsonb():
                         return JSONB()
-                    
+
                     col_type_factory = create_jsonb
                 except ImportError:
                     # Fallback to regular String storage for non-PostgreSQL databases
                     def create_string():
                         return String()
-                    
+
                     col_type_factory = create_string
             else:
                 # Get SQL type from TypeRegistry
@@ -257,14 +257,17 @@ class SQLModelAdapter:
                     # Test if this is a datetime factory
                     try:
                         test_val = default()
-                        if isinstance(test_val, datetime) and test_val.tzinfo is not None:
+                        if (
+                            isinstance(test_val, datetime)
+                            and test_val.tzinfo is not None
+                        ):
                             # This is a timezone-aware datetime factory
                             # Use DateTime with timezone=True
                             from sqlalchemy import DateTime as DateTimeWithTZ
-                            
+
                             def create_datetime_with_tz():
                                 return DateTimeWithTZ(timezone=True)
-                            
+
                             col_type_factory = create_datetime_with_tz
                     except Exception:
                         # If calling fails, just use the default as-is

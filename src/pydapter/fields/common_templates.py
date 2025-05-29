@@ -2,19 +2,11 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
+from typing import Annotated, Any
 
-from typing import Any
-from pydantic import (
-    Field as PydanticField,
-    EmailStr,
-    HttpUrl,
-    constr,
-    conint,
-    confloat,
-    AwareDatetime,
-    NaiveDatetime,
-)
-from typing_extensions import Annotated
+from pydantic import AwareDatetime, EmailStr
+from pydantic import Field as PydanticField
+from pydantic import HttpUrl, NaiveDatetime, confloat, conint, constr
 
 from pydapter.fields.template import FieldTemplate
 

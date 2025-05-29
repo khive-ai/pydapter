@@ -291,7 +291,7 @@ def create_model(
     if isinstance(fields, dict):
         # Import here to avoid circular imports
         from pydapter.fields.template import FieldTemplate
-        
+
         for name, field_or_template in fields.items():
             if isinstance(field_or_template, FieldTemplate):
                 # Create Field from FieldTemplate
