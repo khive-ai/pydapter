@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 from pydapter.fields.common_templates import (
     CREATED_AT_TEMPLATE,
     CREATED_AT_TZ_TEMPLATE,
+    DELETED_AT_TZ_TEMPLATE,
     ID_TEMPLATE,
     JSON_TEMPLATE,
     UPDATED_AT_TEMPLATE,
@@ -74,6 +75,25 @@ class ProtocolFieldFamilies:
             base_type=str,
             description="SHA256 hash of the content",
         ).as_nullable(),
+    }
+
+    AUDITABLE: dict[str, FieldTemplate] = {
+        "created_by": ID_TEMPLATE.as_nullable(),
+        "updated_by": ID_TEMPLATE.as_nullable(),
+        "version": FieldTemplate(
+            base_type=int,
+            description="Version number for optimistic locking",
+            default=1,
+        ),
+    }
+
+    SOFT_DELETABLE: dict[str, FieldTemplate] = {
+        "deleted_at": DELETED_AT_TZ_TEMPLATE,
+        "is_deleted": FieldTemplate(
+            base_type=bool,
+            description="Soft delete flag",
+            default=False,
+        ),
     }
 
     # Event protocol base fields (combines multiple protocols)
