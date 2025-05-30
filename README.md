@@ -398,7 +398,7 @@ For more information, see [the CI documentation](docs/ci.md).
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for
+This project is licensed under the Apache-2 License - see the LICENSE file for
 details.
 
 ## Acknowledgements

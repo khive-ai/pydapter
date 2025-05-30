@@ -5,20 +5,7 @@ from typing import Any, Union
 from pydantic import BaseModel
 
 from pydapter.protocols.constants import ProtocolType
-from pydapter.protocols.cryptographical import CryptographicalMixin
-from pydapter.protocols.embeddable import EmbeddableMixin
-from pydapter.protocols.identifiable import IdentifiableMixin
-from pydapter.protocols.invokable import InvokableMixin
-from pydapter.protocols.temporal import TemporalMixin
-
-# Mapping of protocol names to actual mixin classes
-_MIXIN_CLASSES = {
-    "identifiable": IdentifiableMixin,
-    "temporal": TemporalMixin,
-    "embeddable": EmbeddableMixin,
-    "invokable": InvokableMixin,
-    "cryptographical": CryptographicalMixin,
-}
+from pydapter.protocols.registry import get_mixin_registry
 
 
 def create_protocol_model_class(
@@ -83,8 +70,8 @@ def create_protocol_model_class(
     mixins = []
     for protocol in protocols:
         protocol_str = str(protocol).lower()
-        if protocol_str in _MIXIN_CLASSES:
-            mixins.append(_MIXIN_CLASSES[protocol_str])
+        if protocol_str in get_mixin_registry():
+            mixins.append(get_mixin_registry()[protocol_str])
 
     # Create the final class with mixins
     # Order: structural_model -> mixins -> base_model
@@ -132,8 +119,8 @@ def combine_with_mixins(
     mixins = []
     for protocol in protocols:
         protocol_str = str(protocol).lower()
-        if protocol_str in _MIXIN_CLASSES:
-            mixins.append(_MIXIN_CLASSES[protocol_str])
+        if protocol_str in get_mixin_registry():
+            mixins.append(get_mixin_registry()[protocol_str])
 
     # Determine the new class name
     class_name = name or model_class.__name__
