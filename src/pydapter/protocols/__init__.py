@@ -17,6 +17,7 @@ from pydapter.protocols.event import Event, as_event
 from pydapter.protocols.factory import combine_with_mixins, create_protocol_model_class
 from pydapter.protocols.identifiable import Identifiable, IdentifiableMixin
 from pydapter.protocols.invokable import Invokable, InvokableMixin
+from pydapter.protocols.registry import get_mixin_registry, register_mixin
 from pydapter.protocols.temporal import Temporal, TemporalMixin
 
 __all__ = (
@@ -46,4 +47,7 @@ __all__ = (
     # Factory functions
     "create_protocol_model_class",
     "combine_with_mixins",
+    # Registry functions
+    "get_mixin_registry",
+    "register_mixin",
 )

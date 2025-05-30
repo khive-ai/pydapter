@@ -9,6 +9,8 @@ ProtocolType = Literal[
     "embeddable",
     "invokable",
     "cryptographical",
+    "soft_deletable",
+    "auditable",
 ]
 
 # Protocol constants
@@ -17,6 +19,8 @@ TEMPORAL: ProtocolType = "temporal"
 EMBEDDABLE: ProtocolType = "embeddable"
 INVOKABLE: ProtocolType = "invokable"
 CRYPTOGRAPHICAL: ProtocolType = "cryptographical"
+AUDITABLE: ProtocolType = "auditable"
+SOFT_DELETABLE: ProtocolType = "soft_deletable"
 
 # Map protocol names to their corresponding mixin classes
 PROTOCOL_MIXINS = {
@@ -25,6 +29,8 @@ PROTOCOL_MIXINS = {
     "embeddable": "EmbeddableMixin",
     "invokable": "InvokableMixin",
     "cryptographical": "CryptographicalMixin",
+    "auditable": "AuditableMixin",
+    "soft_deletable": "SoftDeletableMixin",
 }
 
 # Export all constants
@@ -35,5 +41,7 @@ __all__ = [
     "EMBEDDABLE",
     "INVOKABLE",
     "CRYPTOGRAPHICAL",
+    "AUDITABLE",
+    "SOFT_DELETABLE",
     "PROTOCOL_MIXINS",
 ]
