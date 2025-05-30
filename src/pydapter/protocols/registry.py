@@ -1,10 +1,10 @@
+from pydapter.protocols.auditable import AuditableMixin
 from pydapter.protocols.cryptographical import CryptographicalMixin
 from pydapter.protocols.embeddable import EmbeddableMixin
 from pydapter.protocols.identifiable import IdentifiableMixin
 from pydapter.protocols.invokable import InvokableMixin
-from pydapter.protocols.temporal import TemporalMixin
-from pydapter.protocols.auditable import AuditableMixin
 from pydapter.protocols.soft_deletable import SoftDeletableMixin
+from pydapter.protocols.temporal import TemporalMixin
 
 # Mapping of protocol names to actual mixin classes
 _MIXIN_CLASSES = {
@@ -16,6 +16,7 @@ _MIXIN_CLASSES = {
     "auditable": AuditableMixin,
     "soft_deletable": SoftDeletableMixin,
 }
+
 
 def register_mixin(protocol_name: str, mixin_class: type) -> None:
     """

@@ -16,7 +16,7 @@ validation that Pydantic provides.
 
 ## ✨ Key Features
 
-### 🏗️ **Field System** (New in v0.2.3)
+### 🏗️ **Field System** (New in v0.3.0)
 
 - **Field Templates**: Reusable field definitions with flexible naming
 - **Field Families**: Pre-defined collections for common patterns (Entity,
@@ -162,6 +162,6 @@ details.
 
 ## 📄 License
 
-pydapter is released under the MIT License. See the
+pydapter is released under the Apache-2.0 License. See the
 [LICENSE](https://github.com/agenticsorg/pydapter/blob/main/LICENSE) file for
 details.

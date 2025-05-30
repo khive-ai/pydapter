@@ -6,7 +6,7 @@ Pydapter is a protocol-driven data transformation framework that emphasizes
 **stateless adapters**, **composable protocols**, **type safety**, and now a
 **comprehensive field system** for building robust models.
 
-## 🏗️ Field System (New in v0.2.3)
+## 🏗️ Field System (New in v0.3.0)
 
 The field system provides powerful tools for model creation:
 

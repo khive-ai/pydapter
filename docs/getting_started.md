@@ -1,7 +1,7 @@
 # Getting Started with Pydapter
 
 Pydapter is a powerful adapter library that lets you easily convert between
-Pydantic models and various data formats. With the new field system (v0.2.3),
+Pydantic models and various data formats. With the new field system (v0.3.0),
 creating robust models is easier than ever!
 
 ## Installation
