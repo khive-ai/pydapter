@@ -1,4 +1,4 @@
-# Pydapter: Elegant Adapters for Pydantic Models
+# Pydapter: Adapters for Pydantic Models
 
 [![codecov](https://codecov.io/github/khive-ai/pydapter/graph/badge.svg?token=FAE47FY26T)](https://codecov.io/github/khive-ai/pydapter)
 [![PyPI version](https://img.shields.io/pypi/v/pydapter.svg)](https://pypi.org/project/pydapter/)
