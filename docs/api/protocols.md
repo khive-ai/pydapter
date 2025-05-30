@@ -1,7 +1,7 @@
 # Protocols API Reference
 
-The `pydapter.protocols` module provides independent, composable interfaces for
-models with specialized functionality.
+This page provides detailed API documentation for the `pydapter.protocols` module,
+which implements composable interfaces for models with specialized functionality.
 
 ## Installation
 
@@ -9,268 +9,101 @@ models with specialized functionality.
 pip install pydapter
 ```
 
-## Overview
+## Module Overview
 
-Protocols in pydapter are **independent, composable interfaces** that can be
-mixed and matched:
+The protocols module provides independent, composable interfaces that can be mixed
+and matched to add specialized behavior to Pydantic models:
 
 ```text
-Independent Protocols:
+Protocol Architecture:
 ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
 │   Identifiable  │  │    Temporal     │  │   Embeddable    │
 │   (id: UUID)    │  │ (timestamps)    │  │ (content +      │
 │                 │  │                 │  │  embedding)     │
 └─────────────────┘  └─────────────────┘  └─────────────────┘
 
-┌─────────────────┐  ┌─────────────────┐
-│    Invokable    │  │ Cryptographical │
-│ (execution      │  │ (hashing)       │
-│  tracking)      │  │                 │
-└─────────────────┘  └─────────────────┘
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│    Invokable    │  │ Cryptographical │  │   Auditable     │
+│ (execution      │  │ (hashing)       │  │ (audit tracking)│
+│  tracking)      │  │                 │  │                 │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
 
-Event = Identifiable + Temporal + Embeddable + Invokable
+┌─────────────────┐
+│ SoftDeletable   │
+│ (soft delete)   │
+│                 │
+└─────────────────┘
+
+Event = Identifiable + Temporal + Embeddable + Invokable + Cryptographical
 ```
 
-Each protocol defines specific fields and can be used independently or combined
-through multiple inheritance.
+Each protocol defines specific fields and behavioral methods that can be used
+independently or combined through multiple inheritance.
 
-## Core Protocols
+## Core Protocol Interfaces
 
-### Identifiable
+### Protocol Definitions
 
-**Module:** `pydapter.protocols.identifiable`
-
-Provides unique identification using UUID.
-
-**Protocol Interface:**
+The module provides runtime-checkable protocol interfaces that define contracts
+for model behavior:
 
 ```python
-@runtime_checkable
-class Identifiable(Protocol):
-    id: UUID
+from pydapter.protocols import (
+    Identifiable,      # UUID-based identification
+    Temporal,          # Creation and update timestamps
+    Embeddable,        # Vector embeddings for ML
+    Invokable,         # Async execution with state tracking
+    Cryptographical,   # Content hashing capabilities
+    Auditable,         # User tracking and versioning
+    SoftDeletable,     # Soft deletion with restore
+)
 ```
 
-**Mixin Class:** `IdentifiableMixin`
+### Mixin Classes
 
-- Provides UUID serialization to string
-- Implements `__hash__` based on ID
-
-**Usage:**
+Each protocol includes a corresponding mixin class that provides the implementation:
 
 ```python
-from pydapter.protocols.identifiable import IdentifiableMixin
+from pydapter.protocols import (
+    IdentifiableMixin,      # Hash implementation, UUID serialization
+    TemporalMixin,          # update_timestamp() method
+    EmbeddableMixin,        # n_dim property, embedding parsing
+    InvokableMixin,         # invoke() method, execution tracking
+    CryptographicalMixin,   # hash_content() method
+    AuditableMixin,         # mark_updated_by() method
+    SoftDeletableMixin,     # soft_delete(), restore() methods
+)
+```
+
+## Usage Examples
+
+### Basic Protocol Composition
+
+```python
+from pydapter.protocols import IdentifiableMixin, TemporalMixin
 from pydantic import BaseModel
 
-class User(BaseModel, IdentifiableMixin):
+class User(BaseModel, IdentifiableMixin, TemporalMixin):
     name: str
     email: str
 
-user = User(name="John Doe", email="john@example.com")
-print(user.id)  # UUID field must be provided or use field defaults
+user = User(name="John", email="john@example.com")
+user.update_timestamp()  # Method from TemporalMixin
+print(user.id)           # UUID from IdentifiableMixin
 ```
 
-### Temporal
-
-**Module:** `pydapter.protocols.temporal`
-
-Adds timestamp tracking capabilities.
-
-**Protocol Interface:**
-
-```python
-@runtime_checkable
-class Temporal(Protocol):
-    created_at: datetime
-    updated_at: datetime
-```
-
-**Mixin Class:** `TemporalMixin`
-
-- `update_timestamp()`: Updates `updated_at` to current UTC time
-- Provides datetime serialization to ISO format
-
-**Usage:**
-
-```python
-from pydapter.protocols.temporal import TemporalMixin
-from pydantic import BaseModel
-
-class Article(BaseModel, TemporalMixin):
-    title: str
-    content: str
-
-article = Article(title="Hello World", content="...")
-article.update_timestamp()  # Updates updated_at field
-```
-
-### Embeddable
-
-**Module:** `pydapter.protocols.embeddable`
-
-Provides content and vector embedding support.
-
-**Protocol Interface:**
-
-```python
-@runtime_checkable
-class Embeddable(Protocol):
-    content: str | None
-    embedding: Embedding  # list[float]
-```
-
-**Mixin Class:** `EmbeddableMixin`
-
-- `n_dim` property: Returns embedding dimensions
-- `parse_embedding_response()`: Parses various embedding API response formats
-
-**Usage:**
-
-```python
-from pydapter.protocols.embeddable import EmbeddableMixin
-from pydantic import BaseModel
-
-class Document(BaseModel, EmbeddableMixin):
-    title: str
-
-doc = Document(title="AI Research")
-doc.content = "Machine learning research paper"
-doc.embedding = [0.1, 0.2, 0.3, ...]
-print(doc.n_dim)  # Returns embedding length
-```
-
-### Invokable
-
-**Module:** `pydapter.protocols.invokable`
-
-Enables asynchronous execution with state tracking.
-
-**Protocol Interface:**
-
-```python
-@runtime_checkable
-class Invokable(Protocol):
-    request: dict | None
-    execution: Execution
-    _handler: Callable | None
-    _handler_args: tuple[Any, ...]
-    _handler_kwargs: dict[str, Any]
-```
-
-**Mixin Class:** `InvokableMixin`
-
-- `invoke()`: Executes the handler and tracks execution state
-- `has_invoked` property: Returns True if execution completed or failed
-- Private attributes for handler management
-
-**Usage:**
-
-```python
-from pydapter.protocols.invokable import InvokableMixin
-from pydapter.fields.execution import Execution
-from pydantic import BaseModel, PrivateAttr
-
-class Task(BaseModel, InvokableMixin):
-    name: str
-    execution: Execution
-    _handler: callable = PrivateAttr()
-    _handler_args: tuple = PrivateAttr(default=())
-    _handler_kwargs: dict = PrivateAttr(default_factory=dict)
-
-async def process_data():
-    return {"result": "success"}
-
-task = Task(name="Process", execution=Execution())
-task._handler = process_data
-await task.invoke()
-print(task.execution.status)  # ExecutionStatus.COMPLETED
-```
-
-### Cryptographical
-
-**Module:** `pydapter.protocols.cryptographical`
-
-Provides content hashing capabilities.
-
-**Protocol Interface:**
-
-```python
-@runtime_checkable
-class Cryptographical(Protocol):
-    content: JsonValue
-    sha256: str | None = None
-```
-
-**Mixin Class:** `CryptographicalMixin`
-
-- `hash_content()`: Generates SHA-256 hash of content
-
-**Usage:**
-
-```python
-from pydapter.protocols.cryptographical import CryptographicalMixin
-from pydantic import BaseModel
-
-class SecureData(BaseModel, CryptographicalMixin):
-    title: str
-    content: str
-
-data = SecureData(title="Secret", content="classified information")
-data.hash_content()
-print(data.sha256)  # SHA-256 hash of content
-```
-
-## Event Protocol
-
-### Event
-
-**Module:** `pydapter.protocols.event`
-
-The Event class combines multiple protocols into a comprehensive event tracking
-system.
-
-**Inheritance:**
-
-```python
-class Event(_BaseEvent, IdentifiableMixin, InvokableMixin, TemporalMixin, EmbeddableMixin):
-    # Combines all major protocols
-```
-
-**Event Fields (from BASE_EVENT_FIELDS):**
-
-- `id`: Unique identifier (UUID, frozen)
-- `created_at`: Creation timestamp
-- `updated_at`: Last update timestamp
-- `embedding`: Vector representation
-- `execution`: Execution state tracking
-- `request`: Request parameters (dict)
-- `content`: Event content (str | dict | JsonValue | None)
-- `event_type`: Event classification (str | None)
-
-**Constructor:**
-
-```python
-def __init__(
-    self,
-    handler: Callable,
-    handler_arg: tuple[Any, ...],
-    handler_kwargs: dict[str, Any],
-    **data,
-):
-```
-
-**Usage:**
+### Event Protocol Usage
 
 ```python
 from pydapter.protocols.event import Event
 
-async def process_user_data(user_id: str):
-    return {"user_id": user_id, "processed": True}
+async def process_data(data: dict):
+    return {"result": "processed", "input": data}
 
 event = Event(
-    handler=process_user_data,
-    handler_arg=("user123",),
+    handler=process_data,
+    handler_arg=({"user_id": 123},),
     handler_kwargs={},
-    content="Processing user data",
     event_type="data_processing"
 )
 
@@ -278,30 +111,7 @@ await event.invoke()
 print(event.execution.status)  # ExecutionStatus.COMPLETED
 ```
 
-### Event Decorator: as_event
-
-**Function:** `as_event`
-
-Transforms functions into event-tracked operations.
-
-**Signature:**
-
-```python
-def as_event(
-    *,
-    event_type: str | None = None,
-    request_arg: str | None = None,
-    embed_content: bool = False,
-    embed_function: Callable[..., Embedding] | None = None,
-    adapt: bool = False,
-    adapter: type[Adapter | AsyncAdapter] | None = None,
-    content_parser: Callable | None = None,
-    strict_content: bool = False,
-    **kw
-) -> Callable
-```
-
-**Basic Usage:**
+### Event Decorator
 
 ```python
 from pydapter.protocols.event import as_event
@@ -315,111 +125,135 @@ event = await process_request({"user_id": 123})
 print(event.event_type)  # "api_call"
 ```
 
-**Advanced Usage with Embedding and Persistence:**
+## Factory Functions
+
+### Protocol Model Creation
 
 ```python
-from pydapter.protocols.event import as_event
-from pydapter.extras import AsyncPostgresAdapter
+from pydapter.protocols.factory import create_protocol_model_class
+from pydapter.protocols.constants import IDENTIFIABLE, TEMPORAL
 
-def my_embedding_function(text: str) -> list[float]:
-    # Your embedding logic
-    return [0.1, 0.2, 0.3]
-
-@as_event(
-    event_type="ml_inference",
-    embed_content=True,
-    embed_function=my_embedding_function,
-    adapt=True,
-    adapter=AsyncPostgresAdapter,
-    content_parser=lambda response: response.get("prediction"),
-    database_url="postgresql://..."
+User = create_protocol_model_class(
+    "User",
+    IDENTIFIABLE,  # Adds id field + behavior
+    TEMPORAL,      # Adds timestamps + update_timestamp() method
+    name=FieldTemplate(base_type=str),
+    email=FieldTemplate(base_type=str)
 )
-async def run_model(input_data):
-    prediction = {"prediction": "positive", "confidence": 0.95}
-    return prediction
-
-# Event is automatically created, embedded, and stored
-event = await run_model({"text": "This is great!"})
 ```
 
-## Protocol Composition
+### Mixin Combination
+
+```python
+from pydapter.protocols.factory import combine_with_mixins
+
+EnhancedUser = combine_with_mixins(
+    BaseUser,
+    ["identifiable", "temporal", "auditable"],
+    name="EnhancedUser"
+)
+```
+
+## Registry System
+
+### Dynamic Protocol Registration
+
+```python
+from pydapter.protocols.registry import register_mixin, get_mixin_registry
+
+# Register a custom protocol
+class GeospatialMixin:
+    def set_coordinates(self, lat: float, lng: float):
+        self.latitude = lat
+        self.longitude = lng
+
+register_mixin("geospatial", GeospatialMixin)
+
+# View all registered protocols
+registry = get_mixin_registry()
+print(list(registry.keys()))
+# ['identifiable', 'temporal', 'embeddable', 'invokable',
+#  'cryptographical', 'auditable', 'soft_deletable', 'geospatial']
+```
+
+## Field Integration
+
+Protocols integrate with the field system through pre-defined field families:
+
+```python
+from pydapter.fields.protocol_families import ProtocolFieldFamilies
+
+# Access protocol field definitions
+entity_fields = ProtocolFieldFamilies.ENTITY        # id, created_at, updated_at
+audit_fields = ProtocolFieldFamilies.AUDITABLE      # created_by, updated_by, version
+soft_delete_fields = ProtocolFieldFamilies.SOFT_DELETABLE  # deleted_at, is_deleted
+```
+
+## Protocol Constants
+
+```python
+from pydapter.protocols.constants import (
+    IDENTIFIABLE,
+    TEMPORAL,
+    EMBEDDABLE,
+    INVOKABLE,
+    CRYPTOGRAPHICAL,
+    AUDITABLE,
+    SOFT_DELETABLE,
+    PROTOCOL_MIXINS,  # Maps protocol names to mixin classes
+)
+```
+
+## Advanced Usage
 
 ### Multiple Protocol Inheritance
-
-Protocols are designed to be composed through multiple inheritance:
 
 ```python
 from pydapter.protocols import (
     IdentifiableMixin,
     TemporalMixin,
     EmbeddableMixin,
-    CryptographicalMixin
+    AuditableMixin,
+    SoftDeletableMixin
 )
-from pydantic import BaseModel
 
-# Combine multiple protocols
 class RichDocument(
     BaseModel,
-    IdentifiableMixin,     # Adds: id
-    TemporalMixin,         # Adds: created_at, updated_at
-    EmbeddableMixin,       # Adds: content, embedding
-    CryptographicalMixin   # Adds: sha256
+    IdentifiableMixin,
+    TemporalMixin,
+    EmbeddableMixin,
+    AuditableMixin,
+    SoftDeletableMixin
 ):
     title: str
-    category: str
+    content: str
 
-# Use all protocol features
-doc = RichDocument(
-    title="Research Paper",
-    category="AI",
-    content="Deep learning research...",
-    embedding=[0.1, 0.2, 0.3]
+doc = RichDocument(title="Report", content="Content")
+doc.update_timestamp()       # Temporal
+doc.hash_content()           # Cryptographical (if included)
+doc.mark_updated_by("user")  # Auditable
+doc.soft_delete()            # SoftDeletable
+```
+
+### Event with Embedding and Persistence
+
+```python
+from pydapter.protocols.event import as_event
+from pydapter.extras import AsyncPostgresAdapter
+
+@as_event(
+    event_type="ml_inference",
+    embed_content=True,
+    embed_function=embedding_function,
+    adapt=True,
+    adapter=AsyncPostgresAdapter,
+    database_url="postgresql://..."
 )
+async def run_model(input_data):
+    return {"prediction": "positive", "confidence": 0.95}
 
-doc.update_timestamp()    # Temporal
-doc.hash_content()        # Cryptographical
-print(doc.n_dim)          # Embeddable
-print(doc.id)             # Identifiable
-```
-
-### Selective Protocol Usage
-
-Use only the protocols you need:
-
-```python
-# Just identification and timestamps
-class SimpleEvent(BaseModel, IdentifiableMixin, TemporalMixin):
-    action: str
-    user_id: str
-
-# Just embedding capability
-class EmbeddedText(BaseModel, EmbeddableMixin):
-    text: str
-
-# Just execution tracking
-class ExecutableTask(BaseModel, InvokableMixin):
-    task_name: str
-    execution: Execution
-```
-
-## Field Integration
-
-Protocols integrate with the `pydapter.fields` system through pre-defined field
-definitions:
-
-```python
-from pydapter.protocols.event import BASE_EVENT_FIELDS
-
-# Standard event field definitions
-BASE_EVENT_FIELDS = [
-    ID_FROZEN.copy(name="id"),              # From pydapter.fields
-    DATETIME.copy(name="created_at"),       # From pydapter.fields
-    DATETIME.copy(name="updated_at"),       # From pydapter.fields
-    EMBEDDING.copy(name="embedding"),       # From pydapter.fields
-    EXECUTION.copy(name="execution"),       # From pydapter.fields
-    PARAMS.copy(name="request"),            # From pydapter.fields
-    # ... additional fields
-]
+# Event is automatically created, embedded, and stored
+event = await run_model({"text": "This is great!"})
 ```
 
 ## Best Practices
@@ -427,47 +261,121 @@ BASE_EVENT_FIELDS = [
 ### Protocol Selection
 
 1. **Use Minimal Sets**: Only include protocols you actually need
-2. **Composition Over Inheritance**: Prefer multiple protocol mixins over
-   complex hierarchies
-3. **Field Consistency**: Use standard field definitions from `pydapter.fields`
+2. **Composition Over Inheritance**: Prefer multiple protocol mixins
+3. **Field Consistency**: Use standard field definitions from field families
 
-### Event Tracking
+### Performance Considerations
 
-1. **Strategic Decoration**: Use `@as_event` for important business operations
-2. **Content Management**: Implement robust content parsing for complex
-   responses
-3. **Error Handling**: Handle execution failures gracefully
-4. **Performance**: Consider overhead for high-frequency operations
+1. **Lazy Registration**: Register protocols only when needed
+2. **Selective Composition**: Avoid unnecessary protocol overhead
+3. **Event Decoration**: Consider performance impact for high-frequency operations
 
-### Protocol Patterns
+---
 
-```python
-# Pattern 1: Basic entity with tracking
-class TrackedEntity(BaseModel, IdentifiableMixin, TemporalMixin):
-    pass
+## Auto-generated API Reference
 
-# Pattern 2: AI/ML document
-class AIDocument(BaseModel, IdentifiableMixin, TemporalMixin, EmbeddableMixin):
-    pass
+The following sections contain auto-generated API documentation for all protocol modules:
 
-# Pattern 3: Executable event
-class ExecutableEvent(BaseModel, IdentifiableMixin, TemporalMixin, InvokableMixin):
-    pass
+## Core Protocols
 
-# Pattern 4: Full event (all protocols)
-class FullEvent(Event):  # Already combines all protocols
-    pass
-```
+### Identifiable
 
-## Migration Guide
+::: pydapter.protocols.identifiable
+    options:
+      show_root_heading: true
+      show_source: true
 
-When upgrading from previous versions:
+### Temporal
 
-1. **Protocol Independence**: Update code that assumed hierarchical inheritance
-2. **Field Integration**: Migrate to standardized field definitions
-3. **Event Composition**: Use Event class for comprehensive event tracking
-4. **Mixin Usage**: Prefer mixin classes over protocol interfaces for
-   implementation
+::: pydapter.protocols.temporal
+    options:
+      show_root_heading: true
+      show_source: true
 
-For detailed migration instructions, see the
-[Migration Guide](../migration_guide.md#protocols-and-fields).
+### Embeddable
+
+::: pydapter.protocols.embeddable
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Invokable
+
+::: pydapter.protocols.invokable
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Cryptographical
+
+::: pydapter.protocols.cryptographical
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Auditable
+
+::: pydapter.protocols.auditable
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Soft Deletable
+
+::: pydapter.protocols.soft_deletable
+    options:
+      show_root_heading: true
+      show_source: true
+
+## Event System
+
+### Event Class
+
+::: pydapter.protocols.event.Event
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Event Decorator
+
+::: pydapter.protocols.event.as_event
+    options:
+      show_root_heading: true
+      show_source: true
+
+## Factory and Utilities
+
+### Protocol Factory
+
+::: pydapter.protocols.factory
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Protocol Registry
+
+::: pydapter.protocols.registry
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Protocol Constants
+
+::: pydapter.protocols.constants
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Protocol Types
+
+::: pydapter.protocols.types
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Protocol Utilities
+
+::: pydapter.protocols.utils
+    options:
+      show_root_heading: true
+      show_source: true

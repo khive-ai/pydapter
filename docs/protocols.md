@@ -20,6 +20,15 @@ This will install the required dependencies, including `typing-extensions`.
 
 The Protocols module provides the following interfaces:
 
+- **Identifiable**: Unique identification using UUID
+- **Temporal**: Creation and update timestamps
+- **Embeddable**: Vector embeddings for ML applications
+- **Invokable**: Function execution with state tracking
+- **Event**: Comprehensive event tracking (combines multiple protocols)
+- **Auditable**: User tracking and versioning for audit trails
+- **SoftDeletable**: Soft deletion with restore capabilities
+- **Cryptographical**: Content hashing capabilities
+
 ### Identifiable
 
 The `Identifiable` protocol provides a unique identifier for objects. It's the
@@ -173,6 +182,107 @@ await log_event.invoke()
 print(f"Event ID: {log_event.id}")
 print(f"Created at: {log_event.created_at}")
 print(f"Status: {log_event.execution.status}")
+```
+
+### Auditable
+
+The `Auditable` protocol adds user tracking and versioning capabilities for audit trails.
+
+**Key features:**
+
+- Tracks who created the entity (`created_by`)
+- Tracks who last updated the entity (`updated_by`)
+- Version number for optimistic locking
+- Integration with temporal updates
+
+```python
+from pydapter.protocols import Identifiable, Temporal
+from pydapter.protocols.auditable import AuditableMixin
+
+class AuditedDocument(Identifiable, Temporal, AuditableMixin):
+    title: str
+    content: str
+    created_by: str | None = None
+    updated_by: str | None = None
+    version: int = 1
+
+# Create and audit a document
+doc = AuditedDocument(
+    title="Confidential Report",
+    content="Sensitive information",
+    created_by="admin"
+)
+
+# Update with audit trail
+doc.content = "Updated content"
+doc.mark_updated_by("editor123")
+print(f"Version: {doc.version}")      # Version: 2
+print(f"Updated by: {doc.updated_by}") # Updated by: editor123
+```
+
+### SoftDeletable
+
+The `SoftDeletable` protocol provides soft deletion capabilities, allowing entities to
+be marked as deleted without permanently removing them.
+
+**Key features:**
+
+- Marks deletion with timestamp (`deleted_at`)
+- Boolean flag for deletion status (`is_deleted`)
+- Restore capability for recovering deleted entities
+- Preserves data for audit and recovery purposes
+
+```python
+from pydapter.protocols import Identifiable
+from pydapter.protocols.soft_deletable import SoftDeletableMixin
+
+class SoftDeletableUser(Identifiable, SoftDeletableMixin):
+    name: str
+    email: str
+    deleted_at: datetime | None = None
+    is_deleted: bool = False
+
+# Create and soft delete a user
+user = SoftDeletableUser(name="John Doe", email="john@example.com")
+
+# Soft delete the user
+user.soft_delete()
+print(f"Deleted: {user.is_deleted}")    # Deleted: True
+print(f"Deleted at: {user.deleted_at}") # Deleted at: 2023-10-01T12:00:00+00:00
+
+# Restore the user
+user.restore()
+print(f"Deleted: {user.is_deleted}")    # Deleted: False
+print(f"Deleted at: {user.deleted_at}") # Deleted at: None
+```
+
+## Protocol Registry
+
+The protocol registry system allows for dynamic registration and discovery of protocol mixins.
+
+**Key features:**
+
+- Dynamic mixin registration
+- Extensible protocol system
+- Runtime protocol discovery
+- Custom protocol support
+
+```python
+from pydapter.protocols.registry import register_mixin, get_mixin_registry
+
+# Define a custom protocol mixin
+class GeospatialMixin:
+    def set_coordinates(self, latitude: float, longitude: float):
+        self.latitude = latitude
+        self.longitude = longitude
+
+# Register the custom mixin
+register_mixin("geospatial", GeospatialMixin)
+
+# View all registered protocols
+registry = get_mixin_registry()
+print(list(registry.keys()))
+# Output: ['identifiable', 'temporal', 'embeddable', 'invokable', 'cryptographical', 'auditable', 'soft_deletable', 'geospatial']
 ```
 
 ## Protocol Inheritance Hierarchy
