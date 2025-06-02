@@ -33,4 +33,4 @@ __all__ = (
     "as_event",
 )
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
