@@ -1,0 +1,1292 @@
+# protocols/__init__.py
+"""
+Pydapter Protocol System - A composable, high-performance protocol system
+for defining reusable behaviors and contracts.
+"""
+
+from .core import (
+    Protocol,
+    ProtocolMeta,
+    BehaviorProtocol,
+    ComposableProtocol,
+    ProtocolRegistry,
+)
+from .behaviors import (
+    Identifiable,
+    Temporal,
+    Auditable,
+    Versionable,
+    SoftDeletable,
+    Taggable,
+    Searchable,
+)
+from .composition import (
+    ProtocolComposer,
+    compose_protocols,
+    create_protocol,
+)
+from .adapters import (
+    StorageAdapter,
+    PydanticAdapter,
+    SQLModelAdapter,
+    DictAdapter,
+    JSONAdapter,
+)
+
+__all__ = [
+    # Core
+    "Protocol",
+    "ProtocolMeta",
+    "BehaviorProtocol",
+    "ComposableProtocol",
+    "ProtocolRegistry",
+    # Behaviors
+    "Identifiable",
+    "Temporal",
+    "Auditable",
+    "Versionable",
+    "SoftDeletable",
+    "Taggable",
+    "Searchable",
+    # Composition
+    "ProtocolComposer",
+    "compose_protocols",
+    "create_protocol",
+    # Adapters
+    "StorageAdapter",
+    "PydanticAdapter",
+    "SQLModelAdapter",
+    "DictAdapter",
+    "JSONAdapter",
+]
+
+# protocols/core/__init__.py
+from .base import Protocol, ProtocolMeta
+from .protocols import BehaviorProtocol, ComposableProtocol
+from .registry import ProtocolRegistry, protocol_registry
+
+__all__ = [
+    "Protocol",
+    "ProtocolMeta",
+    "BehaviorProtocol",
+    "ComposableProtocol",
+    "ProtocolRegistry",
+    "protocol_registry",
+]
+
+# protocols/core/base.py
+"""Base protocol implementation with composition support."""
+
+from typing import Dict, Any, Type, Optional, Set, ClassVar, Tuple
+from abc import ABCMeta
+import weakref
+from functools import lru_cache
+
+from ...fields import Schema, SchemaBuilder
+
+class ProtocolMeta(ABCMeta):
+    """Metaclass for protocols with automatic registration and composition."""
+    
+    # Class-level registry of all protocols
+    _protocol_registry: weakref.WeakValueDictionary = weakref.WeakValueDictionary()
+    
+    def __new__(mcs, name: str, bases: Tuple[type, ...], 
+                namespace: Dict[str, Any], **kwargs):
+        # Extract protocol configuration
+        protocol_id = namespace.pop('__protocol_id__', name.lower())
+        required_fields = namespace.pop('__required_fields__', {})
+        optional_fields = namespace.pop('__optional_fields__', {})
+        behaviors = namespace.pop('__behaviors__', [])
+        
+        # Create class
+        cls = super().__new__(mcs, name, bases, namespace)
+        
+        # Set protocol attributes
+        cls.__protocol_id__ = protocol_id
+        cls.__required_fields__ = required_fields
+        cls.__optional_fields__ = optional_fields
+        cls.__behaviors__ = behaviors
+        
+        # Register protocol
+        mcs._protocol_registry[protocol_id] = cls
+        
+        return cls
+    
+    @classmethod
+    def get_protocol(mcs, protocol_id: str) -> Optional[Type['Protocol']]:
+        """Get protocol by ID."""
+        return mcs._protocol_registry.get(protocol_id)
+    
+    @classmethod
+    def all_protocols(mcs) -> Dict[str, Type['Protocol']]:
+        """Get all registered protocols."""
+        return dict(mcs._protocol_registry)
+
+class Protocol(metaclass=ProtocolMeta):
+    """
+    Base protocol class for defining reusable behaviors.
+    
+    Protocols define:
+    - Required and optional fields
+    - Behaviors (methods that operate on those fields)
+    - Composition rules with other protocols
+    """
+    
+    __protocol_id__: ClassVar[str]
+    __required_fields__: ClassVar[Dict[str, 'FieldTemplate']]
+    __optional_fields__: ClassVar[Dict[str, 'FieldTemplate']]
+    __behaviors__: ClassVar[list[str]]
+    
+    def __init_subclass__(cls, protocol_id: Optional[str] = None, **kwargs):
+        """Initialize subclass with protocol configuration."""
+        super().__init_subclass__(**kwargs)
+        
+        if protocol_id:
+            cls.__protocol_id__ = protocol_id
+    
+    @classmethod
+    @lru_cache(maxsize=128)
+    def get_schema(cls) -> Schema:
+        """Get schema for this protocol."""
+        builder = SchemaBuilder(f"{cls.__name__}Schema")
+        
+        # Add required fields
+        for name, template in cls.__required_fields__.items():
+            builder.add_field(name, template, {"required": True})
+        
+        # Add optional fields
+        for name, template in cls.__optional_fields__.items():
+            builder.add_field(name, template, {"required": False})
+        
+        return builder.build()
+    
+    @classmethod
+    def get_all_fields(cls) -> Dict[str, 'FieldTemplate']:
+        """Get all fields (required + optional)."""
+        return {**cls.__required_fields__, **cls.__optional_fields__}
+    
+    @classmethod
+    def validate_implementation(cls, obj: Any) -> bool:
+        """Check if an object implements this protocol."""
+        # Check required fields
+        for field_name in cls.__required_fields__:
+            if not hasattr(obj, field_name):
+                return False
+        
+        # Check behaviors
+        for behavior in cls.__behaviors__:
+            if not hasattr(obj, behavior) or not callable(getattr(obj, behavior)):
+                return False
+        
+        return True
+    
+    @classmethod
+    def apply_to_schema(cls, schema: Schema) -> Schema:
+        """Apply this protocol to an existing schema."""
+        # Merge fields
+        protocol_schema = cls.get_schema()
+        return schema.merge(protocol_schema)
+    
+    def __repr__(self) -> str:
+        """String representation."""
+        return f"<Protocol {self.__protocol_id__}>"
+
+# protocols/core/protocols.py
+"""Protocol interfaces for type checking."""
+
+from typing import Protocol as TypingProtocol, runtime_checkable, Any, Dict
+from abc import abstractmethod
+
+@runtime_checkable
+class BehaviorProtocol(TypingProtocol):
+    """Protocol for objects that have behaviors."""
+    
+    @abstractmethod
+    def apply_behavior(self, behavior_name: str, *args, **kwargs) -> Any:
+        """Apply a named behavior."""
+        ...
+    
+    @abstractmethod
+    def has_behavior(self, behavior_name: str) -> bool:
+        """Check if object has a behavior."""
+        ...
+
+@runtime_checkable
+class ComposableProtocol(TypingProtocol):
+    """Protocol for composable objects."""
+    
+    @abstractmethod
+    def compose_with(self, other: 'ComposableProtocol') -> 'ComposableProtocol':
+        """Compose with another protocol."""
+        ...
+    
+    @abstractmethod
+    def get_components(self) -> list['ComposableProtocol']:
+        """Get component protocols."""
+        ...
+
+# protocols/core/registry.py
+"""Global protocol registry with efficient lookup."""
+
+from typing import Dict, Type, Optional, Set, List
+import threading
+from functools import lru_cache
+
+from .base import Protocol, ProtocolMeta
+
+class ProtocolRegistry:
+    """
+    Thread-safe registry for protocol management.
+    Handles registration, lookup, and composition.
+    """
+    
+    def __init__(self):
+        self._protocols: Dict[str, Type[Protocol]] = {}
+        self._compositions: Dict[frozenset[str], Type[Protocol]] = {}
+        self._lock = threading.RLock()
+    
+    def register(self, protocol: Type[Protocol]) -> None:
+        """Register a protocol."""
+        with self._lock:
+            self._protocols[protocol.__protocol_id__] = protocol
+    
+    def get(self, protocol_id: str) -> Optional[Type[Protocol]]:
+        """Get protocol by ID."""
+        return self._protocols.get(protocol_id)
+    
+    def get_all(self) -> Dict[str, Type[Protocol]]:
+        """Get all registered protocols."""
+        with self._lock:
+            return self._protocols.copy()
+    
+    @lru_cache(maxsize=256)
+    def find_protocols_with_field(self, field_name: str) -> List[Type[Protocol]]:
+        """Find all protocols that have a specific field."""
+        result = []
+        for protocol in self._protocols.values():
+            if field_name in protocol.get_all_fields():
+                result.append(protocol)
+        return result
+    
+    def register_composition(self, protocol_ids: Set[str], 
+                           composed_protocol: Type[Protocol]) -> None:
+        """Register a composed protocol."""
+        with self._lock:
+            key = frozenset(protocol_ids)
+            self._compositions[key] = composed_protocol
+    
+    def get_composition(self, protocol_ids: Set[str]) -> Optional[Type[Protocol]]:
+        """Get composed protocol."""
+        key = frozenset(protocol_ids)
+        return self._compositions.get(key)
+    
+    def clear(self) -> None:
+        """Clear all registrations."""
+        with self._lock:
+            self._protocols.clear()
+            self._compositions.clear()
+
+# Global registry instance
+protocol_registry = ProtocolRegistry()
+
+# protocols/behaviors/__init__.py
+from .identifiable import Identifiable
+from .temporal import Temporal
+from .auditable import Auditable
+from .versionable import Versionable
+from .soft_deletable import SoftDeletable
+from .taggable import Taggable
+from .searchable import Searchable
+
+__all__ = [
+    "Identifiable",
+    "Temporal",
+    "Auditable",
+    "Versionable",
+    "SoftDeletable",
+    "Taggable",
+    "Searchable",
+]
+
+# protocols/behaviors/identifiable.py
+"""Identifiable protocol for entities with unique IDs."""
+
+from typing import Optional
+import uuid
+
+from ..core import Protocol
+from ...fields import UUIDField, StringField, IntField
+
+class Identifiable(Protocol):
+    """Protocol for entities with unique identifiers."""
+    
+    __protocol_id__ = "identifiable"
+    __required_fields__ = {
+        "id": UUIDField(auto_generate=True),
+    }
+    __optional_fields__ = {}
+    __behaviors__ = ["get_id", "equals_by_id"]
+    
+    @staticmethod
+    def get_id(obj) -> uuid.UUID:
+        """Get the entity's ID."""
+        return obj.id
+    
+    @staticmethod
+    def equals_by_id(obj, other) -> bool:
+        """Check equality by ID."""
+        if not hasattr(other, 'id'):
+            return False
+        return obj.id == other.id
+
+class StringIdentifiable(Protocol):
+    """Protocol for entities with string identifiers."""
+    
+    __protocol_id__ = "string_identifiable"
+    __required_fields__ = {
+        "id": StringField(min_length=1),
+    }
+    __optional_fields__ = {}
+    __behaviors__ = ["get_id", "equals_by_id"]
+
+class IntIdentifiable(Protocol):
+    """Protocol for entities with integer identifiers."""
+    
+    __protocol_id__ = "int_identifiable"
+    __required_fields__ = {
+        "id": IntField(min_value=1),
+    }
+    __optional_fields__ = {}
+    __behaviors__ = ["get_id", "equals_by_id"]
+
+# protocols/behaviors/temporal.py
+"""Temporal protocols for time-tracking."""
+
+from datetime import datetime, timezone
+from typing import Optional
+
+from ..core import Protocol
+from ...fields import DateTimeField
+
+class Temporal(Protocol):
+    """Protocol for entities with creation and update timestamps."""
+    
+    __protocol_id__ = "temporal"
+    __required_fields__ = {
+        "created_at": DateTimeField(
+            timezone_aware=True,
+            auto_now_add=True,
+            metadata={"index": True}
+        ),
+        "updated_at": DateTimeField(
+            timezone_aware=True,
+            auto_now=True,
+            metadata={"index": True}
+        ),
+    }
+    __optional_fields__ = {}
+    __behaviors__ = ["touch", "age", "was_modified"]
+    
+    @staticmethod
+    def touch(obj) -> None:
+        """Update the updated_at timestamp."""
+        obj.updated_at = datetime.now(timezone.utc)
+    
+    @staticmethod
+    def age(obj) -> float:
+        """Get age in seconds since creation."""
+        now = datetime.now(timezone.utc)
+        return (now - obj.created_at).total_seconds()
+    
+    @staticmethod
+    def was_modified(obj) -> bool:
+        """Check if entity was modified after creation."""
+        return obj.updated_at > obj.created_at
+
+class TemporalNaive(Protocol):
+    """Protocol for entities with naive (timezone-unaware) timestamps."""
+    
+    __protocol_id__ = "temporal_naive"
+    __required_fields__ = {
+        "created_at": DateTimeField(
+            timezone_aware=False,
+            auto_now_add=True,
+        ),
+        "updated_at": DateTimeField(
+            timezone_aware=False,
+            auto_now=True,
+        ),
+    }
+    __optional_fields__ = {}
+    __behaviors__ = ["touch", "age", "was_modified"]
+
+# protocols/behaviors/auditable.py
+"""Auditable protocol for tracking changes."""
+
+from typing import Optional
+from datetime import datetime
+
+from ..core import Protocol
+from ...fields import StringField, UUIDField, DateTimeField
+
+class Auditable(Protocol):
+    """Protocol for entities that track who created/modified them."""
+    
+    __protocol_id__ = "auditable"
+    __required_fields__ = {}
+    __optional_fields__ = {
+        "created_by": StringField(required=False),
+        "updated_by": StringField(required=False),
+        "created_by_id": UUIDField(required=False),
+        "updated_by_id": UUIDField(required=False),
+    }
+    __behaviors__ = ["set_created_by", "set_updated_by"]
+    
+    @staticmethod
+    def set_created_by(obj, user_id: str, user_name: Optional[str] = None) -> None:
+        """Set created by information."""
+        if hasattr(obj, 'created_by_id'):
+            obj.created_by_id = user_id
+        if user_name and hasattr(obj, 'created_by'):
+            obj.created_by = user_name
+    
+    @staticmethod
+    def set_updated_by(obj, user_id: str, user_name: Optional[str] = None) -> None:
+        """Set updated by information."""
+        if hasattr(obj, 'updated_by_id'):
+            obj.updated_by_id = user_id
+        if user_name and hasattr(obj, 'updated_by'):
+            obj.updated_by = user_name
+        
+        # Also update timestamp if temporal
+        if hasattr(obj, 'touch'):
+            obj.touch()
+
+class FullAuditable(Protocol):
+    """Extended auditable with IP and user agent tracking."""
+    
+    __protocol_id__ = "full_auditable"
+    __required_fields__ = {}
+    __optional_fields__ = {
+        "created_by": StringField(required=False),
+        "updated_by": StringField(required=False),
+        "created_by_id": UUIDField(required=False),
+        "updated_by_id": UUIDField(required=False),
+        "created_from_ip": StringField(required=False),
+        "updated_from_ip": StringField(required=False),
+        "created_user_agent": StringField(required=False),
+        "updated_user_agent": StringField(required=False),
+    }
+    __behaviors__ = ["set_created_audit", "set_updated_audit"]
+
+# protocols/behaviors/versionable.py
+"""Versionable protocol for optimistic locking."""
+
+from typing import Optional
+
+from ..core import Protocol
+from ...fields import IntField
+
+class Versionable(Protocol):
+    """Protocol for entities with version tracking."""
+    
+    __protocol_id__ = "versionable"
+    __required_fields__ = {
+        "version": IntField(default=1, min_value=1),
+    }
+    __optional_fields__ = {}
+    __behaviors__ = ["increment_version", "check_version"]
+    
+    @staticmethod
+    def increment_version(obj) -> None:
+        """Increment the version number."""
+        obj.version += 1
+    
+    @staticmethod
+    def check_version(obj, expected_version: int) -> bool:
+        """Check if version matches expected."""
+        return obj.version == expected_version
+
+class VersionableWithHistory(Protocol):
+    """Protocol for entities that track version history."""
+    
+    __protocol_id__ = "versionable_history"
+    __required_fields__ = {
+        "version": IntField(default=1, min_value=1),
+        "previous_version": IntField(required=False),
+    }
+    __optional_fields__ = {
+        "version_history": ListField(item_type=dict, required=False),
+    }
+    __behaviors__ = ["increment_version", "get_version_history"]
+
+# protocols/behaviors/soft_deletable.py
+"""Soft delete protocol for logical deletion."""
+
+from datetime import datetime, timezone
+from typing import Optional
+
+from ..core import Protocol
+from ...fields import DateTimeField, BoolField, StringField
+
+class SoftDeletable(Protocol):
+    """Protocol for entities that support soft deletion."""
+    
+    __protocol_id__ = "soft_deletable"
+    __required_fields__ = {}
+    __optional_fields__ = {
+        "deleted_at": DateTimeField(
+            timezone_aware=True,
+            required=False,
+            metadata={"index": True}
+        ),
+        "is_deleted": BoolField(default=False, metadata={"index": True}),
+        "deleted_by": StringField(required=False),
+    }
+    __behaviors__ = ["soft_delete", "restore", "is_deleted", "permanently_delete"]
+    
+    @staticmethod
+    def soft_delete(obj, deleted_by: Optional[str] = None) -> None:
+        """Mark entity as deleted."""
+        obj.deleted_at = datetime.now(timezone.utc)
+        obj.is_deleted = True
+        if deleted_by and hasattr(obj, 'deleted_by'):
+            obj.deleted_by = deleted_by
+    
+    @staticmethod
+    def restore(obj) -> None:
+        """Restore soft-deleted entity."""
+        obj.deleted_at = None
+        obj.is_deleted = False
+        if hasattr(obj, 'deleted_by'):
+            obj.deleted_by = None
+    
+    @staticmethod
+    def is_deleted(obj) -> bool:
+        """Check if entity is deleted."""
+        return getattr(obj, 'is_deleted', False)
+    
+    @staticmethod
+    def permanently_delete(obj) -> None:
+        """Marker for permanent deletion (actual deletion handled externally)."""
+        # This is a marker method - actual deletion is handled by storage layer
+        pass
+
+# protocols/behaviors/taggable.py
+"""Taggable protocol for categorization."""
+
+from typing import List, Set
+
+from ..core import Protocol
+from ...fields import ListField, StringField
+
+class Taggable(Protocol):
+    """Protocol for entities that can be tagged."""
+    
+    __protocol_id__ = "taggable"
+    __required_fields__ = {}
+    __optional_fields__ = {
+        "tags": ListField(
+            item_type=str,
+            default=list,
+            metadata={"index": True}
+        ),
+    }
+    __behaviors__ = ["add_tag", "remove_tag", "has_tag", "clear_tags"]
+    
+    @staticmethod
+    def add_tag(obj, tag: str) -> None:
+        """Add a tag."""
+        if tag not in obj.tags:
+            obj.tags.append(tag)
+    
+    @staticmethod
+    def remove_tag(obj, tag: str) -> None:
+        """Remove a tag."""
+        if tag in obj.tags:
+            obj.tags.remove(tag)
+    
+    @staticmethod
+    def has_tag(obj, tag: str) -> bool:
+        """Check if entity has a tag."""
+        return tag in obj.tags
+    
+    @staticmethod
+    def clear_tags(obj) -> None:
+        """Clear all tags."""
+        obj.tags.clear()
+
+class Categorizable(Protocol):
+    """Protocol for entities with categories."""
+    
+    __protocol_id__ = "categorizable"
+    __required_fields__ = {}
+    __optional_fields__ = {
+        "category": StringField(required=False, metadata={"index": True}),
+        "subcategory": StringField(required=False),
+        "categories": ListField(item_type=str, default=list),
+    }
+    __behaviors__ = ["set_category", "in_category"]
+
+# protocols/behaviors/searchable.py
+"""Searchable protocol for full-text search."""
+
+from typing import List, Optional
+
+from ..core import Protocol
+from ...fields import StringField, ListField, FloatField
+
+class Searchable(Protocol):
+    """Protocol for entities that support search."""
+    
+    __protocol_id__ = "searchable"
+    __required_fields__ = {}
+    __optional_fields__ = {
+        "search_text": StringField(
+            required=False,
+            metadata={"fulltext_index": True}
+        ),
+        "search_keywords": ListField(
+            item_type=str,
+            default=list,
+            metadata={"index": True}
+        ),
+        "search_score": FloatField(
+            required=False,
+            min_value=0.0,
+            max_value=1.0
+        ),
+    }
+    __behaviors__ = ["update_search_text", "add_keyword", "calculate_relevance"]
+    
+    @staticmethod
+    def update_search_text(obj, *fields: str) -> None:
+        """Update search text from specified fields."""
+        parts = []
+        for field in fields:
+            if hasattr(obj, field):
+                value = getattr(obj, field)
+                if value:
+                    parts.append(str(value))
+        obj.search_text = " ".join(parts)
+    
+    @staticmethod
+    def add_keyword(obj, keyword: str) -> None:
+        """Add a search keyword."""
+        if keyword not in obj.search_keywords:
+            obj.search_keywords.append(keyword)
+    
+    @staticmethod
+    def calculate_relevance(obj, query: str) -> float:
+        """Calculate relevance score for a query."""
+        # Simple implementation - can be overridden
+        query_lower = query.lower()
+        text_lower = (obj.search_text or "").lower()
+        
+        if query_lower in text_lower:
+            return 1.0
+        
+        # Check keywords
+        for keyword in obj.search_keywords:
+            if query_lower in keyword.lower():
+                return 0.8
+        
+        return 0.0
+
+# protocols/composition/__init__.py
+from .composer import ProtocolComposer
+from .factory import compose_protocols, create_protocol
+
+__all__ = [
+    "ProtocolComposer",
+    "compose_protocols",
+    "create_protocol",
+]
+
+# protocols/composition/composer.py
+"""Protocol composition system."""
+
+from typing import Set, Dict, Any, Type, Optional, List
+from functools import lru_cache
+
+from ..core import Protocol, ProtocolMeta, protocol_registry
+from ...fields import FieldTemplate
+
+class ProtocolComposer:
+    """
+    Composes multiple protocols into a unified protocol.
+    Handles field conflicts and behavior merging.
+    """
+    
+    def __init__(self):
+        self._composition_cache = {}
+    
+    def compose(self, *protocols: Type[Protocol], 
+                name: Optional[str] = None,
+                resolve_conflicts: Optional[callable] = None) -> Type[Protocol]:
+        """
+        Compose multiple protocols into one.
+        
+        Args:
+            protocols: Protocol classes to compose
+            name: Name for composed protocol
+            resolve_conflicts: Function to resolve field conflicts
+        
+        Returns:
+            New protocol class with combined fields and behaviors
+        """
+        # Check cache
+        protocol_ids = frozenset(p.__protocol_id__ for p in protocols)
+        if protocol_ids in self._composition_cache:
+            return self._composition_cache[protocol_ids]
+        
+        # Generate name
+        if not name:
+            name = "_".join(p.__name__ for p in protocols)
+        
+        # Merge fields
+        required_fields = {}
+        optional_fields = {}
+        conflicts = []
+        
+        for protocol in protocols:
+            # Check required fields
+            for field_name, field_template in protocol.__required_fields__.items():
+                if field_name in required_fields:
+                    conflicts.append((field_name, required_fields[field_name], 
+                                    field_template, protocol))
+                else:
+                    required_fields[field_name] = field_template
+            
+            # Check optional fields
+            for field_name, field_template in protocol.__optional_fields__.items():
+                if field_name in optional_fields or field_name in required_fields:
+                    conflicts.append((field_name, 
+                                    optional_fields.get(field_name) or 
+                                    required_fields.get(field_name),
+                                    field_template, protocol))
+                else:
+                    optional_fields[field_name] = field_template
+        
+        # Resolve conflicts
+        if conflicts:
+            if resolve_conflicts:
+                for field_name, existing, new, protocol in conflicts:
+                    resolved = resolve_conflicts(field_name, existing, new)
+                    if field_name in required_fields:
+                        required_fields[field_name] = resolved
+                    else:
+                        optional_fields[field_name] = resolved
+            else:
+                # Default: use first definition
+                pass
+        
+        # Merge behaviors
+        behaviors = []
+        seen_behaviors = set()
+        for protocol in protocols:
+            for behavior in protocol.__behaviors__:
+                if behavior not in seen_behaviors:
+                    behaviors.append(behavior)
+                    seen_behaviors.add(behavior)
+        
+        # Create composed protocol
+        protocol_id = f"composed_{hash(protocol_ids) & 0xFFFFFFFF}"
+        
+        # Create namespace with combined methods
+        namespace = {
+            '__protocol_id__': protocol_id,
+            '__required_fields__': required_fields,
+            '__optional_fields__': optional_fields,
+            '__behaviors__': behaviors,
+            '__composed_from__': protocols,
+        }
+        
+        # Add behavior methods
+        for protocol in protocols:
+            for behavior in protocol.__behaviors__:
+                if hasattr(protocol, behavior):
+                    namespace[behavior] = getattr(protocol, behavior)
+        
+        # Create class
+        composed_class = ProtocolMeta(name, (Protocol,), namespace)
+        
+        # Cache and register
+        self._composition_cache[protocol_ids] = composed_class
+        protocol_registry.register_composition(
+            {p.__protocol_id__ for p in protocols},
+            composed_class
+        )
+        
+        return composed_class
+    
+    def decompose(self, protocol: Type[Protocol]) -> List[Type[Protocol]]:
+        """Get original protocols from a composed protocol."""
+        return getattr(protocol, '__composed_from__', [protocol])
+    
+    def is_composed(self, protocol: Type[Protocol]) -> bool:
+        """Check if a protocol is composed."""
+        return hasattr(protocol, '__composed_from__')
+
+# protocols/composition/factory.py
+"""Factory functions for protocol composition."""
+
+from typing import Type, Dict, Any, Optional
+from functools import lru_cache
+
+from ..core import Protocol, protocol_registry
+from .composer import ProtocolComposer
+
+# Global composer instance
+_composer = ProtocolComposer()
+
+@lru_cache(maxsize=128)
+def compose_protocols(*protocol_ids: str, name: Optional[str] = None) -> Type[Protocol]:
+    """
+    Compose protocols by their IDs.
+    
+    Example:
+        Entity = compose_protocols("identifiable", "temporal", "auditable")
+    """
+    protocols = []
+    for protocol_id in protocol_ids:
+        protocol = protocol_registry.get(protocol_id)
+        if not protocol:
+            raise ValueError(f"Unknown protocol: {protocol_id}")
+        protocols.append(protocol)
+    
+    return _composer.compose(*protocols, name=name)
+
+def create_protocol(name: str, *behaviors: str, **fields: 'FieldTemplate') -> Type[Protocol]:
+    """
+    Create a new protocol with fields and behaviors.
+    
+    Example:
+        Rateable = create_protocol(
+            "Rateable",
+            "rate", "get_average_rating",
+            rating=FloatField(min_value=0, max_value=5),
+            rating_count=IntField(default=0),
+        )
+    """
+    # Split fields into required and optional based on template config
+    required_fields = {}
+    optional_fields = {}
+    
+    for field_name, template in fields.items():
+        if template.required:
+            required_fields[field_name] = template
+        else:
+            optional_fields[field_name] = template
+    
+    # Create protocol class
+    protocol_id = name.lower()
+    namespace = {
+        '__protocol_id__': protocol_id,
+        '__required_fields__': required_fields,
+        '__optional_fields__': optional_fields,
+        '__behaviors__': list(behaviors),
+    }
+    
+    # Create and register
+    protocol_class = type(name, (Protocol,), namespace)
+    protocol_registry.register(protocol_class)
+    
+    return protocol_class
+
+# protocols/adapters/__init__.py
+from .base import StorageAdapter
+from .pydantic_adapter import PydanticAdapter
+from .sqlmodel_adapter import SQLModelAdapter
+from .dict_adapter import DictAdapter
+from .json_adapter import JSONAdapter
+
+__all__ = [
+    "StorageAdapter",
+    "PydanticAdapter",
+    "SQLModelAdapter",
+    "DictAdapter",
+    "JSONAdapter",
+]
+
+# protocols/adapters/base.py
+"""Base adapter for storage backends."""
+
+from typing import Dict, Any, Type, Optional
+from abc import ABC, abstractmethod
+
+from ..core import Protocol
+from ...fields import Field, Schema
+
+class StorageAdapter(ABC):
+    """
+    Abstract base class for storage adapters.
+    Adapters convert between protocols/schemas and storage-specific formats.
+    """
+    
+    @abstractmethod
+    def to_storage_schema(self, schema: Schema) -> Any:
+        """Convert schema to storage-specific schema definition."""
+        ...
+    
+    @abstractmethod
+    def from_storage_data(self, data: Any, schema: Schema) -> Dict[str, Any]:
+        """Convert storage data to Python dict."""
+        ...
+    
+    @abstractmethod
+    def to_storage_data(self, data: Dict[str, Any], schema: Schema) -> Any:
+        """Convert Python dict to storage format."""
+        ...
+    
+    @abstractmethod
+    def create_model(self, schema: Schema) -> Type:
+        """Create storage-specific model class."""
+        ...
+
+# protocols/adapters/pydantic_adapter.py
+"""Pydantic adapter for protocol/schema conversion."""
+
+from typing import Dict, Any, Type, Optional
+from pydantic import BaseModel, Field as PydanticField, ConfigDict
+from pydantic import create_model as pydantic_create_model
+
+from .base import StorageAdapter
+from ...fields import Schema, Field
+
+class PydanticAdapter(StorageAdapter):
+    """Adapter for Pydantic models."""
+    
+    def to_storage_schema(self, schema: Schema) -> Dict[str, Any]:
+        """Convert schema to Pydantic field definitions."""
+        fields = {}
+        
+        for field_name, field in schema.create_fields().items():
+            # Create Pydantic field
+            field_schema = field._schema
+            
+            # Build field kwargs
+            kwargs = {}
+            if field_schema.default is not None:
+                kwargs['default'] = field_schema.default
+            elif not field_schema.required:
+                kwargs['default'] = None
+            
+            # Add metadata
+            if field_schema.metadata:
+                kwargs['json_schema_extra'] = field_schema.metadata
+            
+            # Create field definition
+            if field_schema.required and field_schema.default is None:
+                fields[field_name] = (field_schema.type, ...)
+            else:
+                fields[field_name] = (field_schema.type, 
+                                    PydanticField(**kwargs))
+        
+        return fields
+    
+    def from_storage_data(self, data: BaseModel, schema: Schema) -> Dict[str, Any]:
+        """Convert Pydantic model to dict."""
+        return data.model_dump()
+    
+    def to_storage_data(self, data: Dict[str, Any], schema: Schema) -> BaseModel:
+        """Convert dict to Pydantic model."""
+        model_class = self.create_model(schema)
+        return model_class(**data)
+    
+    def create_model(self, schema: Schema) -> Type[BaseModel]:
+        """Create Pydantic model from schema."""
+        fields = self.to_storage_schema(schema)
+        
+        # Create config
+        config = ConfigDict(
+            validate_assignment=True,
+            use_enum_values=True,
+            arbitrary_types_allowed=True,
+            json_encoders={
+                # Add custom encoders for special types
+                uuid.UUID: str,
+                datetime: lambda v: v.isoformat(),
+            }
+        )
+        
+        # Create model
+        model = pydantic_create_model(
+            schema.name,
+            __config__=config,
+            **fields
+        )
+        
+        return model
+
+# protocols/adapters/sqlmodel_adapter.py
+"""SQLModel adapter for database integration."""
+
+from typing import Dict, Any, Type, Optional
+from sqlmodel import SQLModel, Field as SQLField
+import uuid
+from datetime import datetime
+
+from .base import StorageAdapter
+from ...fields import Schema, Field, UUIDField, DateTimeField, StringField
+
+class SQLModelAdapter(StorageAdapter):
+    """Adapter for SQLModel integration."""
+    
+    def __init__(self, table_prefix: str = "", schema_name: Optional[str] = None):
+        self.table_prefix = table_prefix
+        self.schema_name = schema_name
+    
+    def to_storage_schema(self, schema: Schema) -> Dict[str, Any]:
+        """Convert schema to SQLModel field definitions."""
+        fields = {}
+        
+        for field_name, field in schema.create_fields().items():
+            field_schema = field._schema
+            sql_kwargs = {}
+            
+            # Map field types to SQL types
+            if isinstance(field_schema.type, type) and issubclass(field_schema.type, uuid.UUID):
+                sql_kwargs['sa_column_kwargs'] = {"type_": "UUID"}
+            
+            # Handle primary key
+            if field_schema.metadata.get('primary_key'):
+                sql_kwargs['primary_key'] = True
+            
+            # Handle indexes
+            if field_schema.metadata.get('index'):
+                sql_kwargs['index'] = True
+            
+            # Handle nullable
+            if not field_schema.required:
+                sql_kwargs['nullable'] = True
+            
+            # Handle default
+            if field_schema.default is not None:
+                if callable(field_schema.default):
+                    sql_kwargs['default_factory'] = field_schema.default
+                else:
+                    sql_kwargs['default'] = field_schema.default
+            
+            # Create field
+            if field_schema.required and field_schema.default is None:
+                fields[field_name] = (field_schema.type, SQLField(**sql_kwargs))
+            else:
+                fields[field_name] = (Optional[field_schema.type], 
+                                    SQLField(**sql_kwargs))
+        
+        return fields
+    
+    def from_storage_data(self, data: SQLModel, schema: Schema) -> Dict[str, Any]:
+        """Convert SQLModel instance to dict."""
+        result = {}
+        for field_name in schema.field_names:
+            if hasattr(data, field_name):
+                result[field_name] = getattr(data, field_name)
+        return result
+    
+    def to_storage_data(self, data: Dict[str, Any], schema: Schema) -> SQLModel:
+        """Convert dict to SQLModel instance."""
+        model_class = self.create_model(schema)
+        return model_class(**data)
+    
+    def create_model(self, schema: Schema) -> Type[SQLModel]:
+        """Create SQLModel from schema."""
+        fields = self.to_storage_schema(schema)
+        
+        # Table configuration
+        table_name = f"{self.table_prefix}{schema.name.lower()}"
+        table_args = {}
+        if self.schema_name:
+            table_args['schema'] = self.schema_name
+        
+        # Create namespace
+        namespace = {
+            '__tablename__': table_name,
+            '__table_args__': table_args,
+            **fields
+        }
+        
+        # Create model class
+        model_class = type(
+            f"{schema.name}SQLModel",
+            (SQLModel, ),
+            namespace
+        )
+        
+        return model_class
+
+# protocols/adapters/dict_adapter.py
+"""Dictionary adapter for simple serialization."""
+
+from typing import Dict, Any, Type
+from datetime import datetime
+import uuid
+
+from .base import StorageAdapter
+from ...fields import Schema
+
+class DictAdapter(StorageAdapter):
+    """Simple dict adapter for in-memory storage."""
+    
+    def to_storage_schema(self, schema: Schema) -> Dict[str, Any]:
+        """Convert schema to dict representation."""
+        return {
+            "name": schema.name,
+            "fields": {
+                name: {
+                    "type": field.template.python_type.__name__,
+                    "required": field.template.required,
+                    "metadata": field.metadata,
+                }
+                for name, field in schema.fields.items()
+            }
+        }
+    
+    def from_storage_data(self, data: Dict[str, Any], schema: Schema) -> Dict[str, Any]:
+        """Already in dict format, just validate."""
+        fields = schema.create_fields()
+        result = {}
+        
+        for field_name, value in data.items():
+            if field_name in fields:
+                field = fields[field_name]
+                result[field_name] = field.validate(value)
+        
+        return result
+    
+    def to_storage_data(self, data: Dict[str, Any], schema: Schema) -> Dict[str, Any]:
+        """Serialize to dict with proper types."""
+        fields = schema.create_fields()
+        result = {}
+        
+        for field_name, value in data.items():
+            if field_name in fields:
+                field = fields[field_name]
+                result[field_name] = field.serialize(value)
+        
+        return result
+    
+    def create_model(self, schema: Schema) -> Type[dict]:
+        """For dict adapter, just return dict type."""
+        return dict
+
+# protocols/adapters/json_adapter.py
+"""JSON adapter for serialization."""
+
+import json
+from typing import Dict, Any, Type
+from datetime import datetime
+import uuid
+from decimal import Decimal
+
+from .dict_adapter import DictAdapter
+from ...fields import Schema
+
+class JSONAdapter(DictAdapter):
+    """JSON serialization adapter."""
+    
+    def __init__(self, indent: Optional[int] = None, 
+                 ensure_ascii: bool = False):
+        self.indent = indent
+        self.ensure_ascii = ensure_ascii
+    
+    def to_storage_data(self, data: Dict[str, Any], schema: Schema) -> str:
+        """Convert to JSON string."""
+        # First convert to dict
+        dict_data = super().to_storage_data(data, schema)
+        
+        # Custom encoder for special types
+        class CustomEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, (datetime,)):
+                    return obj.isoformat()
+                elif isinstance(obj, uuid.UUID):
+                    return str(obj)
+                elif isinstance(obj, Decimal):
+                    return float(obj)
+                elif hasattr(obj, 'to_dict'):
+                    return obj.to_dict()
+                return super().default(obj)
+        
+        return json.dumps(
+            dict_data, 
+            cls=CustomEncoder,
+            indent=self.indent,
+            ensure_ascii=self.ensure_ascii
+        )
+    
+    def from_storage_data(self, data: str, schema: Schema) -> Dict[str, Any]:
+        """Parse from JSON string."""
+        dict_data = json.loads(data)
+        return super().from_storage_data(dict_data, schema)
+
+# protocols/utils/__init__.py
+from .validation import validate_protocol_implementation
+from .inspection import (
+    get_protocol_fields,
+    get_protocol_behaviors,
+    find_protocols_for_object,
+)
+
+__all__ = [
+    "validate_protocol_implementation",
+    "get_protocol_fields",
+    "get_protocol_behaviors",
+    "find_protocols_for_object",
+]
+
+# protocols/utils/validation.py
+"""Protocol validation utilities."""
+
+from typing import Type, Any, List, Optional
+
+from ..core import Protocol, protocol_registry
+
+def validate_protocol_implementation(obj: Any, 
+                                   protocol: Type[Protocol]) -> List[str]:
+    """
+    Validate that an object implements a protocol.
+    Returns list of missing requirements.
+    """
+    missing = []
+    
+    # Check required fields
+    for field_name in protocol.__required_fields__:
+        if not hasattr(obj, field_name):
+            missing.append(f"field:{field_name}")
+    
+    # Check behaviors
+    for behavior in protocol.__behaviors__:
+        if not hasattr(obj, behavior):
+            missing.append(f"behavior:{behavior}")
+        elif not callable(getattr(obj, behavior)):
+            missing.append(f"behavior:{behavior} (not callable)")
+    
+    return missing
+
+# protocols/utils/inspection.py
+"""Protocol inspection utilities."""
+
+from typing import Type, Dict, List, Any, Set
+
+from ..core import Protocol, protocol_registry
+from ...fields import FieldTemplate
+
+def get_protocol_fields(protocol: Type[Protocol]) -> Dict[str, FieldTemplate]:
+    """Get all fields defined by a protocol."""
+    return protocol.get_all_fields()
+
+def get_protocol_behaviors(protocol: Type[Protocol]) -> List[str]:
+    """Get all behaviors defined by a protocol."""
+    return protocol.__behaviors__.copy()
+
+def find_protocols_for_object(obj: Any) -> List[Type[Protocol]]:
+    """Find all protocols that an object implements."""
+    implemented = []
+    
+    for protocol in protocol_registry.get_all().values():
+        if protocol.validate_implementation(obj):
+            implemented.append(protocol)
+    
+    return implemented

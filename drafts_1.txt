@@ -1,0 +1,1693 @@
+# fields/__init__.py
+"""
+Pydapter Field System - A high-performance, type-safe field definition system
+for runtime model generation and data transformation.
+"""
+
+from .core import (
+    Field,
+    FieldSchema,
+    FieldProtocol,
+    ConversionProtocol,
+    ValidationProtocol,
+)
+from .templates import (
+    FieldTemplate,
+    StringField,
+    IntField,
+    FloatField,
+    BoolField,
+    DateTimeField,
+    UUIDField,
+    ListField,
+    DictField,
+    EmailField,
+    URLField,
+)
+from .schema import (
+    Schema,
+    SchemaBuilder,
+    create_schema,
+    schema_from_dict,
+    schema_from_pydantic,
+)
+from .types import (
+    TypeRegistry,
+    DynamicModel,
+    create_model,
+    create_converter,
+)
+
+__all__ = [
+    # Core
+    "Field",
+    "FieldSchema",
+    "FieldProtocol",
+    "ConversionProtocol",
+    "ValidationProtocol",
+    # Templates
+    "FieldTemplate",
+    "StringField",
+    "IntField",
+    "FloatField",
+    "BoolField",
+    "DateTimeField",
+    "UUIDField",
+    "ListField",
+    "DictField",
+    "EmailField",
+    "URLField",
+    # Schema
+    "Schema",
+    "SchemaBuilder",
+    "create_schema",
+    "schema_from_dict",
+    "schema_from_pydantic",
+    # Types
+    "TypeRegistry",
+    "DynamicModel",
+    "create_model",
+    "create_converter",
+]
+
+# fields/core/__init__.py
+from .protocols import (
+    FieldProtocol,
+    ConversionProtocol,
+    ValidationProtocol,
+    StorageProtocol,
+)
+from .field import Field, FieldSchema
+from .registry import FieldRegistry
+
+__all__ = [
+    "FieldProtocol",
+    "ConversionProtocol",
+    "ValidationProtocol",
+    "StorageProtocol",
+    "Field",
+    "FieldSchema",
+    "FieldRegistry",
+]
+
+# fields/core/protocols.py
+"""Core protocols defining the contracts for fields and conversions."""
+
+from typing import Protocol, TypeVar, Any, Dict, Optional, Type, runtime_checkable
+from abc import abstractmethod
+
+T = TypeVar('T')
+S = TypeVar('S')
+
+@runtime_checkable
+class FieldProtocol(Protocol[T]):
+    """Protocol defining the contract for all fields."""
+    
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Field name."""
+        ...
+    
+    @property
+    @abstractmethod
+    def type(self) -> Type[T]:
+        """Python type of the field."""
+        ...
+    
+    @property
+    @abstractmethod
+    def metadata(self) -> Dict[str, Any]:
+        """Field metadata for adapters."""
+        ...
+    
+    @abstractmethod
+    def validate(self, value: Any) -> T:
+        """Validate and coerce value to field type."""
+        ...
+    
+    @abstractmethod
+    def serialize(self, value: T) -> Any:
+        """Serialize field value for storage/transport."""
+        ...
+
+@runtime_checkable
+class ConversionProtocol(Protocol[S, T]):
+    """Protocol for type conversions between formats."""
+    
+    @abstractmethod
+    def convert(self, value: S) -> T:
+        """Convert from source type to target type."""
+        ...
+    
+    @abstractmethod
+    def reverse(self, value: T) -> S:
+        """Convert from target type back to source type."""
+        ...
+
+@runtime_checkable
+class ValidationProtocol(Protocol):
+    """Protocol for field validation."""
+    
+    @abstractmethod
+    def validate(self, value: Any, field: FieldProtocol) -> Any:
+        """Validate value against field constraints."""
+        ...
+    
+    @property
+    @abstractmethod
+    def error_message(self) -> str:
+        """Validation error message template."""
+        ...
+
+@runtime_checkable
+class StorageProtocol(Protocol):
+    """Protocol for storage backend adapters."""
+    
+    @abstractmethod
+    def to_storage_type(self, field: FieldProtocol) -> Dict[str, Any]:
+        """Convert field to storage-specific type definition."""
+        ...
+    
+    @abstractmethod
+    def from_storage_value(self, value: Any, field: FieldProtocol) -> Any:
+        """Convert storage value to Python value."""
+        ...
+    
+    @abstractmethod
+    def to_storage_value(self, value: Any, field: FieldProtocol) -> Any:
+        """Convert Python value to storage value."""
+        ...
+
+# fields/core/field.py
+"""Core Field implementation with memory-efficient design."""
+
+from typing import Type, Any, Dict, Optional, Set, Callable, TypeVar
+from dataclasses import dataclass, field
+import weakref
+from functools import cached_property
+
+from .protocols import FieldProtocol, ValidationProtocol
+
+T = TypeVar('T')
+
+@dataclass(frozen=True, slots=True)
+class FieldSchema:
+    """Immutable field schema for memory efficiency."""
+    name: str
+    type: Type
+    default: Any = None
+    required: bool = True
+    validators: tuple[ValidationProtocol, ...] = field(default_factory=tuple)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    def __hash__(self):
+        # Custom hash for efficient caching
+        return hash((self.name, self.type, self.required))
+
+class Field(FieldProtocol[T]):
+    """
+    High-performance field implementation with caching and lazy evaluation.
+    Uses __slots__ for memory efficiency.
+    """
+    __slots__ = ('_schema', '_value_cache', '_validation_cache', '__weakref__')
+    
+    def __init__(self, schema: FieldSchema):
+        self._schema = schema
+        self._value_cache = {}
+        self._validation_cache = weakref.WeakValueDictionary()
+    
+    @property
+    def name(self) -> str:
+        return self._schema.name
+    
+    @property
+    def type(self) -> Type[T]:
+        return self._schema.type
+    
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        return self._schema.metadata
+    
+    def validate(self, value: Any) -> T:
+        """Validate with caching for repeated values."""
+        # Quick path for None and defaults
+        if value is None:
+            if not self._schema.required:
+                return self._schema.default
+            raise ValueError(f"Field '{self.name}' is required")
+        
+        # Check cache
+        cache_key = self._make_cache_key(value)
+        if cache_key in self._validation_cache:
+            return self._validation_cache[cache_key]
+        
+        # Run validators
+        validated = value
+        for validator in self._schema.validators:
+            validated = validator.validate(validated, self)
+        
+        # Type coercion
+        if not isinstance(validated, self.type):
+            validated = self.type(validated)
+        
+        # Cache result
+        self._validation_cache[cache_key] = validated
+        return validated
+    
+    def serialize(self, value: T) -> Any:
+        """Serialize with type-specific optimizations."""
+        if value is None:
+            return None
+        
+        # Fast path for primitives
+        if isinstance(value, (str, int, float, bool)):
+            return value
+        
+        # Use protocol if available
+        if hasattr(value, '__serialize__'):
+            return value.__serialize__()
+        
+        # Default serialization
+        return str(value)
+    
+    def _make_cache_key(self, value: Any) -> int:
+        """Create cache key for value."""
+        try:
+            return hash(value)
+        except TypeError:
+            # Unhashable type, use id
+            return id(value)
+
+# fields/core/registry.py
+"""Global field registry with efficient lookup."""
+
+from typing import Dict, Type, Optional, Set
+from weakref import WeakValueDictionary
+import threading
+
+from .field import Field, FieldSchema
+from .protocols import FieldProtocol
+
+class FieldRegistry:
+    """
+    Thread-safe global registry for field definitions.
+    Uses weak references to allow garbage collection.
+    """
+    
+    def __init__(self):
+        self._schemas: Dict[str, FieldSchema] = {}
+        self._instances: WeakValueDictionary[str, Field] = WeakValueDictionary()
+        self._lock = threading.RLock()
+    
+    def register_schema(self, schema: FieldSchema) -> None:
+        """Register a field schema."""
+        with self._lock:
+            key = f"{schema.type.__module__}.{schema.type.__qualname__}:{schema.name}"
+            self._schemas[key] = schema
+    
+    def get_field(self, type_: Type, name: str) -> Optional[Field]:
+        """Get or create field instance."""
+        key = f"{type_.__module__}.{type_.__qualname__}:{name}"
+        
+        with self._lock:
+            # Check instance cache
+            if key in self._instances:
+                return self._instances[key]
+            
+            # Check schema registry
+            if key in self._schemas:
+                field = Field(self._schemas[key])
+                self._instances[key] = field
+                return field
+            
+            return None
+    
+    def clear(self) -> None:
+        """Clear all registrations."""
+        with self._lock:
+            self._schemas.clear()
+            self._instances.clear()
+
+# Global registry instance
+field_registry = FieldRegistry()
+
+# fields/templates/__init__.py
+from .base import FieldTemplate
+from .primitives import (
+    StringField,
+    IntField,
+    FloatField,
+    BoolField,
+)
+from .temporal import DateTimeField
+from .identifiers import UUIDField
+from .collections import ListField, DictField
+from .network import EmailField, URLField
+
+__all__ = [
+    "FieldTemplate",
+    "StringField",
+    "IntField",
+    "FloatField",
+    "BoolField",
+    "DateTimeField",
+    "UUIDField",
+    "ListField",
+    "DictField",
+    "EmailField",
+    "URLField",
+]
+
+# fields/templates/base.py
+"""Base template system with flyweight pattern for memory efficiency."""
+
+from typing import Type, Any, Dict, Optional, Callable, TypeVar, Generic
+from abc import ABC, abstractmethod
+import weakref
+from functools import lru_cache
+
+from ..core import FieldSchema, Field, field_registry
+from ..core.protocols import ValidationProtocol
+
+T = TypeVar('T')
+
+class FieldTemplate(Generic[T], ABC):
+    """
+    Base template for field definitions using flyweight pattern.
+    Templates are immutable and reusable across multiple models.
+    """
+    
+    # Class-level cache for template instances
+    _template_cache: weakref.WeakValueDictionary = weakref.WeakValueDictionary()
+    
+    def __init__(
+        self,
+        *,
+        default: Optional[T] = None,
+        required: bool = True,
+        validators: Optional[list[ValidationProtocol]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
+        self.default = default
+        self.required = required
+        self.validators = tuple(validators or [])
+        self.metadata = metadata or {}
+        
+        # Freeze the template
+        self._frozen = True
+    
+    def __setattr__(self, name: str, value: Any) -> None:
+        if hasattr(self, '_frozen') and self._frozen:
+            raise AttributeError(f"FieldTemplate is immutable")
+        super().__setattr__(name, value)
+    
+    @property
+    @abstractmethod
+    def python_type(self) -> Type[T]:
+        """Python type for this field."""
+        ...
+    
+    @abstractmethod
+    def create_validators(self) -> list[ValidationProtocol]:
+        """Create validators specific to this field type."""
+        ...
+    
+    @lru_cache(maxsize=256)
+    def create_field(self, name: str, **overrides) -> Field[T]:
+        """
+        Create a field instance with caching.
+        Overrides allow customization per use.
+        """
+        # Merge configurations
+        validators = list(self.validators) + self.create_validators()
+        metadata = {**self.metadata, **overrides.get('metadata', {})}
+        
+        # Create schema
+        schema = FieldSchema(
+            name=name,
+            type=self.python_type,
+            default=overrides.get('default', self.default),
+            required=overrides.get('required', self.required),
+            validators=tuple(validators),
+            metadata=metadata,
+        )
+        
+        # Register and return field
+        field = Field(schema)
+        field_registry.register_schema(schema)
+        return field
+    
+    def __call__(self, **overrides) -> 'FieldTemplate[T]':
+        """Create a new template with overrides."""
+        # Cache key based on overrides
+        cache_key = (
+            self.__class__,
+            self.default,
+            self.required,
+            self.validators,
+            frozenset(self.metadata.items()),
+            frozenset(overrides.items())
+        )
+        
+        # Check cache
+        if cache_key in self._template_cache:
+            return self._template_cache[cache_key]
+        
+        # Create new instance
+        new_template = self.__class__(
+            default=overrides.get('default', self.default),
+            required=overrides.get('required', self.required),
+            validators=list(self.validators) + overrides.get('validators', []),
+            metadata={**self.metadata, **overrides.get('metadata', {})},
+        )
+        
+        # Cache it
+        self._template_cache[cache_key] = new_template
+        return new_template
+
+# fields/templates/primitives.py
+"""Primitive field templates with optimized validation."""
+
+from typing import Type, Optional, Any
+import re
+
+from .base import FieldTemplate
+from ..core.protocols import ValidationProtocol
+
+class StringValidator(ValidationProtocol):
+    """String validation with constraints."""
+    
+    def __init__(self, min_length: Optional[int] = None, 
+                 max_length: Optional[int] = None,
+                 pattern: Optional[str] = None):
+        self.min_length = min_length
+        self.max_length = max_length
+        self.pattern = re.compile(pattern) if pattern else None
+    
+    def validate(self, value: Any, field) -> str:
+        if not isinstance(value, str):
+            value = str(value)
+        
+        if self.min_length and len(value) < self.min_length:
+            raise ValueError(f"String too short (min: {self.min_length})")
+        
+        if self.max_length and len(value) > self.max_length:
+            raise ValueError(f"String too long (max: {self.max_length})")
+        
+        if self.pattern and not self.pattern.match(value):
+            raise ValueError(f"String does not match pattern")
+        
+        return value
+    
+    @property
+    def error_message(self) -> str:
+        return "String validation failed"
+
+class StringField(FieldTemplate[str]):
+    """String field with validation."""
+    
+    def __init__(self, min_length: Optional[int] = None,
+                 max_length: Optional[int] = None,
+                 pattern: Optional[str] = None, **kwargs):
+        super().__init__(**kwargs)
+        self.min_length = min_length
+        self.max_length = max_length
+        self.pattern = pattern
+    
+    @property
+    def python_type(self) -> Type[str]:
+        return str
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        return [StringValidator(self.min_length, self.max_length, self.pattern)]
+
+class NumericValidator(ValidationProtocol):
+    """Numeric validation with bounds."""
+    
+    def __init__(self, min_value: Optional[float] = None,
+                 max_value: Optional[float] = None,
+                 type_: Type = int):
+        self.min_value = min_value
+        self.max_value = max_value
+        self.type = type_
+    
+    def validate(self, value: Any, field) -> Any:
+        try:
+            value = self.type(value)
+        except (ValueError, TypeError):
+            raise ValueError(f"Cannot convert to {self.type.__name__}")
+        
+        if self.min_value is not None and value < self.min_value:
+            raise ValueError(f"Value below minimum ({self.min_value})")
+        
+        if self.max_value is not None and value > self.max_value:
+            raise ValueError(f"Value above maximum ({self.max_value})")
+        
+        return value
+    
+    @property
+    def error_message(self) -> str:
+        return "Numeric validation failed"
+
+class IntField(FieldTemplate[int]):
+    """Integer field with bounds checking."""
+    
+    def __init__(self, min_value: Optional[int] = None,
+                 max_value: Optional[int] = None, **kwargs):
+        super().__init__(**kwargs)
+        self.min_value = min_value
+        self.max_value = max_value
+    
+    @property
+    def python_type(self) -> Type[int]:
+        return int
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        return [NumericValidator(self.min_value, self.max_value, int)]
+
+class FloatField(FieldTemplate[float]):
+    """Float field with precision handling."""
+    
+    def __init__(self, min_value: Optional[float] = None,
+                 max_value: Optional[float] = None,
+                 precision: Optional[int] = None, **kwargs):
+        super().__init__(**kwargs)
+        self.min_value = min_value
+        self.max_value = max_value
+        self.precision = precision
+    
+    @property
+    def python_type(self) -> Type[float]:
+        return float
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        validators = [NumericValidator(self.min_value, self.max_value, float)]
+        if self.precision:
+            # Add precision validator
+            pass
+        return validators
+
+class BoolField(FieldTemplate[bool]):
+    """Boolean field with flexible parsing."""
+    
+    @property
+    def python_type(self) -> Type[bool]:
+        return bool
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        return []  # Bool conversion handles validation
+
+# fields/templates/temporal.py
+"""Temporal field templates for date/time handling."""
+
+from typing import Type, Optional
+from datetime import datetime, timezone
+import dateutil.parser
+
+from .base import FieldTemplate
+from ..core.protocols import ValidationProtocol
+
+class DateTimeValidator(ValidationProtocol):
+    """DateTime validation with timezone handling."""
+    
+    def __init__(self, timezone_aware: bool = True):
+        self.timezone_aware = timezone_aware
+    
+    def validate(self, value: Any, field) -> datetime:
+        if isinstance(value, datetime):
+            dt = value
+        elif isinstance(value, str):
+            dt = dateutil.parser.parse(value)
+        else:
+            raise ValueError(f"Cannot parse datetime from {type(value)}")
+        
+        if self.timezone_aware and dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        elif not self.timezone_aware and dt.tzinfo is not None:
+            dt = dt.replace(tzinfo=None)
+        
+        return dt
+    
+    @property
+    def error_message(self) -> str:
+        return "DateTime validation failed"
+
+class DateTimeField(FieldTemplate[datetime]):
+    """DateTime field with timezone support."""
+    
+    def __init__(self, timezone_aware: bool = True,
+                 auto_now: bool = False,
+                 auto_now_add: bool = False, **kwargs):
+        super().__init__(**kwargs)
+        self.timezone_aware = timezone_aware
+        self.auto_now = auto_now
+        self.auto_now_add = auto_now_add
+        
+        # Add metadata for storage adapters
+        self.metadata.update({
+            'temporal': True,
+            'auto_now': auto_now,
+            'auto_now_add': auto_now_add,
+            'timezone_aware': timezone_aware,
+        })
+    
+    @property
+    def python_type(self) -> Type[datetime]:
+        return datetime
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        return [DateTimeValidator(self.timezone_aware)]
+
+# fields/templates/identifiers.py
+"""Identifier field templates."""
+
+from typing import Type
+import uuid
+
+from .base import FieldTemplate
+from ..core.protocols import ValidationProtocol
+
+class UUIDValidator(ValidationProtocol):
+    """UUID validation."""
+    
+    def validate(self, value: Any, field) -> uuid.UUID:
+        if isinstance(value, uuid.UUID):
+            return value
+        elif isinstance(value, str):
+            return uuid.UUID(value)
+        else:
+            raise ValueError(f"Cannot parse UUID from {type(value)}")
+    
+    @property
+    def error_message(self) -> str:
+        return "Invalid UUID format"
+
+class UUIDField(FieldTemplate[uuid.UUID]):
+    """UUID field with auto-generation support."""
+    
+    def __init__(self, auto_generate: bool = True, **kwargs):
+        if auto_generate and 'default' not in kwargs:
+            kwargs['default'] = uuid.uuid4
+        super().__init__(**kwargs)
+        self.auto_generate = auto_generate
+        
+        self.metadata.update({
+            'identifier': True,
+            'auto_generate': auto_generate,
+        })
+    
+    @property
+    def python_type(self) -> Type[uuid.UUID]:
+        return uuid.UUID
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        return [UUIDValidator()]
+
+# fields/templates/collections.py
+"""Collection field templates for lists and dicts."""
+
+from typing import Type, TypeVar, Generic, Any, Optional
+from collections.abc import Sequence, Mapping
+
+from .base import FieldTemplate
+from ..core.protocols import ValidationProtocol
+
+T = TypeVar('T')
+K = TypeVar('K')
+V = TypeVar('V')
+
+class ListValidator(ValidationProtocol):
+    """List validation with item type checking."""
+    
+    def __init__(self, item_type: Optional[Type] = None,
+                 min_items: Optional[int] = None,
+                 max_items: Optional[int] = None):
+        self.item_type = item_type
+        self.min_items = min_items
+        self.max_items = max_items
+    
+    def validate(self, value: Any, field) -> list:
+        if not isinstance(value, (list, tuple, set)):
+            raise ValueError(f"Expected sequence, got {type(value)}")
+        
+        items = list(value)
+        
+        if self.min_items and len(items) < self.min_items:
+            raise ValueError(f"Too few items (min: {self.min_items})")
+        
+        if self.max_items and len(items) > self.max_items:
+            raise ValueError(f"Too many items (max: {self.max_items})")
+        
+        if self.item_type:
+            # Validate each item
+            for i, item in enumerate(items):
+                if not isinstance(item, self.item_type):
+                    try:
+                        items[i] = self.item_type(item)
+                    except Exception:
+                        raise ValueError(f"Invalid item type at index {i}")
+        
+        return items
+    
+    @property
+    def error_message(self) -> str:
+        return "List validation failed"
+
+class ListField(FieldTemplate[list], Generic[T]):
+    """List field with item validation."""
+    
+    def __init__(self, item_type: Optional[Type[T]] = None,
+                 min_items: Optional[int] = None,
+                 max_items: Optional[int] = None, **kwargs):
+        super().__init__(**kwargs)
+        self.item_type = item_type
+        self.min_items = min_items
+        self.max_items = max_items
+    
+    @property
+    def python_type(self) -> Type[list]:
+        return list
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        return [ListValidator(self.item_type, self.min_items, self.max_items)]
+
+class DictValidator(ValidationProtocol):
+    """Dict validation with key/value type checking."""
+    
+    def __init__(self, key_type: Optional[Type] = None,
+                 value_type: Optional[Type] = None):
+        self.key_type = key_type or str
+        self.value_type = value_type
+    
+    def validate(self, value: Any, field) -> dict:
+        if not isinstance(value, dict):
+            raise ValueError(f"Expected dict, got {type(value)}")
+        
+        result = {}
+        for k, v in value.items():
+            # Validate key
+            if not isinstance(k, self.key_type):
+                try:
+                    k = self.key_type(k)
+                except Exception:
+                    raise ValueError(f"Invalid key type: {k}")
+            
+            # Validate value
+            if self.value_type and not isinstance(v, self.value_type):
+                try:
+                    v = self.value_type(v)
+                except Exception:
+                    raise ValueError(f"Invalid value type for key {k}")
+            
+            result[k] = v
+        
+        return result
+    
+    @property
+    def error_message(self) -> str:
+        return "Dict validation failed"
+
+class DictField(FieldTemplate[dict], Generic[K, V]):
+    """Dictionary field with key/value validation."""
+    
+    def __init__(self, key_type: Optional[Type[K]] = None,
+                 value_type: Optional[Type[V]] = None, **kwargs):
+        super().__init__(**kwargs)
+        self.key_type = key_type
+        self.value_type = value_type
+    
+    @property
+    def python_type(self) -> Type[dict]:
+        return dict
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        return [DictValidator(self.key_type, self.value_type)]
+
+# fields/templates/network.py
+"""Network-related field templates."""
+
+from typing import Type
+import re
+from urllib.parse import urlparse
+
+from .base import FieldTemplate
+from ..core.protocols import ValidationProtocol
+
+class EmailValidator(ValidationProtocol):
+    """Email validation."""
+    
+    # Simple email regex - use email-validator for production
+    EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    
+    def validate(self, value: Any, field) -> str:
+        if not isinstance(value, str):
+            value = str(value)
+        
+        if not self.EMAIL_REGEX.match(value):
+            raise ValueError(f"Invalid email format")
+        
+        return value.lower()
+    
+    @property
+    def error_message(self) -> str:
+        return "Invalid email address"
+
+class EmailField(FieldTemplate[str]):
+    """Email field with validation."""
+    
+    @property
+    def python_type(self) -> Type[str]:
+        return str
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        return [EmailValidator()]
+
+class URLValidator(ValidationProtocol):
+    """URL validation."""
+    
+    def __init__(self, schemes: Optional[list[str]] = None):
+        self.schemes = schemes or ['http', 'https']
+    
+    def validate(self, value: Any, field) -> str:
+        if not isinstance(value, str):
+            value = str(value)
+        
+        try:
+            result = urlparse(value)
+            if not all([result.scheme, result.netloc]):
+                raise ValueError("Invalid URL structure")
+            
+            if result.scheme not in self.schemes:
+                raise ValueError(f"Invalid URL scheme: {result.scheme}")
+            
+        except Exception as e:
+            raise ValueError(f"Invalid URL: {e}")
+        
+        return value
+    
+    @property
+    def error_message(self) -> str:
+        return "Invalid URL"
+
+class URLField(FieldTemplate[str]):
+    """URL field with scheme validation."""
+    
+    def __init__(self, schemes: Optional[list[str]] = None, **kwargs):
+        super().__init__(**kwargs)
+        self.schemes = schemes
+    
+    @property
+    def python_type(self) -> Type[str]:
+        return str
+    
+    def create_validators(self) -> list[ValidationProtocol]:
+        return [URLValidator(self.schemes)]
+
+# fields/schema/__init__.py
+from .schema import Schema, SchemaField
+from .builder import SchemaBuilder
+from .factory import (
+    create_schema,
+    schema_from_dict,
+    schema_from_pydantic,
+)
+
+__all__ = [
+    "Schema",
+    "SchemaField",
+    "SchemaBuilder",
+    "create_schema",
+    "schema_from_dict",
+    "schema_from_pydantic",
+]
+
+# fields/schema/schema.py
+"""Schema definition system for model creation."""
+
+from typing import Dict, Any, Optional, Type, TypeVar, Generic
+from dataclasses import dataclass, field
+from functools import cached_property
+import hashlib
+
+from ..templates.base import FieldTemplate
+from ..core import Field
+
+T = TypeVar('T')
+
+@dataclass(frozen=True)
+class SchemaField:
+    """Schema field definition."""
+    name: str
+    template: FieldTemplate
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+class Schema:
+    """
+    Immutable schema definition for model generation.
+    Schemas are the blueprint for creating dynamic models.
+    """
+    
+    def __init__(self, name: str, fields: Dict[str, SchemaField],
+                 metadata: Optional[Dict[str, Any]] = None):
+        self.name = name
+        self.fields = fields
+        self.metadata = metadata or {}
+        self._hash = None
+    
+    @cached_property
+    def field_names(self) -> list[str]:
+        """Get ordered field names."""
+        return list(self.fields.keys())
+    
+    @cached_property
+    def required_fields(self) -> list[str]:
+        """Get required field names."""
+        return [
+            name for name, field in self.fields.items()
+            if field.template.required
+        ]
+    
+    @cached_property
+    def optional_fields(self) -> list[str]:
+        """Get optional field names."""
+        return [
+            name for name, field in self.fields.items()
+            if not field.template.required
+        ]
+    
+    def create_fields(self) -> Dict[str, Field]:
+        """Create field instances from schema."""
+        return {
+            name: schema_field.template.create_field(
+                name, 
+                metadata=schema_field.metadata
+            )
+            for name, schema_field in self.fields.items()
+        }
+    
+    def merge(self, other: 'Schema', name: Optional[str] = None) -> 'Schema':
+        """Merge two schemas into a new schema."""
+        merged_fields = {**self.fields, **other.fields}
+        merged_metadata = {**self.metadata, **other.metadata}
+        merged_name = name or f"{self.name}_{other.name}"
+        
+        return Schema(merged_name, merged_fields, merged_metadata)
+    
+    def select(self, field_names: list[str], name: Optional[str] = None) -> 'Schema':
+        """Create a new schema with selected fields."""
+        selected_fields = {
+            name: self.fields[name]
+            for name in field_names
+            if name in self.fields
+        }
+        
+        new_name = name or f"{self.name}_subset"
+        return Schema(new_name, selected_fields, self.metadata.copy())
+    
+    def __hash__(self) -> int:
+        """Hash for caching."""
+        if self._hash is None:
+            # Create stable hash from schema definition
+            content = f"{self.name}:{sorted(self.fields.items())}"
+            self._hash = int(hashlib.sha256(content.encode()).hexdigest()[:16], 16)
+        return self._hash
+    
+    def __eq__(self, other) -> bool:
+        """Equality comparison."""
+        if not isinstance(other, Schema):
+            return False
+        return (self.name == other.name and 
+                self.fields == other.fields and
+                self.metadata == other.metadata)
+
+# fields/schema/builder.py
+"""Fluent builder for schema creation."""
+
+from typing import Dict, Any, Optional, Type
+from ..templates.base import FieldTemplate
+from .schema import Schema, SchemaField
+
+class SchemaBuilder:
+    """
+    Fluent builder for creating schemas with intuitive API.
+    
+    Example:
+        schema = (SchemaBuilder("User")
+            .add_field("id", UUIDField())
+            .add_field("name", StringField(required=True))
+            .add_field("email", EmailField())
+            .add_field("created_at", DateTimeField(auto_now_add=True))
+            .with_metadata({"table": "users"})
+            .build()
+        )
+    """
+    
+    def __init__(self, name: str):
+        self.name = name
+        self.fields: Dict[str, SchemaField] = {}
+        self.metadata: Dict[str, Any] = {}
+    
+    def add_field(self, name: str, template: FieldTemplate,
+                  metadata: Optional[Dict[str, Any]] = None) -> 'SchemaBuilder':
+        """Add a field to the schema."""
+        self.fields[name] = SchemaField(name, template, metadata or {})
+        return self
+    
+    def add_fields(self, fields: Dict[str, FieldTemplate]) -> 'SchemaBuilder':
+        """Add multiple fields at once."""
+        for name, template in fields.items():
+            self.add_field(name, template)
+        return self
+    
+    def with_metadata(self, metadata: Dict[str, Any]) -> 'SchemaBuilder':
+        """Add metadata to the schema."""
+        self.metadata.update(metadata)
+        return self
+    
+    def extend(self, schema: Schema) -> 'SchemaBuilder':
+        """Extend with fields from another schema."""
+        self.fields.update(schema.fields)
+        return self
+    
+    def build(self) -> Schema:
+        """Build the final schema."""
+        return Schema(self.name, self.fields.copy(), self.metadata.copy())
+
+# fields/schema/factory.py
+"""Factory functions for schema creation."""
+
+from typing import Dict, Any, Type, Optional
+import inspect
+
+from ..templates import (
+    StringField, IntField, FloatField, BoolField,
+    DateTimeField, UUIDField, ListField, DictField,
+)
+from .schema import Schema, SchemaField
+from .builder import SchemaBuilder
+
+# Type mapping for automatic field selection
+TYPE_MAPPING = {
+    str: StringField,
+    int: IntField,
+    float: FloatField,
+    bool: BoolField,
+    list: ListField,
+    dict: DictField,
+}
+
+def create_schema(name: str, **fields: FieldTemplate) -> Schema:
+    """
+    Create a schema with field templates.
+    
+    Example:
+        schema = create_schema(
+            "User",
+            id=UUIDField(),
+            name=StringField(required=True),
+            email=EmailField(),
+        )
+    """
+    builder = SchemaBuilder(name)
+    for field_name, template in fields.items():
+        builder.add_field(field_name, template)
+    return builder.build()
+
+def schema_from_dict(name: str, definition: Dict[str, Any],
+                     type_mapping: Optional[Dict[Type, Type[FieldTemplate]]] = None) -> Schema:
+    """
+    Create schema from dictionary definition.
+    
+    Example:
+        schema = schema_from_dict("User", {
+            "id": {"type": "uuid", "auto_generate": True},
+            "name": {"type": "string", "required": True},
+            "age": {"type": "int", "min_value": 0},
+        })
+    """
+    builder = SchemaBuilder(name)
+    mapping = type_mapping or TYPE_MAPPING
+    
+    for field_name, config in definition.items():
+        # Extract type
+        if isinstance(config, type):
+            field_type = config
+            field_config = {}
+        elif isinstance(config, dict):
+            field_type = config.pop("type", str)
+            field_config = config
+        else:
+            field_type = type(config)
+            field_config = {"default": config}
+        
+        # Map to field template
+        if isinstance(field_type, str):
+            # Handle string type names
+            field_type = {
+                "string": str,
+                "int": int,
+                "integer": int,
+                "float": float,
+                "bool": bool,
+                "boolean": bool,
+                "list": list,
+                "dict": dict,
+                "uuid": UUIDField,
+                "datetime": DateTimeField,
+            }.get(field_type.lower(), str)
+        
+        # Get template class
+        if inspect.isclass(field_type) and issubclass(field_type, FieldTemplate):
+            template_class = field_type
+        else:
+            template_class = mapping.get(field_type, StringField)
+        
+        # Create template
+        template = template_class(**field_config)
+        builder.add_field(field_name, template)
+    
+    return builder.build()
+
+def schema_from_pydantic(model_class: Type) -> Schema:
+    """
+    Create schema from Pydantic model.
+    
+    Example:
+        from pydantic import BaseModel
+        
+        class User(BaseModel):
+            id: UUID
+            name: str
+            email: str
+        
+        schema = schema_from_pydantic(User)
+    """
+    from pydantic import BaseModel
+    from pydantic.fields import FieldInfo
+    import uuid
+    from datetime import datetime
+    
+    if not issubclass(model_class, BaseModel):
+        raise ValueError("Model must be a Pydantic BaseModel")
+    
+    builder = SchemaBuilder(model_class.__name__)
+    
+    # Map Pydantic types to field templates
+    pydantic_mapping = {
+        str: StringField,
+        int: IntField,
+        float: FloatField,
+        bool: BoolField,
+        list: ListField,
+        dict: DictField,
+        uuid.UUID: UUIDField,
+        datetime: DateTimeField,
+    }
+    
+    # Process fields
+    for field_name, field_info in model_class.model_fields.items():
+        # Get type
+        field_type = field_info.annotation
+        
+        # Handle Optional types
+        if hasattr(field_type, '__origin__'):
+            if field_type.__origin__ is Union:
+                # Get non-None type
+                args = [arg for arg in field_type.__args__ if arg is not type(None)]
+                if args:
+                    field_type = args[0]
+        
+        # Get template class
+        template_class = pydantic_mapping.get(field_type, StringField)
+        
+        # Extract constraints
+        kwargs = {}
+        if field_info.default is not None:
+            kwargs['default'] = field_info.default
+        kwargs['required'] = field_info.is_required()
+        
+        # Create template
+        template = template_class(**kwargs)
+        builder.add_field(field_name, template)
+    
+    return builder.build()
+
+# fields/types/__init__.py
+from .registry import TypeRegistry
+from .dynamic import DynamicModel
+from .factory import create_model, create_converter
+
+__all__ = [
+    "TypeRegistry",
+    "DynamicModel",
+    "create_model",
+    "create_converter",
+]
+
+# fields/types/registry.py
+"""Type registry for caching and managing dynamic types."""
+
+from typing import Dict, Type, Optional, Any, Tuple
+from functools import lru_cache
+import weakref
+import threading
+
+from ..schema import Schema
+
+class TypeRegistry:
+    """
+    Global registry for dynamic types with caching.
+    Uses weak references to allow garbage collection of unused types.
+    """
+    
+    def __init__(self):
+        self._type_cache: weakref.WeakValueDictionary[int, Type] = (
+            weakref.WeakValueDictionary()
+        )
+        self._converter_cache: Dict[Tuple[Type, Type], Any] = {}
+        self._lock = threading.RLock()
+        self._stats = {
+            'hits': 0,
+            'misses': 0,
+            'evictions': 0,
+        }
+    
+    def get_or_create_type(self, schema: Schema, 
+                          factory: callable) -> Type:
+        """Get cached type or create new one."""
+        cache_key = hash(schema)
+        
+        with self._lock:
+            # Check cache
+            if cache_key in self._type_cache:
+                self._stats['hits'] += 1
+                return self._type_cache[cache_key]
+            
+            # Create new type
+            self._stats['misses'] += 1
+            new_type = factory(schema)
+            self._type_cache[cache_key] = new_type
+            return new_type
+    
+    def register_converter(self, from_type: Type, to_type: Type,
+                          converter: Any) -> None:
+        """Register a type converter."""
+        with self._lock:
+            key = (from_type, to_type)
+            self._converter_cache[key] = converter
+    
+    def get_converter(self, from_type: Type, to_type: Type) -> Optional[Any]:
+        """Get registered converter."""
+        with self._lock:
+            return self._converter_cache.get((from_type, to_type))
+    
+    def clear(self) -> None:
+        """Clear all caches."""
+        with self._lock:
+            self._type_cache.clear()
+            self._converter_cache.clear()
+            self._stats['evictions'] = self._stats['hits'] + self._stats['misses']
+    
+    def get_stats(self) -> Dict[str, int]:
+        """Get cache statistics."""
+        with self._lock:
+            return self._stats.copy()
+
+# Global registry instance
+type_registry = TypeRegistry()
+
+# fields/types/dynamic.py
+"""Dynamic model base class with optimizations."""
+
+from typing import Dict, Any, Optional, ClassVar
+from abc import ABCMeta
+
+class DynamicModelMeta(ABCMeta):
+    """Metaclass for dynamic models with performance optimizations."""
+    
+    def __new__(mcs, name: str, bases: tuple, namespace: dict,
+                schema: Optional['Schema'] = None, **kwargs):
+        # Add schema to class
+        if schema:
+            namespace['__schema__'] = schema
+            namespace['__fields__'] = schema.create_fields()
+        
+        # Create class
+        cls = super().__new__(mcs, name, bases, namespace)
+        
+        # Generate optimized __init__ if not provided
+        if '__init__' not in namespace and schema:
+            cls.__init__ = mcs._make_init(schema)
+        
+        return cls
+    
+    @staticmethod
+    def _make_init(schema: 'Schema'):
+        """Generate optimized __init__ method."""
+        # Get field names for fast lookup
+        required = set(schema.required_fields)
+        optional = set(schema.optional_fields)
+        all_fields = required | optional
+        
+        def __init__(self, **kwargs):
+            # Check required fields
+            missing = required - set(kwargs.keys())
+            if missing:
+                raise TypeError(f"Missing required fields: {missing}")
+            
+            # Check unknown fields
+            unknown = set(kwargs.keys()) - all_fields
+            if unknown:
+                raise TypeError(f"Unknown fields: {unknown}")
+            
+            # Set fields with validation
+            for name, value in kwargs.items():
+                field = self.__fields__[name]
+                setattr(self, name, field.validate(value))
+            
+            # Set defaults for optional fields
+            for name in optional:
+                if name not in kwargs:
+                    field = self.__fields__[name]
+                    if callable(field._schema.default):
+                        setattr(self, name, field._schema.default())
+                    else:
+                        setattr(self, name, field._schema.default)
+        
+        return __init__
+
+class DynamicModel(metaclass=DynamicModelMeta):
+    """
+    Base class for dynamic models with validation and serialization.
+    """
+    __schema__: ClassVar['Schema']
+    __fields__: ClassVar[Dict[str, 'Field']]
+    
+    def __init_subclass__(cls, schema: Optional['Schema'] = None, **kwargs):
+        """Initialize subclass with schema."""
+        super().__init_subclass__(**kwargs)
+        if schema:
+            cls.__schema__ = schema
+            cls.__fields__ = schema.create_fields()
+    
+    def validate(self) -> None:
+        """Validate all fields."""
+        for name, field in self.__fields__.items():
+            value = getattr(self, name, None)
+            if value is not None:
+                validated = field.validate(value)
+                if validated != value:
+                    setattr(self, name, validated)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        result = {}
+        for name, field in self.__fields__.items():
+            if hasattr(self, name):
+                value = getattr(self, name)
+                result[name] = field.serialize(value)
+        return result
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'DynamicModel':
+        """Create from dictionary."""
+        return cls(**data)
+    
+    def __repr__(self) -> str:
+        """String representation."""
+        fields = []
+        for name in self.__schema__.field_names:
+            if hasattr(self, name):
+                value = getattr(self, name)
+                fields.append(f"{name}={value!r}")
+        
+        return f"{self.__class__.__name__}({', '.join(fields)})"
+
+# fields/types/factory.py
+"""Factory functions for creating dynamic types."""
+
+from typing import Type, Dict, Any, Optional, TypeVar, Protocol
+from functools import lru_cache
+from pydantic import TypeAdapter
+
+from ..schema import Schema
+from .dynamic import DynamicModel, DynamicModelMeta
+from .registry import type_registry
+
+T = TypeVar('T')
+
+@lru_cache(maxsize=256)
+def create_model(schema: Schema, 
+                 base_class: Type[DynamicModel] = DynamicModel,
+                 **namespace) -> Type[DynamicModel]:
+    """
+    Create a dynamic model from schema.
+    
+    Example:
+        User = create_model(user_schema)
+        user = User(name="John", email="john@example.com")
+    """
+    def factory(schema: Schema) -> Type[DynamicModel]:
+        # Create namespace with fields
+        model_namespace = {
+            '__module__': 'pydapter.dynamic',
+            '__qualname__': schema.name,
+            **namespace
+        }
+        
+        # Create class
+        model_class = DynamicModelMeta(
+            schema.name,
+            (base_class,),
+            model_namespace,
+            schema=schema
+        )
+        
+        return model_class
+    
+    # Use registry for caching
+    return type_registry.get_or_create_type(schema, factory)
+
+class ConversionProtocol(Protocol):
+    """Protocol for type converters."""
+    
+    def convert(self, obj: Any) -> Any:
+        """Convert object to target type."""
+        ...
+    
+    def reverse(self, obj: Any) -> Any:
+        """Convert back to source type."""
+        ...
+
+class PydanticConverter:
+    """Converter between DynamicModel and Pydantic."""
+    
+    def __init__(self, dynamic_type: Type[DynamicModel],
+                 pydantic_type: Type):
+        self.dynamic_type = dynamic_type
+        self.pydantic_type = pydantic_type
+        self.adapter = TypeAdapter(pydantic_type)
+    
+    def convert(self, obj: DynamicModel) -> Any:
+        """Convert DynamicModel to Pydantic model."""
+        data = obj.to_dict()
+        return self.adapter.validate_python(data)
+    
+    def reverse(self, obj: Any) -> DynamicModel:
+        """Convert Pydantic model to DynamicModel."""
+        data = self.adapter.dump_python(obj)
+        return self.dynamic_type.from_dict(data)
+
+class SQLModelConverter:
+    """Converter between DynamicModel and SQLModel."""
+    
+    def __init__(self, dynamic_type: Type[DynamicModel],
+                 sql_type: Type):
+        self.dynamic_type = dynamic_type
+        self.sql_type = sql_type
+    
+    def convert(self, obj: DynamicModel) -> Any:
+        """Convert DynamicModel to SQLModel."""
+        data = obj.to_dict()
+        # Map fields according to SQL schema
+        sql_data = {}
+        for key, value in data.items():
+            # Apply any necessary transformations
+            sql_data[key] = value
+        return self.sql_type(**sql_data)
+    
+    def reverse(self, obj: Any) -> DynamicModel:
+        """Convert SQLModel to DynamicModel."""
+        # Extract data from SQLModel
+        data = {}
+        for field_name in self.dynamic_type.__schema__.field_names:
+            if hasattr(obj, field_name):
+                data[field_name] = getattr(obj, field_name)
+        return self.dynamic_type.from_dict(data)
+
+def create_converter(from_schema: Schema, to_type: Type,
+                    converter_class: Optional[Type] = None) -> ConversionProtocol:
+    """
+    Create a converter between schemas/types.
+    
+    Example:
+        # Convert between DynamicModel and Pydantic
+        converter = create_converter(user_schema, PydanticUser)
+        pydantic_user = converter.convert(dynamic_user)
+    """
+    # Check cache
+    from_type = create_model(from_schema)
+    cached = type_registry.get_converter(from_type, to_type)
+    if cached:
+        return cached
+    
+    # Determine converter class
+    if converter_class is None:
+        # Auto-detect
+        if hasattr(to_type, '__pydantic_model__'):
+            converter_class = PydanticConverter
+        elif hasattr(to_type, '__table__'):
+            converter_class = SQLModelConverter
+        else:
+            raise ValueError(f"Cannot determine converter for {to_type}")
+    
+    # Create converter
+    converter = converter_class(from_type, to_type)
+    
+    # Cache it
+    type_registry.register_converter(from_type, to_type, converter)
+    
+    return converter
+
+# fields/utils/__init__.py
+from .performance import (
+    profile_field_creation,
+    benchmark_validation,
+    memory_usage,
+)
+from .validation import (
+    compose_validators,
+    create_validator,
+)
+
+__all__ = [
+    "profile_field_creation",
+    "benchmark_validation", 
+    "memory_usage",
+    "compose_validators",
+    "create_validator",
+]
+
+# fields/utils/performance.py
+"""Performance utilities for profiling and optimization."""
+
+import time
+import tracemalloc
+from functools import wraps
+from typing import Callable, Any
+
+def profile_field_creation(func: Callable) -> Callable:
+    """Profile field creation performance."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        tracemalloc.start()
+        
+        result = func(*args, **kwargs)
+        
+        current, peak = tracemalloc.get_traced_memory()
+        elapsed = time.perf_counter() - start_time
+        tracemalloc.stop()
+        
+        print(f"{func.__name__} took {elapsed:.4f}s")
+        print(f"Memory: current={current/1024:.1f}KB, peak={peak/1024:.1f}KB")
+        
+        return result
+    
+    return wrapper
+
+def benchmark_validation(field: 'Field', data: list[Any], iterations: int = 1000):
+    """Benchmark field validation performance."""
+    import statistics
+    
+    times = []
+    for _ in range(iterations):
+        start = time.perf_counter()
+        for value in data:
+            field.validate(value)
+        times.append(time.perf_counter() - start)
+    
+    return {
+        'mean': statistics.mean(times),
+        'median': statistics.median(times),
+        'stdev': statistics.stdev(times) if len(times) > 1 else 0,
+        'min': min(times),
+        'max': max(times),
+    }
+
+def memory_usage(obj: Any) -> int:
+    """Calculate memory usage of an object."""
+    import sys
+    
+    def get_size(obj, seen=None):
+        size = sys.getsizeof(obj)
+        if seen is None:
+            seen = set()
+        
+        obj_id = id(obj)
+        if obj_id in seen:
+            return 0
+        
+        seen.add(obj_id)
+        
+        if isinstance(obj, dict):
+            size += sum([get_size(v, seen) for v in obj.values()])
+            size += sum([get_size(k, seen) for k in obj.keys()])
+        elif hasattr(obj, '__dict__'):
+            size += get_size(obj.__dict__, seen)
+        elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+            size += sum([get_size(i, seen) for i in obj])
+        
+        return size
+    
+    return get_size(obj)
+
+# fields/utils/validation.py
+"""Validation utilities."""
+
+from typing import List, Callable, Any
+from ..core.protocols import ValidationProtocol
+
+def compose_validators(*validators: ValidationProtocol) -> ValidationProtocol:
+    """Compose multiple validators into one."""
+    
+    class ComposedValidator(ValidationProtocol):
+        def __init__(self):
+            self.validators = validators
+        
+        def validate(self, value: Any, field) -> Any:
+            result = value
+            for validator in self.validators:
+                result = validator.validate(result, field)
+            return result
+        
+        @property
+        def error_message(self) -> str:
+            return "Validation failed"
+    
+    return ComposedValidator()
+
+def create_validator(validate_func: Callable[[Any], Any],
+                    error_message: str = "Validation failed") -> ValidationProtocol:
+    """Create a validator from a function."""
+    
+    class FunctionValidator(ValidationProtocol):
+        def validate(self, value: Any, field) -> Any:
+            return validate_func(value)
+        
+        @property
+        def error_message(self) -> str:
+            return error_message
+    
+    return FunctionValidator()

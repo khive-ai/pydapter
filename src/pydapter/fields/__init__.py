@@ -1,124 +1,62 @@
-from pydapter.fields.builder import DomainModelBuilder
-from pydapter.fields.common_templates import (
-    CREATED_AT_TEMPLATE,
-    CREATED_AT_TZ_TEMPLATE,
-    DELETED_AT_TEMPLATE,
-    DELETED_AT_TZ_TEMPLATE,
-    DESCRIPTION_TEMPLATE,
-    EMAIL_TEMPLATE,
-    ID_TEMPLATE,
-    JSON_TEMPLATE,
-    METADATA_TEMPLATE,
-    NAME_TEMPLATE,
-    NONNEGATIVE_INT_TEMPLATE,
-    PERCENTAGE_TEMPLATE,
-    PHONE_TEMPLATE,
-    POSITIVE_FLOAT_TEMPLATE,
-    POSITIVE_INT_TEMPLATE,
-    STRING_TEMPLATE,
-    TAGS_TEMPLATE,
-    UPDATED_AT_TEMPLATE,
-    UPDATED_AT_TZ_TEMPLATE,
-    URL_TEMPLATE,
-    USERNAME_TEMPLATE,
-)
-from pydapter.fields.dts import (
-    DATETIME,
-    DATETIME_NULLABLE,
-    datetime_serializer,
-    validate_datetime,
-)
-from pydapter.fields.embedding import EMBEDDING, validate_embedding
-from pydapter.fields.execution import EXECUTION, Execution
-from pydapter.fields.families import FieldFamilies, create_field_dict
-from pydapter.fields.ids import (
-    ID_FROZEN,
-    ID_MUTABLE,
-    ID_NULLABLE,
-    serialize_uuid,
-    validate_uuid,
-)
-from pydapter.fields.params import (
-    PARAM_TYPE,
-    PARAM_TYPE_NULLABLE,
-    PARAMS,
-    validate_model_to_params,
-    validate_model_to_type,
-)
-from pydapter.fields.protocol_families import (
-    ProtocolFieldFamilies,
-    create_protocol_model,
-)
-from pydapter.fields.template import FieldTemplate
-from pydapter.fields.types import (
-    ID,
-    Embedding,
-    Field,
-    Metadata,
-    Undefined,
-    UndefinedType,
-    create_model,
-)
-from pydapter.fields.validation_patterns import (
-    ValidationPatterns,
-    create_pattern_template,
-    create_range_template,
-)
+"""Pydapter Field System - High-performance field definitions for runtime model generation."""
 
-__all__ = (
-    "DATETIME",
-    "DATETIME_NULLABLE",
-    "validate_datetime",
-    "datetime_serializer",
-    "ID_FROZEN",
-    "ID_MUTABLE",
-    "ID_NULLABLE",
-    "validate_uuid",
-    "serialize_uuid",
-    "PARAMS",
-    "PARAM_TYPE",
-    "PARAM_TYPE_NULLABLE",
-    "validate_model_to_params",
-    "validate_model_to_type",
-    "EMBEDDING",
-    "validate_embedding",
-    "UndefinedType",
-    "Undefined",
-    "Field",
-    "create_model",
-    "Execution",
-    "EXECUTION",
-    "ID",
-    "Embedding",
-    "Metadata",
-    "FieldTemplate",
-    "ID_TEMPLATE",
-    "STRING_TEMPLATE",
-    "EMAIL_TEMPLATE",
-    "USERNAME_TEMPLATE",
-    "CREATED_AT_TEMPLATE",
-    "UPDATED_AT_TEMPLATE",
-    "DELETED_AT_TEMPLATE",
-    "CREATED_AT_TZ_TEMPLATE",
-    "UPDATED_AT_TZ_TEMPLATE",
-    "DELETED_AT_TZ_TEMPLATE",
-    "NAME_TEMPLATE",
-    "DESCRIPTION_TEMPLATE",
-    "URL_TEMPLATE",
-    "PHONE_TEMPLATE",
-    "POSITIVE_INT_TEMPLATE",
-    "NONNEGATIVE_INT_TEMPLATE",
-    "POSITIVE_FLOAT_TEMPLATE",
-    "PERCENTAGE_TEMPLATE",
-    "JSON_TEMPLATE",
-    "TAGS_TEMPLATE",
-    "METADATA_TEMPLATE",
-    "FieldFamilies",
-    "create_field_dict",
-    "DomainModelBuilder",
-    "ProtocolFieldFamilies",
-    "create_protocol_model",
-    "ValidationPatterns",
-    "create_pattern_template",
-    "create_range_template",
+from .core import Field, FieldSchema, ValidationProtocol
+from .templates import (
+    FieldTemplate,
+    StringField,
+    IntField,
+    FloatField,
+    BoolField,
+    DateTimeField,
+    UUIDField,
+    DecimalField,
+    ListField,
+    DictField,
 )
+from .schema import Schema, SchemaBuilder, SchemaField, create_schema
+
+# Keep existing imports for backward compatibility
+from .types import *
+from .builder import *
+from .dts import *
+from .embedding import *
+from .execution import *
+from .families import *
+from .ids import *
+from .params import *
+from .protocol_families import *
+from .template import *
+from .validation_patterns import *
+from .common_templates import *
+
+__all__ = [
+    # Core
+    "Field",
+    "FieldSchema", 
+    "ValidationProtocol",
+    # Templates
+    "FieldTemplate",
+    "StringField",
+    "IntField",
+    "FloatField",
+    "BoolField",
+    "DateTimeField",
+    "UUIDField",
+    "DecimalField",
+    "ListField",
+    "DictField",
+    # Schema
+    "Schema",
+    "SchemaBuilder",
+    "SchemaField",
+    "create_schema",
+    # Legacy exports (kept for compatibility)
+    "FieldFactory",
+    "FieldBuilder",
+    "FieldDefinition",
+    "ProtocolFieldFamily",
+    "ENTITY_FIELDS",
+    "AUDIT_FIELDS",
+    "TEMPORAL_FIELDS",
+    "SOFT_DELETE_FIELDS",
+]
