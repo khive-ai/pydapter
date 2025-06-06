@@ -199,8 +199,8 @@ class DomainModelBuilder:
                 f"Add at least one field or field family before building."
             )
 
-        # Create field dictionary
-        fields = create_field_dict(self._fields)
+        # Create field dictionary - unpack the single dict as keyword arguments
+        fields = create_field_dict(**self._fields)
 
         # Merge model configuration
         config = {**self.model_config, **extra_config}
