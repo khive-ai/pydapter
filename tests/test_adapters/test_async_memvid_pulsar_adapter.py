@@ -348,7 +348,7 @@ class TestAsyncPulsarMemvidAdapterMemoryOperations:
                 {"text": "Found content", "score": 0.95}
             ]
 
-            mock_deps.return_value = (Mock(), Mock(), lambda *args: mock_retriever)
+            mock_deps.return_value = (Mock(), Mock(), lambda *_args: mock_retriever)
 
             result = await AsyncPulsarMemvidAdapter._process_memory_operation(
                 operation="search",
@@ -532,9 +532,7 @@ class TestAsyncPulsarMemvidAdapterFromObj:
         assert "pulsar_url" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_from_obj_direct_search_success(
-        self, pulsar_memvid_model_factory, temp_files
-    ):
+    async def test_from_obj_direct_search_success(self, temp_files):
         """Test successful direct search."""
         video_file, index_file = temp_files
 
@@ -584,9 +582,7 @@ class TestAsyncPulsarMemvidAdapterFromObj:
                 mock_validate.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_from_obj_stream_search_success(
-        self, pulsar_memvid_model_factory, mock_pulsar_client, temp_files
-    ):
+    async def test_from_obj_stream_search_success(self, mock_pulsar_client, temp_files):
         """Test successful streaming search."""
         video_file, index_file = temp_files
 
@@ -761,7 +757,7 @@ class TestAsyncPulsarMemvidAdapterIntegration:
             mock_deps.return_value = (
                 Mock(),
                 lambda: mock_encoder,
-                lambda *args: mock_retriever,
+                lambda *_args: mock_retriever,
             )
 
             mock_client = Mock()

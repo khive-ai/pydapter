@@ -249,7 +249,7 @@ class TestMemvidAdapterFromObj:
                 )
             assert "No results found for query" in str(exc_info.value)
 
-    def test_from_obj_success(self, memvid_model_factory):
+    def test_from_obj_success(self):
         """Test successful video memory search."""
         # Mock retriever results
         mock_retriever = Mock()
