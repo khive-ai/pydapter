@@ -133,6 +133,12 @@ class CIRunner:
         "test_integration_mongodb.py",
         "test_integration_async_neo4j.py",
         "test_pg_vector_model_adapter.py",
+        # Postgres tests require testcontainers/Docker
+        "test_postgres_adapter.py",
+        "test_async_postgres_adapter.py",
+        "test_integration_postgres.py",
+        # Tests that use async fixtures with containers
+        "test_async_adapters.py",
     ]
 
     def __init__(self, args):
@@ -368,7 +374,7 @@ class CIRunner:
         step = self.add_step("coverage", "Coverage report")
         step.start()
 
-        cmd = ["uv", "run", "coverage", "report", "--fail-under=45"]
+        cmd = ["uv", "run", "coverage", "report", "--fail-under=75"]
         exit_code, output = self.run_command(cmd)
 
         result = StepResult.SUCCESS if exit_code == 0 else StepResult.FAILURE

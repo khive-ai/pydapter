@@ -113,6 +113,19 @@ qdrant = [
     "qdrant-client>=1.10",
 ]
 
+memvid = [
+    "memvid>=0.1.0",
+]
+
+pulsar = [
+    "pulsar-client>=3.7.0",
+]
+
+memvid-pulsar = [
+    "pydapter[memvid]",
+    "pydapter[pulsar]",
+]
+
 aiohttp = [
     "aiohttp>=3.12.0",
 ]
@@ -139,6 +152,7 @@ all = [
     "pydapter[neo4j]",
     "pydapter[motor]",
     "pydapter[qdrant]",
+    "pydapter[memvid-pulsar]",
     "pydapter[aiohttp]",
     "pydapter[email]",
     "pydapter[migrations]",

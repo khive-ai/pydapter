@@ -1,6 +1,8 @@
 # End-to-End Tutorial: Using Pydapter's Async MongoDB Adapter
 
-This comprehensive tutorial will guide you through using Pydapter's async MongoDB adapter for seamless data operations between Pydantic models and MongoDB collections.
+This comprehensive tutorial will guide you through using Pydapter's async
+MongoDB adapter for seamless data operations between Pydantic models and
+MongoDB collections.
 
 ## Table of Contents
 
@@ -19,12 +21,14 @@ This comprehensive tutorial will guide you through using Pydapter's async MongoD
 ## Overview
 
 The AsyncMongoAdapter provides asynchronous methods to:
+
 - Query MongoDB collections and convert documents to Pydantic models
 - Insert Pydantic models as documents into MongoDB collections
 - Handle async MongoDB operations using Motor (async MongoDB driver)
 - Support various async MongoDB operations (find, insert, update, delete)
 
 **Key Features:**
+
 - Full async/await support
 - Automatic Pydantic model validation
 - Comprehensive error handling
@@ -70,6 +74,7 @@ services:
 ### MongoDB Atlas (Cloud)
 
 For production environments, consider using MongoDB Atlas:
+
 1. Create account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 2. Create cluster and get connection string
 3. Update connection string in your code
@@ -138,7 +143,7 @@ async def create_single_user():
         email="john@example.com",
         age=30
     )
-    
+
     try:
         result = await AsyncMongoAdapter.to_obj(
             user,
@@ -164,7 +169,7 @@ async def create_multiple_users():
         User(id=2, username="jane_smith", email="jane@example.com", age=25),
         User(id=3, username="bob_wilson", email="bob@example.com", age=35),
     ]
-    
+
     try:
         result = await AsyncMongoAdapter.to_obj(
             users,
@@ -197,11 +202,11 @@ async def get_all_users():
             },
             many=True
         )
-        
+
         print(f"Retrieved {len(users)} users")
         for user in users:
             print(f"  - {user.username} ({user.email})")
-        
+
         return users
     except Exception as e:
         print(f"Error retrieving users: {e}")
@@ -224,7 +229,7 @@ async def get_user_by_id(user_id: int):
             },
             many=False
         )
-        
+
         print(f"Found user: {user.username}")
         return user
     except ResourceError:
@@ -244,7 +249,7 @@ The async MongoDB adapter supports full MongoDB query syntax:
 ```python
 async def advanced_queries():
     """Demonstrate advanced MongoDB queries."""
-    
+
     # Range queries
     adult_users = await AsyncMongoAdapter.from_obj(
         User,
@@ -256,7 +261,7 @@ async def advanced_queries():
         },
         many=True
     )
-    
+
     # Multiple conditions
     active_adults = await AsyncMongoAdapter.from_obj(
         User,
@@ -271,7 +276,7 @@ async def advanced_queries():
         },
         many=True
     )
-    
+
     # Regular expressions
     gmail_users = await AsyncMongoAdapter.from_obj(
         User,
@@ -283,7 +288,7 @@ async def advanced_queries():
         },
         many=True
     )
-    
+
     # Array queries
     tech_products = await AsyncMongoAdapter.from_obj(
         Product,
@@ -295,7 +300,7 @@ async def advanced_queries():
         },
         many=True
     )
-    
+
     return adult_users, active_adults, gmail_users, tech_products
 ```
 
@@ -304,7 +309,7 @@ async def advanced_queries():
 ```python
 async def complex_queries():
     """Demonstrate complex query patterns."""
-    
+
     # Price range with category filter
     affordable_electronics = await AsyncMongoAdapter.from_obj(
         Product,
@@ -320,7 +325,7 @@ async def complex_queries():
         },
         many=True
     )
-    
+
     # Text search in multiple fields
     search_products = await AsyncMongoAdapter.from_obj(
         Product,
@@ -337,7 +342,7 @@ async def complex_queries():
         },
         many=True
     )
-    
+
     return affordable_electronics, search_products
 ```
 
@@ -361,7 +366,7 @@ from pydapter.exceptions import (
 ```python
 async def robust_data_operation():
     """Demonstrate comprehensive error handling."""
-    
+
     try:
         # Attempt to get user
         user = await AsyncMongoAdapter.from_obj(
@@ -375,27 +380,27 @@ async def robust_data_operation():
             many=False
         )
         return user
-        
+
     except ConnectionError as e:
         print(f"Database connection failed: {e}")
         # Handle connection issues (retry, fallback, etc.)
         return None
-        
+
     except ResourceError as e:
         print(f"User not found: {e}")
         # Handle missing resources
         return None
-        
+
     except AdapterValidationError as e:
         print(f"Data validation failed: {e}")
         # Handle validation errors
         return None
-        
+
     except QueryError as e:
         print(f"Query execution failed: {e}")
         # Handle query issues
         return None
-        
+
     except Exception as e:
         print(f"Unexpected error: {e}")
         # Handle unexpected errors
@@ -411,12 +416,12 @@ from typing import TypeVar, Callable, Any
 T = TypeVar('T')
 
 async def retry_on_connection_error(
-    func: Callable[[], Awaitable[T]], 
+    func: Callable[[], Awaitable[T]],
     max_retries: int = 3,
     delay: float = 1.0
 ) -> T:
     """Retry function on connection errors."""
-    
+
     for attempt in range(max_retries):
         try:
             return await func()
@@ -425,13 +430,13 @@ async def retry_on_connection_error(
                 raise
             print(f"Connection failed (attempt {attempt + 1}/{max_retries}): {e}")
             await asyncio.sleep(delay * (2 ** attempt))  # Exponential backoff
-    
+
     raise ConnectionError("Max retries exceeded")
 
 # Usage
 async def get_users_with_retry():
     """Get users with automatic retry on connection errors."""
-    
+
     async def _get_users():
         return await AsyncMongoAdapter.from_obj(
             User,
@@ -442,7 +447,7 @@ async def get_users_with_retry():
             },
             many=True
         )
-    
+
     return await retry_on_connection_error(_get_users)
 ```
 
@@ -455,18 +460,18 @@ Here's a complete example showing how to build an order management system:
 ```python
 class OrderManager:
     """A comprehensive order management system."""
-    
+
     def __init__(self, mongo_url: str, database: str):
         self.mongo_url = mongo_url
         self.database = database
-    
+
     async def create_order(
-        self, 
-        user_id: int, 
+        self,
+        user_id: int,
         product_ids: List[int]
     ) -> Order:
         """Create a new order with validation."""
-        
+
         # Verify user exists and is active
         try:
             user = await AsyncMongoAdapter.from_obj(
@@ -481,7 +486,7 @@ class OrderManager:
             )
         except ResourceError:
             raise ValueError(f"Active user {user_id} not found")
-        
+
         # Verify all products exist and are in stock
         products = await AsyncMongoAdapter.from_obj(
             Product,
@@ -496,18 +501,18 @@ class OrderManager:
             },
             many=True
         )
-        
+
         if len(products) != len(product_ids):
             found_ids = {p.id for p in products}
             missing_ids = set(product_ids) - found_ids
             raise ValueError(f"Products not available: {missing_ids}")
-        
+
         # Calculate total
         total_amount = sum(p.price for p in products)
-        
+
         # Generate order ID
         order_id = await self._generate_order_id()
-        
+
         # Create order
         order = Order(
             id=order_id,
@@ -515,7 +520,7 @@ class OrderManager:
             product_ids=product_ids,
             total_amount=total_amount
         )
-        
+
         # Save order
         await AsyncMongoAdapter.to_obj(
             order,
@@ -524,13 +529,13 @@ class OrderManager:
             collection="orders",
             many=False
         )
-        
+
         print(f"Order {order.id} created for {user.username} - ${total_amount:.2f}")
         return order
-    
+
     async def get_user_orders(self, user_id: int) -> List[Order]:
         """Get all orders for a user."""
-        
+
         orders = await AsyncMongoAdapter.from_obj(
             Order,
             {
@@ -541,12 +546,12 @@ class OrderManager:
             },
             many=True
         )
-        
+
         return sorted(orders, key=lambda o: o.order_date, reverse=True)
-    
+
     async def get_order_summary(self, order_id: int) -> dict:
         """Get detailed order information."""
-        
+
         try:
             # Get order
             order = await AsyncMongoAdapter.from_obj(
@@ -559,7 +564,7 @@ class OrderManager:
                 },
                 many=False
             )
-            
+
             # Get user
             user = await AsyncMongoAdapter.from_obj(
                 User,
@@ -571,7 +576,7 @@ class OrderManager:
                 },
                 many=False
             )
-            
+
             # Get products
             products = await AsyncMongoAdapter.from_obj(
                 Product,
@@ -583,7 +588,7 @@ class OrderManager:
                 },
                 many=True
             )
-            
+
             return {
                 "order": order,
                 "user": user,
@@ -596,13 +601,13 @@ class OrderManager:
                     "status": order.status
                 }
             }
-            
+
         except ResourceError:
             raise ValueError(f"Order {order_id} not found")
-    
+
     async def _generate_order_id(self) -> int:
         """Generate next order ID."""
-        
+
         orders = await AsyncMongoAdapter.from_obj(
             Order,
             {
@@ -612,28 +617,28 @@ class OrderManager:
             },
             many=True
         )
-        
+
         if not orders:
             return 1
-        
+
         return max(order.id for order in orders) + 1
 
 # Usage example
 async def demo_order_system():
     """Demonstrate the order management system."""
-    
+
     order_manager = OrderManager(MONGO_URL, DATABASE_NAME)
-    
+
     # Create an order
     order = await order_manager.create_order(
-        user_id=1, 
+        user_id=1,
         product_ids=[1, 2, 3]
     )
-    
+
     # Get user's orders
     user_orders = await order_manager.get_user_orders(1)
     print(f"User has {len(user_orders)} orders")
-    
+
     # Get order summary
     summary = await order_manager.get_order_summary(order.id)
     print(f"Order summary: {summary['summary']}")
@@ -649,20 +654,20 @@ Always prefer batch operations over individual operations:
 # ✅ Good: Batch insert
 users = [User(...) for _ in range(100)]
 await AsyncMongoAdapter.to_obj(
-    users, 
-    url=MONGO_URL, 
-    db=DATABASE_NAME, 
-    collection="users", 
+    users,
+    url=MONGO_URL,
+    db=DATABASE_NAME,
+    collection="users",
     many=True
 )
 
 # ❌ Bad: Individual inserts
 for user in users:
     await AsyncMongoAdapter.to_obj(
-        user, 
-        url=MONGO_URL, 
-        db=DATABASE_NAME, 
-        collection="users", 
+        user,
+        url=MONGO_URL,
+        db=DATABASE_NAME,
+        collection="users",
         many=False
     )
 ```
@@ -705,11 +710,11 @@ filtered_users = [u for u in all_users if u.id in [1, 2, 3]]
 # For large datasets, consider pagination
 async def get_users_paginated(page: int, size: int = 100):
     """Get users with pagination."""
-    
+
     skip = page * size
     # Note: MongoDB skip/limit would be implemented differently
     # This is a simplified example
-    
+
     users = await AsyncMongoAdapter.from_obj(
         User,
         {
@@ -720,7 +725,7 @@ async def get_users_paginated(page: int, size: int = 100):
         },
         many=True
     )
-    
+
     return users[skip:skip + size]
 ```
 
@@ -735,7 +740,7 @@ class User(BaseModel):
     username: str
     email: str
     created_at: datetime = Field(default_factory=datetime.now)
-    
+
     class Config:
         # Add any Pydantic config here
         validate_assignment = True
@@ -794,10 +799,10 @@ from unittest.mock import patch
 @pytest.mark.asyncio
 async def test_create_user():
     """Test user creation."""
-    
+
     with patch('pydapter.extras.async_mongo_.AsyncMongoAdapter.to_obj') as mock_to_obj:
         mock_to_obj.return_value = {"inserted_count": 1}
-        
+
         user = User(id=1, username="test", email="test@example.com", age=25)
         result = await AsyncMongoAdapter.to_obj(
             user,
@@ -806,7 +811,7 @@ async def test_create_user():
             collection="users",
             many=False
         )
-        
+
         assert result["inserted_count"] == 1
         mock_to_obj.assert_called_once()
 ```
@@ -817,7 +822,7 @@ async def test_create_user():
 # ✅ Production setup
 async def create_production_order_manager():
     """Create order manager with production settings."""
-    
+
     return OrderManager(
         mongo_url=os.getenv("MONGO_URL"),
         database=os.getenv("MONGO_DATABASE")
@@ -830,7 +835,7 @@ logger = logging.getLogger(__name__)
 
 async def safe_create_order(*args, **kwargs):
     """Create order with proper logging."""
-    
+
     try:
         order = await order_manager.create_order(*args, **kwargs)
         logger.info(f"Order {order.id} created successfully")
@@ -842,9 +847,11 @@ async def safe_create_order(*args, **kwargs):
 
 ## Summary
 
-The AsyncMongoAdapter provides a powerful, async-first approach to working with MongoDB in Python applications. Key benefits include:
+The AsyncMongoAdapter provides a powerful, async-first approach to working with
+MongoDB in Python applications. Key benefits include:
 
-- **Seamless Integration**: Direct conversion between Pydantic models and MongoDB documents
+- **Seamless Integration**: Direct conversion between Pydantic models and
+  MongoDB documents
 - **Async Performance**: Full async/await support for non-blocking operations
 - **Robust Error Handling**: Specific exceptions for different error scenarios
 - **MongoDB Query Support**: Full MongoDB query syntax support
@@ -854,7 +861,9 @@ The AsyncMongoAdapter provides a powerful, async-first approach to working with 
 
 ```python
 # Basic operations
-await AsyncMongoAdapter.to_obj(model, url=url, db=db, collection=coll, many=False)
+await AsyncMongoAdapter.to_obj(
+    model, url=url, db=db, collection=coll, many=False
+)
 await AsyncMongoAdapter.from_obj(Model, config, many=True)
 
 # Error handling
@@ -872,4 +881,7 @@ config = {
 }
 ```
 
-This tutorial provides a comprehensive foundation for using Pydapter's async MongoDB adapter in real-world applications. Remember to always handle errors appropriately, use batch operations for performance, and follow MongoDB best practices for schema design and querying.
+This tutorial provides a comprehensive foundation for using Pydapter's async
+MongoDB adapter in real-world applications. Remember to always handle errors
+appropriately, use batch operations for performance, and follow MongoDB best
+practices for schema design and querying.

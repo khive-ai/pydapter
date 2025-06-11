@@ -51,7 +51,26 @@ jobs:
           source .venv/bin/activate
           uv sync --extra all
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Configure Docker for testcontainers
+        run: |
+          # Pre-pull the ryuk image to avoid registry issues during tests
+          docker pull testcontainers/ryuk:0.8.1 || echo "Failed to pre-pull ryuk image, continuing anyway"
+
       - name: Run CI script
+        env:
+          # Configure testcontainers for better CI compatibility
+          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
+          # Enable ryuk but with CI-friendly timeouts
+          TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT: 120
+          TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT: 60
         run: |
           uv run scripts/ci.py --python-version ${{ matrix.python-version }}
 
