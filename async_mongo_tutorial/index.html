@@ -1928,7 +1928,9 @@
 
 
 <h1 id="end-to-end-tutorial-using-pydapters-async-mongodb-adapter">End-to-End Tutorial: Using Pydapter's Async MongoDB Adapter<a class="headerlink" href="#end-to-end-tutorial-using-pydapters-async-mongodb-adapter" title="Permanent link">&para;</a></h1>
-<p>This comprehensive tutorial will guide you through using Pydapter's async MongoDB adapter for seamless data operations between Pydantic models and MongoDB collections.</p>
+<p>This comprehensive tutorial will guide you through using Pydapter's async
+MongoDB adapter for seamless data operations between Pydantic models and
+MongoDB collections.</p>
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="#overview">Overview</a></li>
@@ -1944,17 +1946,21 @@
 <li><a href="#best-practices">Best Practices</a></li>
 </ul>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>The AsyncMongoAdapter provides asynchronous methods to:
-- Query MongoDB collections and convert documents to Pydantic models
-- Insert Pydantic models as documents into MongoDB collections
-- Handle async MongoDB operations using Motor (async MongoDB driver)
-- Support various async MongoDB operations (find, insert, update, delete)</p>
-<p><strong>Key Features:</strong>
-- Full async/await support
-- Automatic Pydantic model validation
-- Comprehensive error handling
-- MongoDB query filter support
-- Batch operations for performance</p>
+<p>The AsyncMongoAdapter provides asynchronous methods to:</p>
+<ul>
+<li>Query MongoDB collections and convert documents to Pydantic models</li>
+<li>Insert Pydantic models as documents into MongoDB collections</li>
+<li>Handle async MongoDB operations using Motor (async MongoDB driver)</li>
+<li>Support various async MongoDB operations (find, insert, update, delete)</li>
+</ul>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li>Full async/await support</li>
+<li>Automatic Pydantic model validation</li>
+<li>Comprehensive error handling</li>
+<li>MongoDB query filter support</li>
+<li>Batch operations for performance</li>
+</ul>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Python 3.8+</li>
@@ -1984,10 +1990,12 @@
 </span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">      </span>MONGO_INITDB_ROOT_PASSWORD:<span class="w"> </span>password
 </span></code></pre></div>
 <h3 id="mongodb-atlas-cloud">MongoDB Atlas (Cloud)<a class="headerlink" href="#mongodb-atlas-cloud" title="Permanent link">&para;</a></h3>
-<p>For production environments, consider using MongoDB Atlas:
-1. Create account at <a href="https://www.mongodb.com/cloud/atlas">MongoDB Atlas</a>
-2. Create cluster and get connection string
-3. Update connection string in your code</p>
+<p>For production environments, consider using MongoDB Atlas:</p>
+<ol>
+<li>Create account at <a href="https://www.mongodb.com/cloud/atlas">MongoDB Atlas</a></li>
+<li>Create cluster and get connection string</li>
+<li>Update connection string in your code</li>
+</ol>
 <h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
 <h3 id="import-and-setup">Import and Setup<a class="headerlink" href="#import-and-setup" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
@@ -2285,7 +2293,7 @@
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>
 </span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
 </span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">retry_on_connection_error</span><span class="p">(</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">T</span><span class="p">]],</span> 
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">T</span><span class="p">]],</span>
 </span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
 </span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="n">delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
 </span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
@@ -2330,8 +2338,8 @@
 </span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">database</span> <span class="o">=</span> <span class="n">database</span>
 </span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
 </span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="bp">self</span><span class="p">,</span> 
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 </span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>        <span class="n">product_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
 </span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
 </span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new order with validation.&quot;&quot;&quot;</span>
@@ -2495,7 +2503,7 @@
 </span><span id="__span-13-171"><a id="__codelineno-13-171" name="__codelineno-13-171" href="#__codelineno-13-171"></a>
 </span><span id="__span-13-172"><a id="__codelineno-13-172" name="__codelineno-13-172" href="#__codelineno-13-172"></a>    <span class="c1"># Create an order</span>
 </span><span id="__span-13-173"><a id="__codelineno-13-173" name="__codelineno-13-173" href="#__codelineno-13-173"></a>    <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">order_manager</span><span class="o">.</span><span class="n">create_order</span><span class="p">(</span>
-</span><span id="__span-13-174"><a id="__codelineno-13-174" name="__codelineno-13-174" href="#__codelineno-13-174"></a>        <span class="n">user_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> 
+</span><span id="__span-13-174"><a id="__codelineno-13-174" name="__codelineno-13-174" href="#__codelineno-13-174"></a>        <span class="n">user_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
 </span><span id="__span-13-175"><a id="__codelineno-13-175" name="__codelineno-13-175" href="#__codelineno-13-175"></a>        <span class="n">product_ids</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
 </span><span id="__span-13-176"><a id="__codelineno-13-176" name="__codelineno-13-176" href="#__codelineno-13-176"></a>    <span class="p">)</span>
 </span><span id="__span-13-177"><a id="__codelineno-13-177" name="__codelineno-13-177" href="#__codelineno-13-177"></a>
@@ -2513,20 +2521,20 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># ✅ Good: Batch insert</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">users</span> <span class="o">=</span> <span class="p">[</span><span class="n">User</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)]</span>
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="k">await</span> <span class="n">AsyncMongoAdapter</span><span class="o">.</span><span class="n">to_obj</span><span class="p">(</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">users</span><span class="p">,</span> 
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="n">url</span><span class="o">=</span><span class="n">MONGO_URL</span><span class="p">,</span> 
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    <span class="n">db</span><span class="o">=</span><span class="n">DATABASE_NAME</span><span class="p">,</span> 
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>    <span class="n">collection</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> 
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">users</span><span class="p">,</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="n">url</span><span class="o">=</span><span class="n">MONGO_URL</span><span class="p">,</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    <span class="n">db</span><span class="o">=</span><span class="n">DATABASE_NAME</span><span class="p">,</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>    <span class="n">collection</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
 </span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="n">many</span><span class="o">=</span><span class="kc">True</span>
 </span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="p">)</span>
 </span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>
 </span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="c1"># ❌ Bad: Individual inserts</span>
 </span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
 </span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>    <span class="k">await</span> <span class="n">AsyncMongoAdapter</span><span class="o">.</span><span class="n">to_obj</span><span class="p">(</span>
-</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>        <span class="n">user</span><span class="p">,</span> 
-</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>        <span class="n">url</span><span class="o">=</span><span class="n">MONGO_URL</span><span class="p">,</span> 
-</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>        <span class="n">db</span><span class="o">=</span><span class="n">DATABASE_NAME</span><span class="p">,</span> 
-</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>        <span class="n">collection</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> 
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>        <span class="n">user</span><span class="p">,</span>
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>        <span class="n">url</span><span class="o">=</span><span class="n">MONGO_URL</span><span class="p">,</span>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>        <span class="n">db</span><span class="o">=</span><span class="n">DATABASE_NAME</span><span class="p">,</span>
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>        <span class="n">collection</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
 </span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>        <span class="n">many</span><span class="o">=</span><span class="kc">False</span>
 </span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>    <span class="p">)</span>
 </span></code></pre></div>
@@ -2678,9 +2686,11 @@
 </span><span id="__span-22-24"><a id="__codelineno-22-24" name="__codelineno-22-24" href="#__codelineno-22-24"></a>        <span class="k">raise</span>
 </span></code></pre></div>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p>The AsyncMongoAdapter provides a powerful, async-first approach to working with MongoDB in Python applications. Key benefits include:</p>
+<p>The AsyncMongoAdapter provides a powerful, async-first approach to working with
+MongoDB in Python applications. Key benefits include:</p>
 <ul>
-<li><strong>Seamless Integration</strong>: Direct conversion between Pydantic models and MongoDB documents</li>
+<li><strong>Seamless Integration</strong>: Direct conversion between Pydantic models and
+  MongoDB documents</li>
 <li><strong>Async Performance</strong>: Full async/await support for non-blocking operations</li>
 <li><strong>Robust Error Handling</strong>: Specific exceptions for different error scenarios</li>
 <li><strong>MongoDB Query Support</strong>: Full MongoDB query syntax support</li>
@@ -2688,24 +2698,29 @@
 </ul>
 <h3 id="quick-reference">Quick Reference<a class="headerlink" href="#quick-reference" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Basic operations</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="k">await</span> <span class="n">AsyncMongoAdapter</span><span class="o">.</span><span class="n">to_obj</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="n">coll</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="k">await</span> <span class="n">AsyncMongoAdapter</span><span class="o">.</span><span class="n">from_obj</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="c1"># Error handling</span>
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="k">try</span><span class="p">:</span>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">AsyncMongoAdapter</span><span class="o">.</span><span class="n">from_obj</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="k">except</span> <span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,</span> <span class="n">ResourceError</span><span class="p">,</span> <span class="n">AdapterValidationError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>    <span class="n">handle_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>
-</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="c1"># Configuration</span>
-</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;mongodb://localhost:27017&quot;</span><span class="p">,</span>
-</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>    <span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="s2">&quot;database_name&quot;</span><span class="p">,</span>
-</span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>    <span class="s2">&quot;collection&quot;</span><span class="p">:</span> <span class="s2">&quot;collection_name&quot;</span><span class="p">,</span>
-</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>    <span class="s2">&quot;filter&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;field&quot;</span><span class="p">:</span> <span class="s2">&quot;value&quot;</span><span class="p">}</span>  <span class="c1"># Optional</span>
-</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a><span class="p">}</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="k">await</span> <span class="n">AsyncMongoAdapter</span><span class="o">.</span><span class="n">to_obj</span><span class="p">(</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>    <span class="n">model</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="n">coll</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">False</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="p">)</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="k">await</span> <span class="n">AsyncMongoAdapter</span><span class="o">.</span><span class="n">from_obj</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="c1"># Error handling</span>
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">AsyncMongoAdapter</span><span class="o">.</span><span class="n">from_obj</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="k">except</span> <span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,</span> <span class="n">ResourceError</span><span class="p">,</span> <span class="n">AdapterValidationError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>    <span class="n">handle_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>
+</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a><span class="c1"># Configuration</span>
+</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;mongodb://localhost:27017&quot;</span><span class="p">,</span>
+</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>    <span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="s2">&quot;database_name&quot;</span><span class="p">,</span>
+</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>    <span class="s2">&quot;collection&quot;</span><span class="p">:</span> <span class="s2">&quot;collection_name&quot;</span><span class="p">,</span>
+</span><span id="__span-23-18"><a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a>    <span class="s2">&quot;filter&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;field&quot;</span><span class="p">:</span> <span class="s2">&quot;value&quot;</span><span class="p">}</span>  <span class="c1"># Optional</span>
+</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>This tutorial provides a comprehensive foundation for using Pydapter's async MongoDB adapter in real-world applications. Remember to always handle errors appropriately, use batch operations for performance, and follow MongoDB best practices for schema design and querying.</p>
+<p>This tutorial provides a comprehensive foundation for using Pydapter's async
+MongoDB adapter in real-world applications. Remember to always handle errors
+appropriately, use batch operations for performance, and follow MongoDB best
+practices for schema design and querying.</p>
 
 
 
