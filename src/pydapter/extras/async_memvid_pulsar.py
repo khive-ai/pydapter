@@ -143,14 +143,18 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
     async def _create_producer(cls, client, topic: str, **producer_kwargs):
         """Create Pulsar producer with error handling."""
         try:
-            producer = client.create_producer(
-                topic=topic,
-                compression_type=client.CompressionType.LZ4
-                if hasattr(client, "CompressionType")
-                else None,
-                batching_enabled=True,
+            # Build producer config
+            producer_config = {
+                "topic": topic,
+                "batching_enabled": True,
                 **producer_kwargs,
-            )
+            }
+
+            # Only add compression_type if CompressionType is available
+            if hasattr(client, "CompressionType"):
+                producer_config["compression_type"] = client.CompressionType.LZ4
+
+            producer = client.create_producer(**producer_config)
             return producer
         except Exception as e:
             raise ConnectionError(
@@ -164,14 +168,18 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
     ):
         """Create Pulsar consumer with error handling."""
         try:
-            consumer = client.subscribe(
-                topic=topic,
-                subscription_name=subscription,
-                consumer_type=client.ConsumerType.Shared
-                if hasattr(client, "ConsumerType")
-                else None,
+            # Build consumer config
+            consumer_config = {
+                "topic": topic,
+                "subscription_name": subscription,
                 **consumer_kwargs,
-            )
+            }
+
+            # Only add consumer_type if ConsumerType is available
+            if hasattr(client, "ConsumerType"):
+                consumer_config["consumer_type"] = client.ConsumerType.Shared
+
+            consumer = client.subscribe(**consumer_config)
             return consumer
         except Exception as e:
             raise ConnectionError(
