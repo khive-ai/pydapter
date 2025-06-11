@@ -8,9 +8,15 @@ from unittest.mock import Mock, patch
 
 import pytest
 from pydantic import BaseModel
+from pydantic import ValidationError as PydanticValidationError
 
 from pydapter.core import Adaptable
-from pydapter.exceptions import ConnectionError, ResourceError, ValidationError
+from pydapter.exceptions import (
+    ConnectionError,
+    QueryError,
+    ResourceError,
+    ValidationError,
+)
 from pydapter.extras.memvid_ import MemvidAdapter
 
 
@@ -105,6 +111,21 @@ class TestMemvidAdapterToObj:
             MemvidAdapter.to_obj(sample, video_file="test.mp4")
         assert "index_file" in str(exc_info.value)
 
+    def test_to_obj_empty_string_parameters(self, temp_files):
+        """Test validation with empty string parameters."""
+        video_file, index_file = temp_files
+        sample = Mock()
+
+        # Empty video_file
+        with pytest.raises(ValidationError) as exc_info:
+            MemvidAdapter.to_obj(sample, video_file="", index_file=index_file)
+        assert "Missing required parameter 'video_file'" in str(exc_info.value)
+
+        # Empty index_file
+        with pytest.raises(ValidationError) as exc_info:
+            MemvidAdapter.to_obj(sample, video_file=video_file, index_file="")
+        assert "Missing required parameter 'index_file'" in str(exc_info.value)
+
     def test_to_obj_empty_data(self, temp_files):
         """Test handling empty data."""
         video_file, index_file = temp_files
@@ -169,6 +190,111 @@ class TestMemvidAdapterToObj:
             assert result["index_file"] == index_file
             assert result["chunks"] == 3
             assert result["frames"] == 100
+
+    def test_to_obj_encoder_creation_failure(self, memvid_sample, temp_files):
+        """Test MemvidEncoder creation failure."""
+        video_file, index_file = temp_files
+
+        # Mock the import method to return a mock class that raises on instantiation
+        mock_encoder_class = Mock(side_effect=RuntimeError("Encoder creation failed"))
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(mock_encoder_class, Mock())
+        ):
+            with pytest.raises(ConnectionError) as exc_info:
+                MemvidAdapter.to_obj(
+                    memvid_sample, video_file=video_file, index_file=index_file
+                )
+
+            assert "Failed to create MemvidEncoder" in str(exc_info.value)
+            assert exc_info.value.adapter == "memvid"
+
+    def test_to_obj_non_string_text_field(self, temp_files):
+        """Test error when text field is not a string."""
+        video_file, index_file = temp_files
+
+        # Create mock object with non-string text field
+        mock_obj = Mock()
+        mock_obj.text = 123  # Non-string value
+        mock_obj.model_dump.return_value = {"id": "1", "text": 123}
+
+        # Mock the import method to return mock classes
+        mock_encoder = Mock()
+        mock_encoder_class = Mock(return_value=mock_encoder)
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(mock_encoder_class, Mock())
+        ):
+            with pytest.raises(ValidationError) as exc_info:
+                MemvidAdapter.to_obj(
+                    mock_obj, video_file=video_file, index_file=index_file
+                )
+
+            assert "Text field 'text' must be a string" in str(exc_info.value)
+
+    def test_to_obj_text_processing_error(self, temp_files):
+        """Test error during text processing."""
+        video_file, index_file = temp_files
+
+        # Create mock object
+        mock_obj = Mock()
+        mock_obj.text = "valid text"
+        mock_obj.model_dump.return_value = {"id": "1", "text": "valid text"}
+
+        # Mock encoder that fails during add_text
+        mock_encoder = Mock()
+        mock_encoder.add_text.side_effect = RuntimeError("Text processing failed")
+        mock_encoder_class = Mock(return_value=mock_encoder)
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(mock_encoder_class, Mock())
+        ):
+            with pytest.raises(QueryError) as exc_info:
+                MemvidAdapter.to_obj(
+                    mock_obj, video_file=video_file, index_file=index_file
+                )
+
+            assert "Error processing text chunks" in str(exc_info.value)
+            assert exc_info.value.adapter == "memvid"
+
+    def test_to_obj_build_video_failure(self, memvid_sample, temp_files):
+        """Test build video failure."""
+        video_file, index_file = temp_files
+
+        # Mock encoder that fails during build_video
+        mock_encoder = Mock()
+        mock_encoder.add_text.return_value = None
+        mock_encoder.build_video.side_effect = RuntimeError("Build video failed")
+        mock_encoder_class = Mock(return_value=mock_encoder)
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(mock_encoder_class, Mock())
+        ):
+            with pytest.raises(QueryError) as exc_info:
+                MemvidAdapter.to_obj(
+                    memvid_sample, video_file=video_file, index_file=index_file
+                )
+
+            assert "Failed to build video memory" in str(exc_info.value)
+            assert exc_info.value.adapter == "memvid"
+
+    def test_to_obj_unexpected_error(self, temp_files):
+        """Test unexpected error handling."""
+        video_file, index_file = temp_files
+
+        # Create mock that raises unexpected error type
+        mock_obj = Mock()
+        mock_obj.text = "valid text"
+        mock_obj.model_dump.side_effect = TypeError("Unexpected error")
+
+        with patch.object(MemvidAdapter, "_import_memvid"):
+            with pytest.raises(QueryError) as exc_info:
+                MemvidAdapter.to_obj(
+                    mock_obj, video_file=video_file, index_file=index_file
+                )
+
+            assert "Unexpected error in Memvid adapter" in str(exc_info.value)
+            assert exc_info.value.adapter == "memvid"
 
 
 class TestMemvidAdapterFromObj:
@@ -248,6 +374,197 @@ class TestMemvidAdapterFromObj:
                     many=False,
                 )
             assert "No results found for query" in str(exc_info.value)
+
+    def test_from_obj_retriever_creation_failure(self):
+        """Test MemvidRetriever creation failure."""
+        mock_retriever_class = Mock(
+            side_effect=RuntimeError("Retriever creation failed")
+        )
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(Mock(), mock_retriever_class)
+        ):
+            with pytest.raises(ConnectionError) as exc_info:
+                MemvidAdapter.from_obj(
+                    Mock,
+                    {
+                        "video_file": "test.mp4",
+                        "index_file": "test.json",
+                        "query": "test",
+                    },
+                )
+
+            assert "Failed to create MemvidRetriever" in str(exc_info.value)
+            assert exc_info.value.adapter == "memvid"
+
+    def test_from_obj_search_execution_failure(self):
+        """Test search execution failure."""
+        mock_retriever = Mock()
+        mock_retriever.search_with_metadata.side_effect = RuntimeError("Search failed")
+        mock_retriever_class = Mock(return_value=mock_retriever)
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(Mock(), mock_retriever_class)
+        ):
+            with pytest.raises(QueryError) as exc_info:
+                MemvidAdapter.from_obj(
+                    Mock,
+                    {
+                        "video_file": "test.mp4",
+                        "index_file": "test.json",
+                        "query": "test query",
+                    },
+                )
+
+            assert "Error searching video memory" in str(exc_info.value)
+            assert exc_info.value.adapter == "memvid"
+
+    def test_from_obj_single_result_success(self):
+        """Test successful single result return."""
+        # Mock retriever results
+        mock_retriever = Mock()
+        mock_retriever.search_with_metadata.return_value = [
+            {"text": "Sample content", "score": 0.95}
+        ]
+        mock_retriever_class = Mock(return_value=mock_retriever)
+
+        # Create model class for validation
+        class TestDoc(Adaptable, BaseModel):
+            id: str
+            text: str
+
+        TestDoc.register_adapter(MemvidAdapter)
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(Mock(), mock_retriever_class)
+        ):
+            with patch.object(TestDoc, "model_validate") as mock_validate:
+                mock_validate.return_value = Mock(id="0", text="Sample content")
+
+                result = MemvidAdapter.from_obj(
+                    TestDoc,
+                    {
+                        "video_file": "test.mp4",
+                        "index_file": "test.json",
+                        "query": "testing content",
+                    },
+                    many=False,
+                )
+
+                # Verify single result returned
+                assert result is not None
+                mock_validate.assert_called_once()
+
+    def test_from_obj_validation_fallback(self):
+        """Test fallback validation when primary validation fails."""
+        # Mock retriever results
+        mock_retriever = Mock()
+        mock_retriever.search_with_metadata.return_value = [
+            {"text": "Sample content", "score": 0.95}
+        ]
+        mock_retriever_class = Mock(return_value=mock_retriever)
+
+        # Create model class that requires specific fields
+        class StrictTestDoc(Adaptable, BaseModel):
+            id: str
+            text: str
+            required_field: str  # This will cause first validation to fail
+
+        StrictTestDoc.register_adapter(MemvidAdapter)
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(Mock(), mock_retriever_class)
+        ):
+            with patch.object(StrictTestDoc, "model_validate") as mock_validate:
+                # First call fails, second call succeeds
+                mock_validate.side_effect = [
+                    PydanticValidationError.from_exception_data(
+                        "StrictTestDoc",
+                        [
+                            {
+                                "type": "missing",
+                                "loc": ("required_field",),
+                                "msg": "Field required",
+                            }
+                        ],
+                    ),
+                    Mock(id="0", text="Sample content"),
+                ]
+
+                result = MemvidAdapter.from_obj(
+                    StrictTestDoc,
+                    {
+                        "video_file": "test.mp4",
+                        "index_file": "test.json",
+                        "query": "testing content",
+                    },
+                    many=True,
+                )
+
+                # Verify fallback worked
+                assert len(result) == 1
+                assert mock_validate.call_count == 2
+
+    def test_from_obj_validation_error(self):
+        """Test validation error during result conversion."""
+        # Mock retriever results
+        mock_retriever = Mock()
+        mock_retriever.search_with_metadata.return_value = [
+            {"text": "Sample content", "score": 0.95}
+        ]
+        mock_retriever_class = Mock(return_value=mock_retriever)
+
+        # Create model class
+        class TestDoc(Adaptable, BaseModel):
+            id: str
+            text: str
+
+        TestDoc.register_adapter(MemvidAdapter)
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(Mock(), mock_retriever_class)
+        ):
+            with patch.object(TestDoc, "model_validate") as mock_validate:
+                # Both validation attempts fail
+                validation_error = PydanticValidationError.from_exception_data(
+                    "TestDoc",
+                    [{"type": "missing", "loc": ("id",), "msg": "Field required"}],
+                )
+                mock_validate.side_effect = [validation_error, validation_error]
+
+                with pytest.raises(ValidationError) as exc_info:
+                    MemvidAdapter.from_obj(
+                        TestDoc,
+                        {
+                            "video_file": "test.mp4",
+                            "index_file": "test.json",
+                            "query": "testing content",
+                        },
+                        many=True,
+                    )
+
+                assert "Validation error converting search results" in str(
+                    exc_info.value
+                )
+
+    def test_from_obj_unexpected_error(self):
+        """Test unexpected error handling in from_obj."""
+        # Create mock that raises unexpected error
+        with patch.object(
+            MemvidAdapter, "_import_memvid", side_effect=TypeError("Unexpected error")
+        ):
+            with pytest.raises(QueryError) as exc_info:
+                MemvidAdapter.from_obj(
+                    Mock,
+                    {
+                        "video_file": "test.mp4",
+                        "index_file": "test.json",
+                        "query": "test",
+                    },
+                )
+
+            assert "Unexpected error in Memvid adapter" in str(exc_info.value)
+            assert exc_info.value.adapter == "memvid"
 
     def test_from_obj_success(self):
         """Test successful video memory search."""
