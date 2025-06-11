@@ -245,23 +245,23 @@ class TestAsyncPulsarMemvidAdapterClient:
     @pytest.mark.asyncio
     async def test_create_pulsar_client_success(self):
         """Test successful Pulsar client creation."""
-        with patch("pulsar.Client") as mock_pulsar_class:
-            mock_client = Mock()
-            mock_pulsar_class.return_value = mock_client
+        mock_client = Mock()
+        mock_pulsar_module = Mock()
+        mock_pulsar_module.Client.return_value = mock_client
 
-            with patch.object(
-                AsyncPulsarMemvidAdapter,
-                "_import_dependencies",
-                return_value=(mock_pulsar_class, Mock(), Mock()),
-            ):
-                client = await AsyncPulsarMemvidAdapter._create_pulsar_client(
-                    "pulsar://localhost:6650"
-                )
+        with patch.object(
+            AsyncPulsarMemvidAdapter,
+            "_import_dependencies",
+            return_value=(mock_pulsar_module, Mock(), Mock()),
+        ):
+            client = await AsyncPulsarMemvidAdapter._create_pulsar_client(
+                "pulsar://localhost:6650"
+            )
 
-                assert client is mock_client
-                mock_pulsar_class.assert_called_once_with(
-                    service_url="pulsar://localhost:6650", operation_timeout_seconds=30
-                )
+            assert client is mock_client
+            mock_pulsar_module.Client.assert_called_once_with(
+                service_url="pulsar://localhost:6650", operation_timeout_seconds=30
+            )
 
     @pytest.mark.asyncio
     async def test_create_pulsar_client_failure(self):

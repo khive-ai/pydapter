@@ -22,6 +22,8 @@ uv pip install openpyxl  # Also needed for Excel support
 # Install optional modules
 uv pip install "pydapter[protocols]"      # For standardized model interfaces
 uv pip install "pydapter[migrations-sql]" # For database schema migrations
+uv pip install "pydapter[memvid]"         # For video-based AI memory storage
+uv pip install "pydapter[memvid-pulsar]"  # For enterprise streaming video memory
 
 # or install all adapters at once
 uv pip install "pydapter[all]"
@@ -329,6 +331,114 @@ loaded_students = ExcelAdapter.from_obj(
 print("\nLoaded students:")
 for student in loaded_students:
     print(f"{student.name}: {student.grade} ({student.score})")
+```
+
+## Working with Video Memory (Memvid)
+
+Pydapter now supports video-based AI memory through the Memvid adapter. This allows you to encode text into video files for efficient storage and semantic search:
+
+```python
+from pydantic import BaseModel
+from pydapter.extras.memvid_ import MemvidAdapter
+
+# First install memvid: pip install memvid
+
+# Define a document model
+class Document(BaseModel):
+    id: str
+    text: str
+    category: str
+    source: str
+
+# Create some documents
+documents = [
+    Document(
+        id="1", 
+        text="Artificial intelligence is transforming how we work with data",
+        category="tech", 
+        source="blog"
+    ),
+    Document(
+        id="2", 
+        text="Machine learning algorithms can detect patterns in large datasets",
+        category="tech", 
+        source="paper"
+    ),
+    Document(
+        id="3", 
+        text="Natural language processing enables computers to understand text",
+        category="ai", 
+        source="tutorial"
+    ),
+]
+
+# Build video memory from documents
+build_result = MemvidAdapter.to_obj(
+    documents,
+    video_file="knowledge_base.mp4",
+    index_file="knowledge_index.json",
+    text_field="text",  # Field containing text to encode
+    chunk_size=512,     # Size of text chunks
+    overlap=32         # Overlap between chunks
+)
+
+print(f"Encoded {build_result['encoded_count']} documents into video memory")
+
+# Search the video memory
+search_config = {
+    "video_file": "knowledge_base.mp4",
+    "index_file": "knowledge_index.json", 
+    "query": "machine learning algorithms",
+    "top_k": 2  # Return top 2 results
+}
+
+results = MemvidAdapter.from_obj(Document, search_config, many=True)
+print(f"\nFound {len(results)} relevant documents:")
+for doc in results:
+    print(f"- {doc.text}")
+```
+
+### Advanced: Using Pulsar for Streaming Video Memory
+
+For enterprise use cases, you can use the Pulsar-enhanced Memvid adapter for distributed video memory operations:
+
+```python
+import asyncio
+from pydapter.extras.async_memvid_pulsar import AsyncPulsarMemvidAdapter
+
+# First install dependencies: pip install memvid pulsar-client
+
+async def demo_streaming_memory():
+    # Stream documents for video memory creation
+    stream_result = await AsyncPulsarMemvidAdapter.to_obj(
+        documents,
+        pulsar_url="pulsar://localhost:6650",
+        topic="memory-operations",
+        memory_id="knowledge-base-v1",
+        video_file="memories/knowledge.mp4",
+        index_file="memories/knowledge.json",
+        async_processing=False  # Process immediately for demo
+    )
+    
+    print(f"Streaming result: {stream_result['success']}")
+    
+    # Search with direct query
+    search_result = await AsyncPulsarMemvidAdapter.from_obj(
+        Document,
+        {
+            "pulsar_url": "pulsar://localhost:6650",
+            "query": "artificial intelligence",
+            "video_file": "memories/knowledge.mp4", 
+            "index_file": "memories/knowledge.json",
+            "memory_id": "knowledge-base-v1"
+        },
+        many=True
+    )
+    
+    print(f"Found {len(search_result)} documents via streaming search")
+
+# Run the async demo
+# asyncio.run(demo_streaming_memory())
 ```
 
 ## Error Handling
