@@ -2,8 +2,9 @@
 Simplified tests for Memvid adapter focusing on testable components.
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 from pydapter.exceptions import ConnectionError, ValidationError
 from pydapter.extras.memvid_ import MemvidAdapter

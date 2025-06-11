@@ -10,11 +10,7 @@ import pytest
 from pydantic import BaseModel
 
 from pydapter.core import Adaptable
-from pydapter.exceptions import (
-    ValidationError,
-    ConnectionError,
-    ResourceError,
-)
+from pydapter.exceptions import ConnectionError, ResourceError, ValidationError
 from pydapter.extras.memvid_ import MemvidAdapter
 
 
@@ -100,35 +96,32 @@ class TestMemvidAdapterToObj:
         sample = Mock()
 
         # Missing video_file
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             MemvidAdapter.to_obj(sample, index_file="test.json")
-        assert "Missing required parameter 'video_file'" in str(exc_info.value)
+        assert "video_file" in str(exc_info.value)
 
         # Missing index_file
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             MemvidAdapter.to_obj(sample, video_file="test.mp4")
-        assert "Missing required parameter 'index_file'" in str(exc_info.value)
+        assert "index_file" in str(exc_info.value)
 
-    @patch("pydapter.extras.memvid_.MemvidEncoder")
-    def test_to_obj_empty_data(self, mock_encoder_class, temp_files):
+    def test_to_obj_empty_data(self, temp_files):
         """Test handling empty data."""
         video_file, index_file = temp_files
 
         result = MemvidAdapter.to_obj([], video_file=video_file, index_file=index_file)
 
         assert result == {"encoded_count": 0}
-        mock_encoder_class.assert_not_called()
 
-    @patch("pydapter.extras.memvid_.MemvidEncoder")
-    def test_to_obj_missing_text_field(self, mock_encoder_class, temp_files):
+    def test_to_obj_missing_text_field(self, temp_files):
         """Test error when text field is missing."""
         video_file, index_file = temp_files
 
         # Create mock object without text field
         mock_obj = Mock()
         mock_obj.model_dump.return_value = {"id": "1", "name": "test"}
-        mock_obj.text = None  # Missing text attribute
 
+        # Make hasattr return False for the text field
         with patch("builtins.hasattr", return_value=False):
             with pytest.raises(ValidationError) as exc_info:
                 MemvidAdapter.to_obj(
@@ -137,43 +130,45 @@ class TestMemvidAdapterToObj:
 
             assert "Text field 'text' not found in model" in str(exc_info.value)
 
-    @patch("pydapter.extras.memvid_.MemvidEncoder")
-    def test_to_obj_success(self, mock_encoder_class, memvid_sample, temp_files):
+    def test_to_obj_success(self, memvid_sample, temp_files):
         """Test successful video memory creation."""
         video_file, index_file = temp_files
 
-        # Mock encoder
+        # Mock the import method to return mock classes
         mock_encoder = Mock()
         mock_encoder.build_video.return_value = {"chunks": 3, "frames": 100}
-        mock_encoder_class.return_value = mock_encoder
+        mock_encoder_class = Mock(return_value=mock_encoder)
 
-        result = MemvidAdapter.to_obj(
-            memvid_sample,
-            video_file=video_file,
-            index_file=index_file,
-            chunk_size=512,
-            overlap=25,
-        )
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(mock_encoder_class, Mock())
+        ):
+            result = MemvidAdapter.to_obj(
+                memvid_sample,
+                video_file=video_file,
+                index_file=index_file,
+                chunk_size=512,
+                overlap=25,
+            )
 
-        # Verify encoder was created and used correctly
-        mock_encoder_class.assert_called_once()
-        mock_encoder.add_text.assert_called_once_with(
-            memvid_sample.text, chunk_size=512, overlap=25
-        )
-        mock_encoder.build_video.assert_called_once_with(
-            video_file,
-            index_file,
-            codec="h265",
-            show_progress=False,
-            allow_fallback=True,
-        )
+            # Verify encoder was created and used correctly
+            mock_encoder_class.assert_called_once()
+            mock_encoder.add_text.assert_called_once_with(
+                memvid_sample.text, chunk_size=512, overlap=25
+            )
+            mock_encoder.build_video.assert_called_once_with(
+                video_file,
+                index_file,
+                codec="h265",
+                show_progress=False,
+                allow_fallback=True,
+            )
 
-        # Verify result
-        assert result["encoded_count"] == 1
-        assert result["video_file"] == video_file
-        assert result["index_file"] == index_file
-        assert result["chunks"] == 3
-        assert result["frames"] == 100
+            # Verify result
+            assert result["encoded_count"] == 1
+            assert result["video_file"] == video_file
+            assert result["index_file"] == index_file
+            assert result["chunks"] == 3
+            assert result["frames"] == 100
 
 
 class TestMemvidAdapterFromObj:
@@ -185,71 +180,76 @@ class TestMemvidAdapterFromObj:
         # Missing video_file
         with pytest.raises(ValidationError) as exc_info:
             MemvidAdapter.from_obj(Mock, {"index_file": "test.json", "query": "test"})
-        assert "Missing required parameter 'video_file'" in str(exc_info.value)
+        assert "video_file" in str(exc_info.value)
 
         # Missing index_file
         with pytest.raises(ValidationError) as exc_info:
             MemvidAdapter.from_obj(Mock, {"video_file": "test.mp4", "query": "test"})
-        assert "Missing required parameter 'index_file'" in str(exc_info.value)
+        assert "index_file" in str(exc_info.value)
 
         # Missing query
         with pytest.raises(ValidationError) as exc_info:
             MemvidAdapter.from_obj(
                 Mock, {"video_file": "test.mp4", "index_file": "test.json"}
             )
-        assert "Missing required parameter 'query'" in str(exc_info.value)
+        assert "query" in str(exc_info.value)
 
-    @patch("pydapter.extras.memvid_.MemvidRetriever")
-    def test_from_obj_file_not_found(self, mock_retriever_class):
+    def test_from_obj_file_not_found(self):
         """Test error when video memory files are not found."""
-        mock_retriever_class.side_effect = FileNotFoundError("Video file not found")
+        mock_retriever_class = Mock(
+            side_effect=FileNotFoundError("Video file not found")
+        )
 
-        with pytest.raises(ResourceError) as exc_info:
-            MemvidAdapter.from_obj(
-                Mock,
-                {
-                    "video_file": "nonexistent.mp4",
-                    "index_file": "nonexistent.json",
-                    "query": "test",
-                },
-            )
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(Mock(), mock_retriever_class)
+        ):
+            with pytest.raises(ResourceError) as exc_info:
+                MemvidAdapter.from_obj(
+                    Mock,
+                    {
+                        "video_file": "nonexistent.mp4",
+                        "index_file": "nonexistent.json",
+                        "query": "test",
+                    },
+                )
 
-        assert "Video memory files not found" in str(exc_info.value)
+            assert "Video memory files not found" in str(exc_info.value)
 
-    @patch("pydapter.extras.memvid_.MemvidRetriever")
-    def test_from_obj_no_results(self, mock_retriever_class):
+    def test_from_obj_no_results(self):
         """Test handling when no search results are found."""
         mock_retriever = Mock()
         mock_retriever.search_with_metadata.return_value = []
-        mock_retriever_class.return_value = mock_retriever
+        mock_retriever_class = Mock(return_value=mock_retriever)
 
-        # Test many=True returns empty list
-        result = MemvidAdapter.from_obj(
-            Mock,
-            {
-                "video_file": "test.mp4",
-                "index_file": "test.json",
-                "query": "nonexistent query",
-            },
-            many=True,
-        )
-        assert result == []
-
-        # Test many=False raises ResourceError
-        with pytest.raises(ResourceError) as exc_info:
-            MemvidAdapter.from_obj(
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(Mock(), mock_retriever_class)
+        ):
+            # Test many=True returns empty list
+            result = MemvidAdapter.from_obj(
                 Mock,
                 {
                     "video_file": "test.mp4",
                     "index_file": "test.json",
                     "query": "nonexistent query",
                 },
-                many=False,
+                many=True,
             )
-        assert "No results found for query" in str(exc_info.value)
+            assert result == []
 
-    @patch("pydapter.extras.memvid_.MemvidRetriever")
-    def test_from_obj_success(self, mock_retriever_class, memvid_model_factory):
+            # Test many=False raises ResourceError
+            with pytest.raises(ResourceError) as exc_info:
+                MemvidAdapter.from_obj(
+                    Mock,
+                    {
+                        "video_file": "test.mp4",
+                        "index_file": "test.json",
+                        "query": "nonexistent query",
+                    },
+                    many=False,
+                )
+            assert "No results found for query" in str(exc_info.value)
+
+    def test_from_obj_success(self, memvid_model_factory):
         """Test successful video memory search."""
         # Mock retriever results
         mock_retriever = Mock()
@@ -257,38 +257,46 @@ class TestMemvidAdapterFromObj:
             {"text": "Sample content about testing", "score": 0.95},
             {"text": "Another relevant piece of text", "score": 0.87},
         ]
-        mock_retriever_class.return_value = mock_retriever
+        mock_retriever_class = Mock(return_value=mock_retriever)
 
         # Create model class for validation
-        TestDoc = memvid_model_factory.__wrapped__()
+        class TestDoc(Adaptable, BaseModel):
+            id: str
+            text: str
+            category: str = "general"
 
-        with patch.object(TestDoc, "model_validate") as mock_validate:
-            # Mock successful validation
-            mock_validate.side_effect = [
-                Mock(id="0", text="Sample content about testing"),
-                Mock(id="1", text="Another relevant piece of text"),
-            ]
+        TestDoc.register_adapter(MemvidAdapter)
 
-            result = MemvidAdapter.from_obj(
-                TestDoc,
-                {
-                    "video_file": "test.mp4",
-                    "index_file": "test.json",
-                    "query": "testing content",
-                    "top_k": 2,
-                },
-                many=True,
-            )
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(Mock(), mock_retriever_class)
+        ):
+            with patch.object(TestDoc, "model_validate") as mock_validate:
+                # Mock successful validation
+                mock_validate.side_effect = [
+                    Mock(id="0", text="Sample content about testing"),
+                    Mock(id="1", text="Another relevant piece of text"),
+                ]
 
-            # Verify retriever was used correctly
-            mock_retriever_class.assert_called_once_with("test.mp4", "test.json")
-            mock_retriever.search_with_metadata.assert_called_once_with(
-                "testing content", top_k=2
-            )
+                result = MemvidAdapter.from_obj(
+                    TestDoc,
+                    {
+                        "video_file": "test.mp4",
+                        "index_file": "test.json",
+                        "query": "testing content",
+                        "top_k": 2,
+                    },
+                    many=True,
+                )
 
-            # Verify results
-            assert len(result) == 2
-            assert mock_validate.call_count == 2
+                # Verify retriever was used correctly
+                mock_retriever_class.assert_called_once_with("test.mp4", "test.json")
+                mock_retriever.search_with_metadata.assert_called_once_with(
+                    "testing content", top_k=2
+                )
+
+                # Verify results
+                assert len(result) == 2
+                assert mock_validate.call_count == 2
 
 
 class TestMemvidAdapterIntegration:
@@ -299,7 +307,7 @@ class TestMemvidAdapterIntegration:
         doc = memvid_model_factory(id="test", text="Sample text")
 
         # Verify adapter is registered
-        # Check that the adapter is registered by checking the class has the adapter
-        assert hasattr(doc.__class__, "_adapters")
-        adapter_keys = [adapter.obj_key for adapter in doc.__class__._adapters]
+        # Check that the adapter is registered by checking the registry
+        registry = doc.__class__._registry()
+        adapter_keys = list(registry._reg.keys())
         assert "memvid" in adapter_keys

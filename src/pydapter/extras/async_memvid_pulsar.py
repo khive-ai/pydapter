@@ -9,8 +9,8 @@ import json
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
-from typing import TypeVar, Optional, Dict, Any, List, Callable
 from pathlib import Path
+from typing import Any, Callable, TypeVar
 
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
@@ -27,10 +27,10 @@ class PulsarMemvidMessage(BaseModel):
     message_id: str
     timestamp: datetime
     operation: str  # "encode", "search", "update", "rebuild"
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     memory_id: str
-    source: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    source: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class MemoryOperationResult(BaseModel):
@@ -40,8 +40,8 @@ class MemoryOperationResult(BaseModel):
     message_id: str
     memory_id: str
     operation: str
-    result_data: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    result_data: dict[str, Any] | None = None
+    error: str | None = None
     timestamp: datetime
 
 
@@ -183,7 +183,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
     async def _process_memory_operation(
         cls,
         operation: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         memory_id: str,
         video_file: str,
         index_file: str,
@@ -333,9 +333,9 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
         codec: str = "h265",
         operation: str = "encode",
         async_processing: bool = True,
-        result_topic: Optional[str] = None,
+        result_topic: str | None = None,
         **_kw,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Stream data to Pulsar for distributed video memory creation.
 
@@ -496,7 +496,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
     @classmethod
     async def from_obj(
         cls, subj_cls: type[T], obj: dict, /, *, many=True, **_kw
-    ) -> List[T] | T | None:
+    ) -> list[T] | T | None:
         """
         Consume search queries from Pulsar and return model instances.
 
@@ -539,7 +539,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
     @classmethod
     async def _direct_search(
         cls, subj_cls: type[T], obj: dict, *, many: bool = True
-    ) -> List[T] | T | None:
+    ) -> list[T] | T | None:
         """Perform direct search without Pulsar streaming."""
         if "video_file" not in obj or "index_file" not in obj:
             raise ValidationError(
@@ -608,7 +608,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
     @classmethod
     async def _stream_search(
         cls, subj_cls: type[T], obj: dict, *, many: bool = True
-    ) -> List[T] | T | None:
+    ) -> list[T] | T | None:
         """Consume search queries from Pulsar stream."""
         if "search_topic" not in obj:
             raise ValidationError(
@@ -708,8 +708,8 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
         pulsar_url: str,
         topic: str,
         subscription: str,
-        result_topic: Optional[str] = None,
-        worker_id: Optional[str] = None,
+        result_topic: str | None = None,
+        worker_id: str | None = None,
     ) -> Callable:
         """
         Create a background worker that processes memory operations from Pulsar.
@@ -784,7 +784,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
         return worker
 
     @classmethod
-    async def health_check(cls, pulsar_url: str) -> Dict[str, Any]:
+    async def health_check(cls, pulsar_url: str) -> dict[str, Any]:
         """Check health of Pulsar connection and dependencies."""
         try:
             # Check dependencies

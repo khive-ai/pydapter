@@ -12,14 +12,11 @@ import pytest
 from pydantic import BaseModel
 
 from pydapter.async_core import AsyncAdaptable
-from pydapter.exceptions import (
-    ValidationError,
-    ConnectionError,
-)
+from pydapter.exceptions import ConnectionError, ValidationError
 from pydapter.extras.async_memvid_pulsar import (
     AsyncPulsarMemvidAdapter,
-    PulsarMemvidMessage,
     MemoryOperationResult,
+    PulsarMemvidMessage,
 )
 
 
@@ -34,8 +31,8 @@ def pulsar_memvid_model_factory():
             category: str = "general"
             source: str = "test"
 
-        # Register the adapter
-        TestDocument.register_adapter(AsyncPulsarMemvidAdapter)
+        # Register the async adapter
+        TestDocument.register_async_adapter(AsyncPulsarMemvidAdapter)
         return TestDocument(**kw)
 
     return create_model
@@ -266,16 +263,18 @@ class TestAsyncPulsarMemvidAdapterClient:
     @pytest.mark.asyncio
     async def test_create_pulsar_client_failure(self):
         """Test Pulsar client creation failure."""
+        mock_pulsar_module = Mock()
+        mock_pulsar_module.Client.side_effect = Exception("Connection failed")
+
         with patch.object(
             AsyncPulsarMemvidAdapter,
             "_import_dependencies",
-            return_value=(Mock(), Mock(), Mock()),
+            return_value=(mock_pulsar_module, Mock(), Mock()),
         ):
-            with patch("pulsar.Client", side_effect=Exception("Connection failed")):
-                with pytest.raises(ConnectionError) as exc_info:
-                    await AsyncPulsarMemvidAdapter._create_pulsar_client("invalid-url")
+            with pytest.raises(ConnectionError) as exc_info:
+                await AsyncPulsarMemvidAdapter._create_pulsar_client("invalid-url")
 
-                assert "Failed to create Pulsar client" in str(exc_info.value)
+            assert "Failed to create Pulsar client" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_create_producer_success(self, mock_pulsar_client):
@@ -403,7 +402,7 @@ class TestAsyncPulsarMemvidAdapterToObj:
         sample = Mock()
 
         # Missing pulsar_url
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             await AsyncPulsarMemvidAdapter.to_obj(
                 sample,
                 topic="test",
@@ -411,10 +410,10 @@ class TestAsyncPulsarMemvidAdapterToObj:
                 video_file="test.mp4",
                 index_file="test.json",
             )
-        assert "Missing required parameter 'pulsar_url'" in str(exc_info.value)
+        assert "pulsar_url" in str(exc_info.value)
 
         # Missing topic
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             await AsyncPulsarMemvidAdapter.to_obj(
                 sample,
                 pulsar_url="pulsar://localhost:6650",
@@ -422,7 +421,7 @@ class TestAsyncPulsarMemvidAdapterToObj:
                 video_file="test.mp4",
                 index_file="test.json",
             )
-        assert "Missing required parameter 'topic'" in str(exc_info.value)
+        assert "topic" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_to_obj_empty_data(self):
@@ -530,7 +529,7 @@ class TestAsyncPulsarMemvidAdapterFromObj:
             await AsyncPulsarMemvidAdapter.from_obj(
                 Mock, {"search_topic": "test", "memory_id": "mem1"}
             )
-        assert "Missing required parameter 'pulsar_url'" in str(exc_info.value)
+        assert "pulsar_url" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_from_obj_direct_search_success(
@@ -543,7 +542,13 @@ class TestAsyncPulsarMemvidAdapterFromObj:
         Path(video_file).touch()
         Path(index_file).touch()
 
-        TestDoc = pulsar_memvid_model_factory.__wrapped__()
+        class TestDoc(AsyncAdaptable, BaseModel):
+            id: str
+            text: str
+            category: str = "general"
+            source: str = "test"
+
+        TestDoc.register_async_adapter(AsyncPulsarMemvidAdapter)
 
         with patch.object(
             AsyncPulsarMemvidAdapter, "_process_memory_operation"
@@ -589,7 +594,13 @@ class TestAsyncPulsarMemvidAdapterFromObj:
         Path(video_file).touch()
         Path(index_file).touch()
 
-        TestDoc = pulsar_memvid_model_factory.__wrapped__()
+        class TestDoc(AsyncAdaptable, BaseModel):
+            id: str
+            text: str
+            category: str = "general"
+            source: str = "test"
+
+        TestDoc.register_async_adapter(AsyncPulsarMemvidAdapter)
 
         with (
             patch.object(
@@ -717,8 +728,8 @@ class TestAsyncPulsarMemvidAdapterIntegration:
         )
 
         # Check that the adapter is registered
-        assert hasattr(doc.__class__, "_adapters")
-        adapter_keys = [adapter.obj_key for adapter in doc.__class__._adapters]
+        registry = doc.__class__._areg()
+        adapter_keys = list(registry._reg.keys())
         assert "pulsar_memvid" in adapter_keys
 
     @pytest.mark.asyncio

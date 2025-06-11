@@ -335,7 +335,8 @@ for student in loaded_students:
 
 ## Working with Video Memory (Memvid)
 
-Pydapter now supports video-based AI memory through the Memvid adapter. This allows you to encode text into video files for efficient storage and semantic search:
+Pydapter now supports video-based AI memory through the Memvid adapter. This allows
+you to encode text into video files for efficient storage and semantic search:
 
 ```python
 from pydantic import BaseModel
@@ -353,21 +354,21 @@ class Document(BaseModel):
 # Create some documents
 documents = [
     Document(
-        id="1", 
+        id="1",
         text="Artificial intelligence is transforming how we work with data",
-        category="tech", 
+        category="tech",
         source="blog"
     ),
     Document(
-        id="2", 
+        id="2",
         text="Machine learning algorithms can detect patterns in large datasets",
-        category="tech", 
+        category="tech",
         source="paper"
     ),
     Document(
-        id="3", 
+        id="3",
         text="Natural language processing enables computers to understand text",
-        category="ai", 
+        category="ai",
         source="tutorial"
     ),
 ]
@@ -387,7 +388,7 @@ print(f"Encoded {build_result['encoded_count']} documents into video memory")
 # Search the video memory
 search_config = {
     "video_file": "knowledge_base.mp4",
-    "index_file": "knowledge_index.json", 
+    "index_file": "knowledge_index.json",
     "query": "machine learning algorithms",
     "top_k": 2  # Return top 2 results
 }
@@ -400,7 +401,8 @@ for doc in results:
 
 ### Advanced: Using Pulsar for Streaming Video Memory
 
-For enterprise use cases, you can use the Pulsar-enhanced Memvid adapter for distributed video memory operations:
+For enterprise use cases, you can use the Pulsar-enhanced Memvid adapter for
+distributed video memory operations:
 
 ```python
 import asyncio
@@ -419,22 +421,22 @@ async def demo_streaming_memory():
         index_file="memories/knowledge.json",
         async_processing=False  # Process immediately for demo
     )
-    
+
     print(f"Streaming result: {stream_result['success']}")
-    
+
     # Search with direct query
     search_result = await AsyncPulsarMemvidAdapter.from_obj(
         Document,
         {
             "pulsar_url": "pulsar://localhost:6650",
             "query": "artificial intelligence",
-            "video_file": "memories/knowledge.mp4", 
+            "video_file": "memories/knowledge.mp4",
             "index_file": "memories/knowledge.json",
             "memory_id": "knowledge-base-v1"
         },
         many=True
     )
-    
+
     print(f"Found {len(search_result)} documents via streaming search")
 
 # Run the async demo
@@ -553,3 +555,176 @@ AlembicAdapter.upgrade(
 
 For more details, see the [Migrations documentation](migrations.md) and the
 [Using Migrations tutorial](tutorials/using_migrations.md).
+
+## Video-based AI Memory with Memvid
+
+Pydapter includes support for video-based AI memory through the Memvid adapter,
+which allows you to encode text data into video format for semantic search and
+retrieval.
+
+### Basic Memvid Adapter
+
+The `MemvidAdapter` converts text data to video-based memory and enables
+semantic search across encoded content.
+
+```python
+from pydantic import BaseModel
+from pydapter.core import Adaptable
+from pydapter.extras.memvid_ import MemvidAdapter
+
+class Document(Adaptable, BaseModel):
+    id: str
+    text: str
+    category: str = "general"
+
+# Register the adapter
+Document.register_adapter(MemvidAdapter)
+
+# Create documents
+docs = [
+    Document(
+        id="1",
+        text="Machine learning is transforming how we process data",
+        category="tech"
+    ),
+    Document(
+        id="2",
+        text="Natural language processing enables computers to understand text",
+        category="ai"
+    ),
+    Document(
+        id="3",
+        text="Computer vision allows machines to interpret visual information",
+        category="cv"
+    )
+]
+
+# Build video memory from documents
+result = MemvidAdapter.to_obj(
+    docs,
+    video_file="knowledge_base.mp4",
+    index_file="knowledge_index.json",
+    chunk_size=512,
+    overlap=50,
+    codec="h265"
+)
+print(f"Encoded {result['encoded_count']} documents")
+print(f"Created {result['chunks']} chunks across {result['frames']} frames")
+
+# Search the video memory
+search_results = MemvidAdapter.from_obj(
+    Document,
+    {
+        "video_file": "knowledge_base.mp4",
+        "index_file": "knowledge_index.json",
+        "query": "machine learning data processing",
+        "top_k": 3
+    },
+    many=True
+)
+
+for doc in search_results:
+    print(f"Found: {doc.text[:50]}...")
+```
+
+### Enterprise Async Pulsar Memvid Adapter
+
+For enterprise applications, the `AsyncPulsarMemvidAdapter` provides streaming
+video memory creation and search through Apache Pulsar.
+
+```python
+import asyncio
+from pydantic import BaseModel
+from pydapter.async_core import AsyncAdaptable
+from pydapter.extras.async_memvid_pulsar import AsyncPulsarMemvidAdapter
+
+class Document(AsyncAdaptable, BaseModel):
+    id: str
+    text: str
+    category: str = "general"
+    source: str = "system"
+
+# Register the async adapter
+Document.register_async_adapter(AsyncPulsarMemvidAdapter)
+
+async def build_distributed_memory():
+    """Build video memory using distributed Pulsar streaming."""
+
+    # Create sample documents
+    docs = [
+        Document(
+            id="doc1",
+            text="Advanced neural networks enable complex pattern recognition",
+            category="deep_learning",
+            source="research"
+        ),
+        Document(
+            id="doc2",
+            text="Transformer architectures revolutionized natural language",
+            category="nlp",
+            source="papers"
+        )
+    ]
+
+    # Stream to Pulsar for async video memory creation
+    result = await AsyncPulsarMemvidAdapter.to_obj(
+        docs,
+        pulsar_url="pulsar://localhost:6650",
+        topic="memory-updates",
+        memory_id="enterprise-kb",
+        video_file="/data/memories/enterprise_kb.mp4",
+        index_file="/data/memories/enterprise_kb.json",
+        async_processing=True  # Process asynchronously
+    )
+
+    print(f"Streaming result: {result}")
+
+    # Search using streaming
+    search_results = await AsyncPulsarMemvidAdapter.from_obj(
+        Document,
+        {
+            "pulsar_url": "pulsar://localhost:6650",
+            "search_topic": "search-queries",
+            "video_file": "/data/memories/enterprise_kb.mp4",
+            "index_file": "/data/memories/enterprise_kb.json",
+            "query": "neural networks pattern recognition",
+            "top_k": 5
+        },
+        many=True
+    )
+
+    return search_results
+
+# Run the async example
+# results = asyncio.run(build_distributed_memory())
+```
+
+### Installation
+
+To use Memvid adapters, install the required dependencies:
+
+```bash
+# For basic Memvid support
+pip install memvid
+
+# For enterprise Pulsar streaming (optional)
+pip install pulsar-client
+```
+
+### Key Features
+
+- **Video-based encoding**: Convert text to searchable video format
+- **Semantic search**: Find similar content using embeddings
+- **Chunking support**: Automatic text chunking with overlap
+- **Multiple codecs**: Support for H.264, H.265, and other formats
+- **Async streaming**: Enterprise-grade processing with Apache Pulsar
+- **Distributed processing**: Scale across multiple workers
+- **Error handling**: Robust error recovery and validation
+
+### Use Cases
+
+- **Knowledge bases**: Build searchable video memories from documents
+- **Content libraries**: Encode and search large text collections
+- **Research databases**: Semantic search across academic papers
+- **Enterprise search**: Distributed text processing and retrieval
+- **AI training data**: Prepare text data for machine learning models
