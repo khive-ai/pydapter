@@ -190,7 +190,9 @@ class TestThreadSafety:
         def worker(worker_id):
             try:
                 for i in range(50):
-                    template = FieldTemplate(str, (FieldMeta(f"worker{worker_id}", f"value{i}"),))
+                    template = FieldTemplate(
+                        str, (FieldMeta(f"worker{worker_id}", f"value{i}"),)
+                    )
                     annotated = template.annotated()
                     results.append((worker_id, annotated))
             except Exception as e:  # noqa: BLE001

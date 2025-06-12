@@ -119,7 +119,9 @@ class TestFieldTemplate:
 
     def test_extract_metadata(self):
         """Test metadata extraction."""
-        tmpl = FieldTemplate(str, (FieldMeta("key1", "value1"), FieldMeta("key2", "value2")))
+        tmpl = FieldTemplate(
+            str, (FieldMeta("key1", "value1"), FieldMeta("key2", "value2"))
+        )
 
         assert tmpl.extract_metadata("key1") == "value1"
         assert tmpl.extract_metadata("key2") == "value2"
@@ -148,7 +150,12 @@ class TestFieldTemplate:
 
     def test_repr_with_attributes(self):
         """Test string representation with attributes."""
-        tmpl = FieldTemplate(int).as_nullable().as_listable().with_validator(lambda x: x > 0)
+        tmpl = (
+            FieldTemplate(int)
+            .as_nullable()
+            .as_listable()
+            .with_validator(lambda x: x > 0)
+        )
 
         repr_str = repr(tmpl)
         assert "nullable" in repr_str
@@ -182,15 +189,15 @@ class TestFieldTemplate:
         # Create template with many metadata items
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            
+
             # Create many metadata items to exceed limit
             metadata_items = tuple(
                 FieldMeta(f"key_{i}", f"value_{i}") for i in range(12)
             )
-            
+
             # This should trigger the warning
             tmpl = FieldTemplate(str, metadata_items)
-            
+
             assert len(w) == 1
             assert "exceeding recommended limit" in str(w[0].message)
 
@@ -320,7 +327,11 @@ class TestEdgeCases:
 
     def test_materialize_cache_eviction_race_condition(self):
         """Test cache eviction race condition handling."""
-        from pydapter.fields.template import _MAX_CACHE_SIZE, FieldTemplate, _annotated_cache
+        from pydapter.fields.template import (
+            _MAX_CACHE_SIZE,
+            FieldTemplate,
+            _annotated_cache,
+        )
 
         # Fill cache to trigger eviction
         original_size = _MAX_CACHE_SIZE

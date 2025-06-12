@@ -390,7 +390,10 @@ class FieldTemplate:
                 actual_type = actual_type | None  # type: ignore
 
             if self.metadata:
-                result = Annotated[actual_type, *self.metadata]  # type: ignore
+                # Python 3.10 doesn't support unpacking in Annotated, so we need to build it differently
+                # We'll use Annotated.__class_getitem__ to build the type dynamically
+                args = [actual_type] + list(self.metadata)
+                result = Annotated.__class_getitem__(tuple(args))  # type: ignore
             else:
                 result = actual_type  # type: ignore[misc]
 
