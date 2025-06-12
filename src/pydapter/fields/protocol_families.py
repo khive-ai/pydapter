@@ -59,8 +59,8 @@ class ProtocolFieldFamilies:
         "embedding": FieldTemplate(
             base_type=list[float],
             description="Vector embedding",
-            default_factory=list,
-            json_schema_extra={"vector_dim": 1536},  # Default OpenAI dimension
+            default=list,
+            json_schema_extra={"vector_dim": 1536},
         ),
     }
 
@@ -74,12 +74,21 @@ class ProtocolFieldFamilies:
         "sha256": FieldTemplate(
             base_type=str,
             description="SHA256 hash of the content",
-        ).as_nullable(),
+            nullable=True,
+        ),
     }
 
     AUDITABLE: dict[str, FieldTemplate] = {
-        "created_by": ID_TEMPLATE.as_nullable(),
-        "updated_by": ID_TEMPLATE.as_nullable(),
+        "created_by": FieldTemplate(
+            base_type=ID_TEMPLATE.base_type,
+            nullable=True,
+            description="ID of the creator",
+        ),
+        "updated_by": FieldTemplate(
+            base_type=ID_TEMPLATE.base_type,
+            nullable=True,
+            description="ID of the last updater",
+        ),
         "version": FieldTemplate(
             base_type=int,
             description="Version number for optimistic locking",
@@ -98,19 +107,25 @@ class ProtocolFieldFamilies:
 
     # Event protocol base fields (combines multiple protocols)
     EVENT_BASE: dict[str, FieldTemplate] = {
-        "id": ID_TEMPLATE.copy(frozen=True),  # Events have frozen IDs
+        "id": ID_TEMPLATE,  # Events have frozen IDs
         "created_at": CREATED_AT_TZ_TEMPLATE,
         "updated_at": UPDATED_AT_TZ_TEMPLATE,
         "event_type": FieldTemplate(
             base_type=str,
             description="Type of the event",
-        ).as_nullable(),
+            nullable=True,
+        ),
         "content": FieldTemplate(
-            base_type=str | dict | None,
+            base_type=dict,  # Use dict as base type, nullable will handle None
             description="Content of the event",
+            nullable=True,
             default=None,
         ),
-        "request": JSON_TEMPLATE.copy(description="Request parameters"),
+        "request": FieldTemplate(
+            base_type=JSON_TEMPLATE.base_type,
+            description="Request parameters",
+            default=dict,
+        ),
     }
 
     # Complete Event protocol fields (all protocols combined)
@@ -126,7 +141,7 @@ class ProtocolFieldFamilies:
 _EXECUTION_TEMPLATE = FieldTemplate(
     base_type=Execution,
     description="Execution details",
-    default_factory=Execution,
+    default=Execution,
 )
 
 # Update the INVOKABLE family

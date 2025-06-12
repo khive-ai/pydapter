@@ -50,10 +50,10 @@ from pydapter.fields.protocol_families import (
     create_protocol_model,
 )
 from pydapter.fields.template import FieldTemplate
+from pydapter.fields.types import Field  # Deprecated - kept for backwards compatibility
 from pydapter.fields.types import (
     ID,
     Embedding,
-    Field,
     Metadata,
     Undefined,
     UndefinedType,
