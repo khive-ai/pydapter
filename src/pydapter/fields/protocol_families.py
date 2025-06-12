@@ -1,10 +1,21 @@
 """Protocol Field Families - Field templates for protocol integration.
 
+DEPRECATED: This module is deprecated in favor of trait_families.py.
+Please use pydapter.fields.trait_families instead.
+
 This module provides field families that correspond to pydapter protocols,
 enabling easy creation of models that implement specific protocol interfaces.
 """
 
 from __future__ import annotations
+
+import warnings
+
+warnings.warn(
+    "protocol_families module is deprecated. Use pydapter.fields.trait_families instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 from typing import TYPE_CHECKING
 
