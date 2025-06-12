@@ -11,9 +11,9 @@ import threading
 from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Self
+from typing import Annotated, Any
 
-from typing_extensions import override
+from typing_extensions import Self, override
 
 from pydapter.exceptions import ValidationError
 
