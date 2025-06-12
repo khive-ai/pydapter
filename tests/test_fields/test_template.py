@@ -196,7 +196,7 @@ class TestFieldTemplate:
             )
 
             # This should trigger the warning
-            tmpl = FieldTemplate(str, metadata_items)
+            FieldTemplate(str, metadata_items)
 
             assert len(w) == 1
             assert "exceeding recommended limit" in str(w[0].message)
