@@ -5,8 +5,16 @@ Comprehensive Pydapter Benchmark Script
 This script benchmarks various high-level functionalities of pydapter.
 Run this on different versions and collect the results.
 
+Version Compatibility:
+- 0.2.x: Field class, basic adapters
+- 0.3.0-0.3.2: FieldTemplate with method chaining
+- 0.3.3+: FieldTemplate with kwargs, traits system
+
+The script automatically detects available features and runs appropriate benchmarks
+to ensure fair comparison across versions.
+
 Usage:
-    python comprehensive_benchmark.py [--output results.json]
+    python comprehensive_benchmark.py [--output results.json] [--iterations 5000]
 """
 
 import time
@@ -67,14 +75,45 @@ except ImportError as e:
     sys.exit(1)
 
 
+def format_time(value: float, unit: str) -> str:
+    """Format time value with appropriate precision based on unit."""
+    if unit == "ns":
+        if value < 10:
+            return f"{value:.1f}"
+        else:
+            return f"{value:.0f}"
+    elif unit == "μs":
+        if value < 10:
+            return f"{value:.2f}"
+        elif value < 100:
+            return f"{value:.1f}"
+        else:
+            return f"{value:.0f}"
+    else:  # ms
+        if value < 10:
+            return f"{value:.3f}"
+        elif value < 100:
+            return f"{value:.2f}"
+        else:
+            return f"{value:.1f}"
+
+
 class BenchmarkRunner:
     """Run comprehensive benchmarks on pydapter"""
     
     def __init__(self, iterations: int = 1000):
         self.iterations = iterations
+        
+        # Detect actual version from package
+        try:
+            import pydapter
+            actual_version = getattr(pydapter, '__version__', PYDAPTER_VERSION)
+        except:
+            actual_version = PYDAPTER_VERSION
+            
         self.results = {
             "metadata": {
-                "pydapter_version": PYDAPTER_VERSION,
+                "pydapter_version": actual_version,
                 "pydantic_version": PYDANTIC_VERSION,
                 "python_version": sys.version,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -84,7 +123,8 @@ class BenchmarkRunner:
                     "has_fieldtemplate": HAS_FIELDTEMPLATE,
                     "has_templates": HAS_TEMPLATES,
                     "has_traits": HAS_TRAITS
-                }
+                },
+                "benchmark_version": "2.0"  # Version of this benchmark script
             },
             "benchmarks": {}
         }
@@ -106,7 +146,22 @@ class BenchmarkRunner:
             start = time.perf_counter()
             func()
             end = time.perf_counter()
-            times.append((end - start) * 1000)  # Convert to ms
+            times.append(end - start)  # Keep in seconds for now
+        
+        # Determine appropriate unit based on median time
+        median_time = statistics.median(times)
+        if median_time < 1e-6:  # Less than 1 microsecond
+            multiplier = 1e9  # Convert to nanoseconds
+            unit = "ns"
+        elif median_time < 1e-3:  # Less than 1 millisecond
+            multiplier = 1e6  # Convert to microseconds
+            unit = "μs"
+        else:  # 1 millisecond or more
+            multiplier = 1e3  # Convert to milliseconds
+            unit = "ms"
+        
+        # Convert all times to the appropriate unit
+        times = [t * multiplier for t in times]
         
         return {
             "mean": statistics.mean(times),
@@ -115,7 +170,8 @@ class BenchmarkRunner:
             "max": max(times),
             "stdev": statistics.stdev(times) if len(times) > 1 else 0,
             "p95": sorted(times)[int(len(times) * 0.95)],
-            "p99": sorted(times)[int(len(times) * 0.99)]
+            "p99": sorted(times)[int(len(times) * 0.99)],
+            "unit": unit
         }
     
     def run_field_benchmarks(self):
@@ -714,12 +770,52 @@ class BenchmarkRunner:
         print("BENCHMARK SUMMARY")
         print("="*60)
         
-        for name, metrics in self.results["benchmarks"].items():
-            print(f"\n{name}:")
-            print(f"  Mean: {metrics['mean']:.3f} ms")
-            print(f"  Median: {metrics['median']:.3f} ms")
-            print(f"  Std Dev: {metrics['stdev']:.3f} ms")
-            print(f"  95th percentile: {metrics['p95']:.3f} ms")
+        # Group benchmarks by category for better readability
+        categories = {
+            "Field Operations": ["field_creation_legacy", "field_creation_chaining", 
+                               "field_creation_kwargs", "field_creation_complex"],
+            "Model Operations": ["model_creation_simple", "model_creation_complex",
+                               "model_creation_templates", "model_instantiation_simple",
+                               "model_instantiation_complex"],
+            "Serialization": ["json_serialize_single", "json_serialize_many",
+                            "json_deserialize_single", "json_deserialize_many",
+                            "csv_serialize_many", "csv_deserialize_many",
+                            "toml_serialize_single", "toml_deserialize_single"],
+            "Validation": ["validation_valid", "validation_invalid"],
+            "Memory": ["memory_many_fields", "memory_large_model"],
+            "Traits": ["trait_enum_access", "trait_registry_creation",
+                      "trait_composition", "trait_like_class"],
+        }
+        
+        # Print by category
+        for category, benchmarks in categories.items():
+            category_has_results = False
+            for bench in benchmarks:
+                if bench in self.results["benchmarks"]:
+                    category_has_results = True
+                    break
+            
+            if category_has_results:
+                print(f"\n{category}:")
+                print("-" * len(category))
+                
+                for bench in benchmarks:
+                    if bench in self.results["benchmarks"]:
+                        metrics = self.results["benchmarks"][bench]
+                        unit = metrics.get('unit', 'ms')
+                        
+                        # Format the name nicely
+                        display_name = bench.replace('_', ' ').title()
+                        if len(display_name) > 30:
+                            display_name = display_name[:27] + "..."
+                        
+                        # Print compact format
+                        mean_str = format_time(metrics['mean'], unit)
+                        median_str = format_time(metrics['median'], unit)
+                        stdev_str = format_time(metrics['stdev'], unit)
+                        
+                        print(f"  {display_name:<30} {mean_str:>8} {unit} "
+                              f"(±{stdev_str} {unit}, median: {median_str} {unit})")
 
 
 def main():
@@ -733,8 +829,8 @@ def main():
     parser.add_argument(
         "--iterations",
         type=int,
-        default=1000,
-        help="Number of iterations for each benchmark"
+        default=5000,
+        help="Number of iterations for each benchmark (default: 5000)"
     )
     
     args = parser.parse_args()
