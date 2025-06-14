@@ -7,7 +7,7 @@ LRU caching for fast model generation.
 
 import pytest
 
-from lionagi.traits import (
+from pydapter.traits import (
     Trait,
     TraitComposer,
     TraitComposition,
@@ -15,7 +15,7 @@ from lionagi.traits import (
     create_trait_composition,
     generate_model,
 )
-from lionagi.traits.composer import CompositionError
+from pydapter.traits.composer import CompositionError
 
 
 class TestTraitComposition:
@@ -23,7 +23,9 @@ class TestTraitComposition:
 
     def test_composition_creation(self):
         """Test creating trait compositions."""
-        composition = TraitComposition(traits=frozenset([Trait.IDENTIFIABLE, Trait.TEMPORAL]))
+        composition = TraitComposition(
+            traits=frozenset([Trait.IDENTIFIABLE, Trait.TEMPORAL])
+        )
 
         assert Trait.IDENTIFIABLE in composition.traits
         assert Trait.TEMPORAL in composition.traits
@@ -181,7 +183,9 @@ class TestTraitComposer:
 
     def test_model_generation_multiple_traits(self):
         """Test generating model with multiple traits."""
-        composition = TraitComposition(traits=frozenset([Trait.IDENTIFIABLE, Trait.TEMPORAL]))
+        composition = TraitComposition(
+            traits=frozenset([Trait.IDENTIFIABLE, Trait.TEMPORAL])
+        )
 
         model_class = self.composer.generate_model(composition)
 

@@ -7,8 +7,8 @@ functionality.
 
 import pytest
 
-from lionagi.traits import Trait, TraitRegistry
-from lionagi.traits.protocols import Identifiable
+from pydapter.traits import Trait, TraitRegistry
+from pydapter.traits.protocols import Identifiable
 
 
 class TestTraitRegistry:
@@ -162,7 +162,9 @@ class TestTraitRegistry:
         self.registry.register_trait(ImplTestClass, Trait.IDENTIFIABLE)
 
         # Get implementation definition
-        impl_def = self.registry.get_implementation_definition(Trait.IDENTIFIABLE, ImplTestClass)
+        impl_def = self.registry.get_implementation_definition(
+            Trait.IDENTIFIABLE, ImplTestClass
+        )
 
         assert impl_def is not None
         assert impl_def.trait == Trait.IDENTIFIABLE
@@ -193,7 +195,9 @@ class TestTraitRegistry:
         assert len(missing) == 0
 
         # Test validation with requirements
-        is_valid, missing = self.registry.validate_dependencies(NoTraitsClass, {Trait.IDENTIFIABLE})
+        is_valid, missing = self.registry.validate_dependencies(
+            NoTraitsClass, {Trait.IDENTIFIABLE}
+        )
         assert is_valid is True  # No dependencies defined for Identifiable
         assert len(missing) == 0
 
@@ -320,7 +324,10 @@ class TestTraitRegistry:
 
         # The current implementation correctly allows local trait on external type
         # (because our traits are always local)
-        assert self.registry._validate_orphan_rule(ExternalType, Trait.IDENTIFIABLE) is True
+        assert (
+            self.registry._validate_orphan_rule(ExternalType, Trait.IDENTIFIABLE)
+            is True
+        )
 
         # Test the conceptual orphan rule logic
         # In a hypothetical scenario where both trait and type are external:
@@ -336,7 +343,9 @@ class TestTraitRegistry:
         # Verify that local trait + external type is allowed (current behavior)
         local_trait_is_local = True
         orphan_rule_passes = external_type_is_local or local_trait_is_local
-        assert orphan_rule_passes, "Orphan rule should allow local trait on external type"
+        assert orphan_rule_passes, (
+            "Orphan rule should allow local trait on external type"
+        )
 
     def test_failed_registration_cleanup(self):
         """Test cleanup after failed registration."""
@@ -367,10 +376,15 @@ class TestTraitRegistry:
             __module__ = "external.package"
 
         # Local type with local trait should pass
-        assert self.registry._validate_orphan_rule(LocalType, Trait.IDENTIFIABLE) is True
+        assert (
+            self.registry._validate_orphan_rule(LocalType, Trait.IDENTIFIABLE) is True
+        )
 
         # External type with local trait should also pass (trait is local)
-        assert self.registry._validate_orphan_rule(ExternalType, Trait.IDENTIFIABLE) is True
+        assert (
+            self.registry._validate_orphan_rule(ExternalType, Trait.IDENTIFIABLE)
+            is True
+        )
 
     def test_get_implementation_definition(self):
         """Test getting implementation-specific definition."""
@@ -386,7 +400,9 @@ class TestTraitRegistry:
 
         self.registry.register_trait(TestImpl, Trait.IDENTIFIABLE)
 
-        definition = self.registry.get_implementation_definition(Trait.IDENTIFIABLE, TestImpl)
+        definition = self.registry.get_implementation_definition(
+            Trait.IDENTIFIABLE, TestImpl
+        )
         assert definition is not None
         assert definition.trait == Trait.IDENTIFIABLE
         assert definition.implementation_type == TestImpl
@@ -407,9 +423,15 @@ class TestTraitRegistry:
             # Missing temporal attributes
             pass
 
-        assert self.registry._validate_trait_implementation(ValidTemporal, Trait.TEMPORAL) is True
         assert (
-            self.registry._validate_trait_implementation(InvalidTemporal, Trait.TEMPORAL) is False
+            self.registry._validate_trait_implementation(ValidTemporal, Trait.TEMPORAL)
+            is True
+        )
+        assert (
+            self.registry._validate_trait_implementation(
+                InvalidTemporal, Trait.TEMPORAL
+            )
+            is False
         )
 
     def test_has_trait_protocol_fallback(self):
@@ -426,7 +448,7 @@ class TestTraitRegistry:
 
     def test_convenience_functions(self):
         """Test module-level convenience functions."""
-        from lionagi.traits.registry import has_trait, implement, register_trait
+        from pydapter.traits.registry import has_trait, implement, register_trait
 
         class ConvenienceTest:
             @property
@@ -460,7 +482,7 @@ class TestTraitRegistry:
 
     def test_implement_decorator_failure(self):
         """Test implement decorator with invalid class."""
-        from lionagi.traits.registry import implement
+        from pydapter.traits.registry import implement
 
         with pytest.raises(ValueError):
 
@@ -471,7 +493,7 @@ class TestTraitRegistry:
 
     def test_as_trait_decorator_success(self):
         """Test as_trait decorator with valid implementation."""
-        from lionagi.traits.registry import as_trait, has_trait
+        from pydapter.traits.registry import as_trait, has_trait
 
         @as_trait(Trait.IDENTIFIABLE, Trait.TEMPORAL)
         class ValidMultiTrait:
@@ -502,7 +524,7 @@ class TestTraitRegistry:
 
     def test_as_trait_decorator_missing_attributes(self):
         """Test as_trait decorator with missing attributes."""
-        from lionagi.traits.registry import as_trait
+        from pydapter.traits.registry import as_trait
 
         with pytest.raises(ValueError) as exc_info:
 
@@ -518,9 +540,9 @@ class TestTraitRegistry:
 
     def test_as_trait_decorator_missing_dependencies(self):
         """Test as_trait decorator with missing dependencies."""
-        from lionagi.traits.base import TraitDefinition
-        from lionagi.traits.protocols import Auditable
-        from lionagi.traits.registry import as_trait
+        from pydapter.traits.base import TraitDefinition
+        from pydapter.traits.protocols import Auditable
+        from pydapter.traits.registry import as_trait
 
         # Create new AUDITABLE definition with dependencies
         original_def = self.registry._trait_definitions[Trait.AUDITABLE]
@@ -575,7 +597,7 @@ class TestTraitRegistry:
 
     def test_as_trait_decorator_orphan_rule(self):
         """Test as_trait decorator with orphan rule violation."""
-        from lionagi.traits.registry import as_trait, get_global_registry
+        from pydapter.traits.registry import as_trait, get_global_registry
 
         # Get the global registry and mock its validation
         global_registry = get_global_registry()
@@ -632,7 +654,9 @@ class TestTraitRegistry:
             def id_type(self) -> str:
                 return "test"
 
-        result = self.registry.register_trait_with_validation(TestClass, Trait.IDENTIFIABLE)
+        result = self.registry.register_trait_with_validation(
+            TestClass, Trait.IDENTIFIABLE
+        )
         assert not result.success
         assert result.error_type == "orphan_rule"
         assert "Cannot implement external trait" in result.error_message
@@ -643,7 +667,7 @@ class TestTraitRegistry:
     def test_register_trait_with_validation_no_definition(self):
         """Test register_trait_with_validation with missing trait definition."""
         # Create a mock trait without definition
-        from lionagi.traits import Trait
+        from pydapter.traits import Trait
 
         # Remove definition temporarily
         original_def = self.registry._trait_definitions.get(Trait.HASHABLE)
@@ -708,7 +732,9 @@ class TestTraitRegistry:
         class TestClass:
             pass
 
-        result = self.registry._validate_trait_implementation_detailed(TestClass, Trait.HASHABLE)
+        result = self.registry._validate_trait_implementation_detailed(
+            TestClass, Trait.HASHABLE
+        )
         assert not result["valid"]
         assert "No protocol type defined" in result["error"]
 
@@ -779,7 +805,7 @@ class TestTraitRegistry:
 
     def test_as_trait_unexpected_exception(self):
         """Test as_trait decorator with unexpected exception."""
-        from lionagi.traits.registry import as_trait, get_global_registry
+        from pydapter.traits.registry import as_trait, get_global_registry
 
         # Get global registry and mock register to raise unexpected exception
         global_registry = get_global_registry()

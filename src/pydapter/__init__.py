@@ -13,6 +13,7 @@ from .fields import (
     UndefinedType,
     create_model,
 )
+
 # Temporary compatibility layer for protocols -> traits migration
 try:
     from .traits.events import Event, as_event

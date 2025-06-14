@@ -7,8 +7,8 @@ TraitDefinition functionality.
 
 import pytest
 
-from lionagi.traits.base import DEFAULT_TRAIT_DEFINITIONS, Trait, TraitDefinition
-from lionagi.traits.protocols import Identifiable, Temporal
+from pydapter.traits.base import DEFAULT_TRAIT_DEFINITIONS, Trait, TraitDefinition
+from pydapter.traits.protocols import Identifiable, Temporal
 
 
 class TestTraitEnum:
@@ -53,9 +53,24 @@ class TestTraitEnum:
     def test_trait_enum_ordering(self):
         """Test that core traits are properly defined."""
         # Test semantic properties instead of numeric ordering
-        core_traits = {Trait.IDENTIFIABLE, Trait.TEMPORAL, Trait.AUDITABLE, Trait.HASHABLE}
-        behavior_traits = {Trait.OPERABLE, Trait.OBSERVABLE, Trait.VALIDATABLE, Trait.SERIALIZABLE}
-        composition_traits = {Trait.COMPOSABLE, Trait.EXTENSIBLE, Trait.CACHEABLE, Trait.INDEXABLE}
+        core_traits = {
+            Trait.IDENTIFIABLE,
+            Trait.TEMPORAL,
+            Trait.AUDITABLE,
+            Trait.HASHABLE,
+        }
+        behavior_traits = {
+            Trait.OPERABLE,
+            Trait.OBSERVABLE,
+            Trait.VALIDATABLE,
+            Trait.SERIALIZABLE,
+        }
+        composition_traits = {
+            Trait.COMPOSABLE,
+            Trait.EXTENSIBLE,
+            Trait.CACHEABLE,
+            Trait.INDEXABLE,
+        }
         performance_traits = {Trait.LAZY, Trait.STREAMING, Trait.PARTIAL}
         security_traits = {Trait.SECURED, Trait.CAPABILITY_AWARE}
 
@@ -69,7 +84,9 @@ class TestTraitEnum:
         )
         all_actual = set(Trait)
 
-        assert all_expected == all_actual, f"Missing traits: {all_expected - all_actual}"
+        assert all_expected == all_actual, (
+            f"Missing traits: {all_expected - all_actual}"
+        )
 
         # Core traits should be distinct from others
         assert core_traits.isdisjoint(behavior_traits)
@@ -114,7 +131,9 @@ class TestTraitDefinition:
     def test_trait_definition_frozen(self):
         """Test that TraitDefinition is immutable."""
         definition = TraitDefinition(
-            trait=Trait.IDENTIFIABLE, protocol_type=Identifiable, implementation_type=object
+            trait=Trait.IDENTIFIABLE,
+            protocol_type=Identifiable,
+            implementation_type=object,
         )
 
         # Should not be able to modify
@@ -131,7 +150,9 @@ class TestTraitDefinition:
             pass
 
         definition = TraitDefinition(
-            trait=Trait.IDENTIFIABLE, protocol_type=Identifiable, implementation_type=TestImpl
+            trait=Trait.IDENTIFIABLE,
+            protocol_type=Identifiable,
+            implementation_type=TestImpl,
         )
 
         # Weak reference should be alive initially
@@ -190,7 +211,9 @@ class TestTraitDefinition:
     def test_default_values(self):
         """Test that default values are properly set."""
         definition = TraitDefinition(
-            trait=Trait.IDENTIFIABLE, protocol_type=Identifiable, implementation_type=object
+            trait=Trait.IDENTIFIABLE,
+            protocol_type=Identifiable,
+            implementation_type=object,
         )
 
         assert definition.dependencies == frozenset()
@@ -263,7 +286,9 @@ class TestTraitDefinitionPerformance:
     def test_trait_definition_memory_efficiency(self):
         """Test that TraitDefinition uses slots for memory efficiency."""
         definition = TraitDefinition(
-            trait=Trait.IDENTIFIABLE, protocol_type=Identifiable, implementation_type=object
+            trait=Trait.IDENTIFIABLE,
+            protocol_type=Identifiable,
+            implementation_type=object,
         )
 
         # Should not have __dict__ due to slots
@@ -310,7 +335,9 @@ class TestTraitDefinitionPerformance:
 
         for _ in range(1000):
             definition = TraitDefinition(
-                trait=Trait.IDENTIFIABLE, protocol_type=Identifiable, implementation_type=TestClass
+                trait=Trait.IDENTIFIABLE,
+                protocol_type=Identifiable,
+                implementation_type=TestClass,
             )
             assert definition.is_alive
 

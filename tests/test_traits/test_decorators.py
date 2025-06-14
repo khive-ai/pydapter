@@ -6,7 +6,7 @@ This module tests the decorator functionality and CLI introspection tools.
 
 import pytest
 
-from lionagi.traits import Trait, as_trait, implement
+from pydapter.traits import Trait, as_trait, implement
 
 
 class TestImplementDecorator:
@@ -26,7 +26,7 @@ class TestImplementDecorator:
                 return "test"
 
         # Should be registered automatically
-        from lionagi.traits import get_global_registry
+        from pydapter.traits import get_global_registry
 
         registry = get_global_registry()
 
@@ -60,7 +60,7 @@ class TestAsTraitDecorator:
                 return "single"
 
         # Should be registered and have metadata
-        from lionagi.traits import get_global_registry
+        from pydapter.traits import get_global_registry
 
         registry = get_global_registry()
 
@@ -89,7 +89,7 @@ class TestAsTraitDecorator:
             def updated_at(self) -> float:
                 return 0.0
 
-        from lionagi.traits import get_global_registry
+        from pydapter.traits import get_global_registry
 
         registry = get_global_registry()
 
@@ -226,7 +226,7 @@ class TestDecoratorMetadata:
             def updated_at(self) -> float:
                 return 0.0
 
-        from lionagi.traits import get_global_registry
+        from pydapter.traits import get_global_registry
 
         registry = get_global_registry()
 

@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from lionagi.traits.protocols import (
+from pydapter.traits.protocols import (
     Auditable,
     Cacheable,
     CapabilityAware,
@@ -439,7 +439,9 @@ class TestObservable:
                 self._observers = {}
                 self._next_id = 0
 
-            def subscribe(self, observer: Any, event_types: list[str] | None = None) -> str:
+            def subscribe(
+                self, observer: Any, event_types: list[str] | None = None
+            ) -> str:
                 sub_id = str(self._next_id)
                 self._next_id += 1
                 self._observers[sub_id] = (observer, event_types)
@@ -543,7 +545,8 @@ class TestComposable:
                 if hasattr(other, "name") and self.name == other.name:
                     raise ValueError("Cannot compose with same name")
                 return ValidComposable(
-                    f"{self.name}+{other.name}", max(self._priority, getattr(other, "_priority", 0))
+                    f"{self.name}+{other.name}",
+                    max(self._priority, getattr(other, "_priority", 0)),
                 )
 
             def get_composition_conflicts(self, other: Any) -> list[str]:
@@ -725,10 +728,16 @@ class TestPartial:
                 self._required = ["name", "email"]
 
             def is_complete(self) -> bool:
-                return all(getattr(self, field, None) is not None for field in self._required)
+                return all(
+                    getattr(self, field, None) is not None for field in self._required
+                )
 
             def get_missing_fields(self) -> list[str]:
-                return [field for field in self._required if getattr(self, field, None) is None]
+                return [
+                    field
+                    for field in self._required
+                    if getattr(self, field, None) is None
+                ]
 
             def finalize(self) -> Any:
                 if not self.is_complete():

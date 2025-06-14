@@ -49,6 +49,7 @@ from pydapter.fields.protocol_families import (
     ProtocolFieldFamilies,
     create_protocol_model,
 )
+
 # Import new trait families
 from pydapter.fields.trait_families import (
     TraitFieldFamilies,

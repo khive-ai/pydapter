@@ -7,7 +7,7 @@ that aren't covered by the main test file.
 
 import time
 
-from lionagi.traits.protocols import Hashable, Identifiable, Operable, Temporal
+from pydapter.traits.protocols import Hashable, Identifiable, Operable, Temporal
 
 
 class TestProtocolImplementations:

@@ -151,8 +151,12 @@ class TraitRegistry:
 
         # Core trait tracking
         self._trait_implementations: dict[type[Any], set[Trait]] = {}
-        self._trait_definitions: dict[Trait, TraitDefinition] = DEFAULT_TRAIT_DEFINITIONS.copy()
-        self._implementation_registry: dict[tuple[Trait, type[Any]], TraitDefinition] = {}
+        self._trait_definitions: dict[Trait, TraitDefinition] = (
+            DEFAULT_TRAIT_DEFINITIONS.copy()
+        )
+        self._implementation_registry: dict[
+            tuple[Trait, type[Any]], TraitDefinition
+        ] = {}
 
         # Performance optimization: Cache TraitDefinition objects
         self._definition_cache: dict[tuple[Trait, type[Any]], TraitDefinition] = {}
@@ -180,7 +184,10 @@ class TraitRegistry:
 
         # Orphan rule enforcement
         self._sealed_traits: set[Trait] = set()
-        self._local_modules: set[str] = {"lionagi", "__main__"}  # Modules considered "local"
+        self._local_modules: set[str] = {
+            "lionagi",
+            "__main__",
+        }  # Modules considered "local"
 
         self._initialized = True
 
@@ -278,7 +285,9 @@ class TraitRegistry:
                     result.error_type = "implementation"
                     error_msg = validation_details.get("error", "")
                     if isinstance(error_msg, str):
-                        result.error_message = error_msg or "Invalid trait implementation"
+                        result.error_message = (
+                            error_msg or "Invalid trait implementation"
+                        )
                     else:
                         result.error_message = "Invalid trait implementation"
 
@@ -309,11 +318,15 @@ class TraitRegistry:
                     definition = self._trait_definitions.get(trait)
                     if definition is None:
                         result.error_type = "definition"
-                        result.error_message = f"No definition found for trait {trait.name}"
+                        result.error_message = (
+                            f"No definition found for trait {trait.name}"
+                        )
                         return result
 
                 # Perform the actual registration
-                self._perform_registration(implementation_type, trait, definition, start_time)
+                self._perform_registration(
+                    implementation_type, trait, definition, start_time
+                )
                 registration_time = (time.perf_counter() - start_time) * 1_000_000  # μs
 
                 # Validate performance target (relaxed for current implementation)
@@ -353,7 +366,9 @@ class TraitRegistry:
 
         Performance target: <2μs per registration
         """
-        result = self.register_trait_with_validation(implementation_type, trait, definition)
+        result = self.register_trait_with_validation(
+            implementation_type, trait, definition
+        )
 
         # Log detailed error if registration failed
         if not result.success:
@@ -415,7 +430,9 @@ class TraitRegistry:
 
             if source == "registered":
                 # Simple dict lookup for registered traits
-                return trait in self._trait_implementations.get(implementation_type, set())
+                return trait in self._trait_implementations.get(
+                    implementation_type, set()
+                )
 
             elif source == "protocol":
                 # Fast path: check registry first for performance
@@ -475,7 +492,9 @@ class TraitRegistry:
     def get_dependency_graph(self) -> dict[Trait, set[Trait]]:
         """Get the complete trait dependency graph."""
         with self._registry_lock:
-            return {trait: deps.copy() for trait, deps in self._dependency_graph.items()}
+            return {
+                trait: deps.copy() for trait, deps in self._dependency_graph.items()
+            }
 
     def get_performance_stats(self) -> dict[str, Any]:
         """Get performance and usage statistics."""
@@ -514,7 +533,9 @@ class TraitRegistry:
 
         return cleaned
 
-    def _validate_trait_implementation(self, implementation_type: type[Any], trait: Trait) -> bool:
+    def _validate_trait_implementation(
+        self, implementation_type: type[Any], trait: Trait
+    ) -> bool:
         """Validate that a type properly implements a trait."""
         trait_def = self._trait_definitions.get(trait)
         if not trait_def or not trait_def.protocol_type:
@@ -548,7 +569,14 @@ class TraitRegistry:
         elif trait == Trait.TEMPORAL:
             return ["created_at", "updated_at"]
         elif trait == Trait.AUDITABLE:
-            return ["id", "id_type", "created_at", "updated_at", "created_by", "updated_by"]
+            return [
+                "id",
+                "id_type",
+                "created_at",
+                "updated_at",
+                "created_by",
+                "updated_by",
+            ]
         elif trait == Trait.HASHABLE:
             return ["compute_hash"]
         else:
@@ -580,7 +608,9 @@ class TraitRegistry:
             if required_attrs:
                 # Check for missing attributes
                 missing = [
-                    attr for attr in required_attrs if not hasattr(implementation_type, attr)
+                    attr
+                    for attr in required_attrs
+                    if not hasattr(implementation_type, attr)
                 ]
                 if missing:
                     result["missing_attributes"] = missing
@@ -625,7 +655,9 @@ class TraitRegistry:
 
         return False
 
-    def _validate_orphan_rule(self, implementation_type: type[Any], trait: Trait) -> bool:
+    def _validate_orphan_rule(
+        self, implementation_type: type[Any], trait: Trait
+    ) -> bool:
         """
         Validate orphan rule: either trait or implementation type must be local.
 
@@ -673,7 +705,9 @@ class TraitRegistry:
         with self._registry_lock:
             self._local_modules.add(module_name)
 
-    def _update_dependency_graph(self, trait: Trait, dependencies: frozenset[Trait]) -> None:
+    def _update_dependency_graph(
+        self, trait: Trait, dependencies: frozenset[Trait]
+    ) -> None:
         """Update the dependency graph with new trait dependencies."""
         # Flatten loops: update both forward and reverse dependencies in one pass
         deps = set(dependencies) if dependencies else set()
@@ -716,7 +750,9 @@ class TraitRegistry:
                 if to_remove in self._trait_implementations:
                     del self._trait_implementations[to_remove]
 
-    def _cleanup_failed_registration(self, implementation_type: type[Any], trait: Trait) -> None:
+    def _cleanup_failed_registration(
+        self, implementation_type: type[Any], trait: Trait
+    ) -> None:
         """Clean up state after failed registration."""
         # Capture type_id before acquiring lock
         type_id = None
@@ -748,7 +784,10 @@ class TraitRegistry:
         return min(current_refs / max_refs, 1.0)
 
     def _detect_dependency_cycle(
-        self, trait: Trait, visited: set[Trait] | None = None, path: list[Trait] | None = None
+        self,
+        trait: Trait,
+        visited: set[Trait] | None = None,
+        path: list[Trait] | None = None,
     ) -> list[Trait] | None:
         """
         Detect cycles in trait dependencies using DFS.
@@ -900,7 +939,9 @@ def implement(trait: Trait) -> Callable[[type[Any]], type[Any]]:
             raise OrphanRuleViolation(trait, cls)
 
         if not registry.register_trait(cls, trait):
-            raise ValueError(f"Failed to implement trait {trait.name} on {cls.__qualname__}")
+            raise ValueError(
+                f"Failed to implement trait {trait.name} on {cls.__qualname__}"
+            )
         return cls
 
     return decorator
@@ -945,14 +986,28 @@ def as_trait(*traits: Trait) -> Callable[[type[Any]], type[Any]]:
                 if not result.success:
                     failed_traits.append(trait.name)
                     # Provide detailed error information
-                    if result.error_type == "dependencies" and result.missing_dependencies:
-                        deps_str = ", ".join(t.name for t in result.missing_dependencies)
-                        detailed_errors.append(f"{trait.name}: missing dependencies [{deps_str}]")
-                    elif result.error_type == "implementation" and result.missing_attributes:
+                    if (
+                        result.error_type == "dependencies"
+                        and result.missing_dependencies
+                    ):
+                        deps_str = ", ".join(
+                            t.name for t in result.missing_dependencies
+                        )
+                        detailed_errors.append(
+                            f"{trait.name}: missing dependencies [{deps_str}]"
+                        )
+                    elif (
+                        result.error_type == "implementation"
+                        and result.missing_attributes
+                    ):
                         attrs_str = ", ".join(result.missing_attributes)
-                        detailed_errors.append(f"{trait.name}: missing attributes [{attrs_str}]")
+                        detailed_errors.append(
+                            f"{trait.name}: missing attributes [{attrs_str}]"
+                        )
                     elif result.error_type == "orphan_rule":
-                        orphan_violations.append(f"{trait.name}: {result.error_message}")
+                        orphan_violations.append(
+                            f"{trait.name}: {result.error_message}"
+                        )
                     else:
                         detailed_errors.append(f"{trait.name}: {result.error_message}")
             except OrphanRuleViolation as e:

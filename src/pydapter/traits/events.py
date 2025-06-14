@@ -8,7 +8,6 @@ migrated from the protocols system to the traits system.
 from __future__ import annotations
 
 import asyncio
-import json
 from collections.abc import Callable
 from datetime import datetime, timezone
 from functools import wraps
@@ -22,7 +21,6 @@ from pydapter.fields import (
     EXECUTION,
     ID_FROZEN,
     PARAMS,
-    Embedding,
     create_model,
 )
 from pydapter.fields.template import FieldTemplate
@@ -73,19 +71,19 @@ def as_event(
 ) -> Callable[..., Any]:
     """
     Decorator to convert function calls into Event objects.
-    
+
     This decorator wraps functions to automatically create Event objects
     that capture function calls, arguments, and results.
-    
+
     Args:
         func: The function to decorate
         event_type: Type of event to create (defaults to function name)
         capture_result: Whether to capture the function result
         capture_args: Whether to capture function arguments
-        
+
     Returns:
         Decorated function that creates Event objects
-        
+
     Example:
         >>> @as_event(event_type="calculation")
         ... def add(a: int, b: int) -> int:
@@ -95,6 +93,7 @@ def as_event(
         >>> result
         5
     """
+
     def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -104,17 +103,17 @@ def as_event(
                 "created_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc),
             }
-            
+
             if capture_args:
                 event_data["request"] = {
                     "args": list(args),  # Convert to list for JSON serialization
                     "kwargs": kwargs,
                 }
-            
+
             # Execute function
             try:
                 result = f(*args, **kwargs)
-                
+
                 if capture_result:
                     # Handle different result types
                     if isinstance(result, BaseModel):
@@ -123,19 +122,21 @@ def as_event(
                         event_data["content"] = vars(result)
                     else:
                         event_data["content"] = result
-                    
+
                 # Create event
                 event = Event(**event_data)
-                
+
                 # Store event on result if possible
-                if hasattr(result, "__dict__") and not isinstance(result, (str, int, float, bool, list, dict)):
+                if hasattr(result, "__dict__") and not isinstance(
+                    result, (str, int, float, bool, list, dict)
+                ):
                     try:
                         result.__event__ = event
-                    except:
+                    except (AttributeError, TypeError):
                         pass  # Some objects don't allow attribute assignment
-                    
+
                 return result
-                
+
             except Exception as e:
                 event_data["content"] = {
                     "error": str(e),
@@ -143,7 +144,7 @@ def as_event(
                 }
                 event = Event(**event_data)
                 raise
-                
+
         # Handle async functions
         @wraps(f)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -153,16 +154,16 @@ def as_event(
                 "created_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc),
             }
-            
+
             if capture_args:
                 event_data["request"] = {
                     "args": list(args),
                     "kwargs": kwargs,
                 }
-            
+
             try:
                 result = await f(*args, **kwargs)
-                
+
                 if capture_result:
                     if isinstance(result, BaseModel):
                         event_data["content"] = result.model_dump()
@@ -170,17 +171,19 @@ def as_event(
                         event_data["content"] = vars(result)
                     else:
                         event_data["content"] = result
-                    
+
                 event = Event(**event_data)
-                
-                if hasattr(result, "__dict__") and not isinstance(result, (str, int, float, bool, list, dict)):
+
+                if hasattr(result, "__dict__") and not isinstance(
+                    result, (str, int, float, bool, list, dict)
+                ):
                     try:
                         result.__event__ = event
-                    except:
+                    except (AttributeError, TypeError):
                         pass
-                    
+
                 return result
-                
+
             except Exception as e:
                 event_data["content"] = {
                     "error": str(e),
@@ -188,13 +191,13 @@ def as_event(
                 }
                 event = Event(**event_data)
                 raise
-        
+
         # Return appropriate wrapper
         if asyncio.iscoroutinefunction(f):
             return async_wrapper
         else:
             return wrapper
-    
+
     # Handle being called with or without parentheses
     if func is None:
         return decorator

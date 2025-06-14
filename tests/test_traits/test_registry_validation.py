@@ -15,9 +15,9 @@ from typing import Any
 
 import pytest
 
-from lionagi.traits import Trait, TraitRegistry
-from lionagi.traits.base import TraitDefinition
-from lionagi.traits.registry import PerformanceWarning
+from pydapter.traits import Trait, TraitRegistry
+from pydapter.traits.base import TraitDefinition
+from pydapter.traits.registry import PerformanceWarning
 
 
 class TestRegistryValidation:
@@ -178,7 +178,9 @@ class TestRegistryValidation:
                     # Create unique class for each registration
                     class_name = f"ThreadClass_{thread_id}_{i}"
                     cls_dict = {
-                        "id": property(lambda self, tid=thread_id, idx=i: f"id_{tid}_{idx}"),
+                        "id": property(
+                            lambda self, tid=thread_id, idx=i: f"id_{tid}_{idx}"
+                        ),
                         "id_type": property(lambda self: "test"),
                         "__module__": __name__,
                     }
@@ -287,7 +289,9 @@ class TestRegistryValidation:
 
         # With the new dual-mode has_trait:
         # "registered" mode correctly shows the trait wasn't registered
-        assert not self.registry.has_trait(AuditableClass, Trait.AUDITABLE, source="registered")
+        assert not self.registry.has_trait(
+            AuditableClass, Trait.AUDITABLE, source="registered"
+        )
         # "protocol" mode may still pass if class satisfies the protocol
         # (depends on whether AuditableClass satisfies all Auditable protocol requirements)
 
@@ -298,7 +302,9 @@ class TestRegistryValidation:
         # which is called within the timing window
         original_validate = self.registry._validate_trait_implementation_detailed
 
-        def slow_validate(impl_type: type[Any], trait: Trait) -> dict[str, bool | str | list[str]]:
+        def slow_validate(
+            impl_type: type[Any], trait: Trait
+        ) -> dict[str, bool | str | list[str]]:
             time.sleep(0.0002)  # 200μs delay to exceed 100μs threshold
             return original_validate(impl_type, trait)
 
@@ -315,7 +321,9 @@ class TestRegistryValidation:
 
         try:
             # Force registration to take longer than threshold
-            result = self.registry.register_trait_with_validation(SlowClass, Trait.IDENTIFIABLE)
+            result = self.registry.register_trait_with_validation(
+                SlowClass, Trait.IDENTIFIABLE
+            )
 
             # Since we mocked validation to be slow (200μs > 100μs threshold),
             # the result should have a performance warning

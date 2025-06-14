@@ -2,7 +2,7 @@
 
 from unittest.mock import Mock
 
-from lionagi.traits.protocols import Identifiable, Operable, Temporal
+from pydapter.traits.protocols import Identifiable, Operable, Temporal
 
 
 class TestProtocolMethods:

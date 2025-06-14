@@ -114,7 +114,9 @@ class TraitComposer:
 
     _instance: ClassVar[TraitComposer | None] = None
     _lock: ClassVar[threading.RLock] = threading.RLock()
-    _compose_lock: ClassVar[threading.Lock] = threading.Lock()  # Guard for LRU cache miss path
+    _compose_lock: ClassVar[threading.Lock] = (
+        threading.Lock()
+    )  # Guard for LRU cache miss path
 
     # Initialize class variables
     _protocol_cache: ClassVar[dict[Trait, type[Any]]] = {}
@@ -178,7 +180,9 @@ class TraitComposer:
             if traits not in TraitComposer._validated_compositions:
                 if not composition.is_valid():
                     missing = composition.get_missing_dependencies()
-                    raise CompositionError(f"Missing dependencies: {[t.name for t in missing]}")
+                    raise CompositionError(
+                        f"Missing dependencies: {[t.name for t in missing]}"
+                    )
                 TraitComposer._validated_compositions.add(traits)
 
             # Generate unique class name with hash suffix to avoid collisions
@@ -203,7 +207,9 @@ class TraitComposer:
                     protocol_types.append(protocol_type)
 
             if not protocol_types:
-                raise CompositionError(f"No protocol types found for traits: {sorted_names}")
+                raise CompositionError(
+                    f"No protocol types found for traits: {sorted_names}"
+                )
 
             # Performance optimization 3: Use pre-built empty mixin if only one protocol
             bases: tuple[type[Any], ...]
@@ -228,7 +234,9 @@ class TraitComposer:
             # Performance optimization 4: Batch register traits
             for trait in traits:
                 # Skip validation since we already validated composition
-                registry._trait_implementations.setdefault(model_class, set()).add(trait)
+                registry._trait_implementations.setdefault(model_class, set()).add(
+                    trait
+                )
 
             return model_class
 
@@ -284,7 +292,9 @@ class TraitComposer:
             "cache_size": info.currsize,
             "max_cache_size": info.maxsize,
             "hit_ratio": (
-                info.hits / (info.hits + info.misses) if (info.hits + info.misses) > 0 else 0.0
+                info.hits / (info.hits + info.misses)
+                if (info.hits + info.misses) > 0
+                else 0.0
             ),
             "generations": self._generation_count,
         }

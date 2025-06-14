@@ -10,17 +10,7 @@ enabling easy creation of models that implement specific protocol interfaces.
 from __future__ import annotations
 
 import warnings
-
-warnings.warn(
-    "protocol_families module is deprecated. Use pydapter.fields.trait_families instead.",
-    DeprecationWarning,
-    stacklevel=2
-)
-
 from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pydapter.protocols import ProtocolType
 
 from pydapter.fields.common_templates import (
     CREATED_AT_TEMPLATE,
@@ -33,6 +23,15 @@ from pydapter.fields.common_templates import (
 )
 from pydapter.fields.execution import Execution
 from pydapter.fields.template import FieldTemplate
+
+if TYPE_CHECKING:
+    from pydapter.protocols import ProtocolType
+
+warnings.warn(
+    "protocol_families module is deprecated. Use pydapter.fields.trait_families instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 __all__ = (
     "ProtocolFieldFamilies",

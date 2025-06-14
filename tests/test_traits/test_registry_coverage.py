@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lionagi.traits import Trait, TraitRegistry, as_trait
-from lionagi.traits.registry import (
+from pydapter.traits import Trait, TraitRegistry, as_trait
+from pydapter.traits.registry import (
     OrphanRuleViolation,
     PerformanceWarning,
     ValidationResult,
@@ -74,7 +74,9 @@ class TestRegistryEdgeCases:
             def id_type(self):
                 return "test"
 
-        result = self.registry.register_trait_with_validation(LocalType, Trait.IDENTIFIABLE)
+        result = self.registry.register_trait_with_validation(
+            LocalType, Trait.IDENTIFIABLE
+        )
 
         assert result.success is False
         assert result.error_type == "orphan_rule"
@@ -97,7 +99,9 @@ class TestRegistryEdgeCases:
         original_defs = self.registry._trait_definitions.copy()
         self.registry._trait_definitions.clear()
 
-        result = self.registry.register_trait_with_validation(TestClass, Trait.IDENTIFIABLE)
+        result = self.registry.register_trait_with_validation(
+            TestClass, Trait.IDENTIFIABLE
+        )
 
         assert result.success is False
         assert result.error_type == "implementation"
@@ -114,7 +118,9 @@ class TestRegistryEdgeCases:
 
         # Temporarily modify trait definition
         original_def = self.registry._trait_definitions.get(Trait.IDENTIFIABLE)
-        self.registry._trait_definitions[Trait.IDENTIFIABLE] = MagicMock(protocol_type=None)
+        self.registry._trait_definitions[Trait.IDENTIFIABLE] = MagicMock(
+            protocol_type=None
+        )
 
         result = self.registry._validate_trait_implementation_detailed(
             TestClass, Trait.IDENTIFIABLE
@@ -200,7 +206,9 @@ class TestRegistryEdgeCases:
                 assert result is True
                 # Check if performance warning was issued
                 perf_warnings = [
-                    warning for warning in w if issubclass(warning.category, PerformanceWarning)
+                    warning
+                    for warning in w
+                    if issubclass(warning.category, PerformanceWarning)
                 ]
                 assert len(perf_warnings) > 0
                 assert "exceeding" in str(perf_warnings[0].message)
@@ -237,7 +245,7 @@ class TestRegistryEdgeCases:
     def test_as_trait_decorator_orphan_rule(self):
         """Test as_trait decorator with orphan rule violation."""
         # Get global registry and mock the orphan rule check
-        from lionagi.traits import get_global_registry
+        from pydapter.traits import get_global_registry
 
         global_registry = get_global_registry()
         original_validate = global_registry._validate_orphan_rule
@@ -271,7 +279,7 @@ class TestRegistryEdgeCases:
 
     def test_as_trait_decorator_unexpected_error(self):
         """Test as_trait decorator with unexpected exception."""
-        from lionagi.traits import get_global_registry
+        from pydapter.traits import get_global_registry
 
         # Get the global registry instance
         global_registry = get_global_registry()
@@ -345,7 +353,9 @@ class TestRegistryEdgeCases:
         self.registry.register_trait(BaseClass, Trait.IDENTIFIABLE)
 
         # Test with satisfied dependencies
-        is_valid, missing = self.registry.validate_dependencies(BaseClass, {Trait.IDENTIFIABLE})
+        is_valid, missing = self.registry.validate_dependencies(
+            BaseClass, {Trait.IDENTIFIABLE}
+        )
         assert is_valid is True
         assert len(missing) == 0
 
@@ -361,7 +371,9 @@ class TestRegistryEdgeCases:
         assert result is False  # Not registered
 
         # Protocol mode would check isinstance (but FaultyType doesn't satisfy protocol)
-        result_protocol = self.registry.has_trait(FaultyType, Trait.IDENTIFIABLE, source="protocol")
+        result_protocol = self.registry.has_trait(
+            FaultyType, Trait.IDENTIFIABLE, source="protocol"
+        )
         assert result_protocol is False  # Doesn't satisfy Identifiable protocol
 
     def test_cleanup_failed_registration_partial_state(self):
@@ -373,7 +385,9 @@ class TestRegistryEdgeCases:
         # Simulate partial registration
         type_id = id(TestClass)
         self.registry._trait_implementations[TestClass] = {Trait.IDENTIFIABLE}
-        self.registry._implementation_registry[(Trait.IDENTIFIABLE, TestClass)] = MagicMock()
+        self.registry._implementation_registry[(Trait.IDENTIFIABLE, TestClass)] = (
+            MagicMock()
+        )
         self.registry._type_id_mapping[TestClass] = type_id
         self.registry._weak_references[type_id] = MagicMock()
 
@@ -382,13 +396,16 @@ class TestRegistryEdgeCases:
 
         # Verify cleanup
         assert TestClass not in self.registry._trait_implementations
-        assert (Trait.IDENTIFIABLE, TestClass) not in self.registry._implementation_registry
+        assert (
+            Trait.IDENTIFIABLE,
+            TestClass,
+        ) not in self.registry._implementation_registry
         assert TestClass not in self.registry._type_id_mapping
 
     def test_global_registry_functions(self):
         """Test global registry helper functions."""
         # Test seal_trait
-        from lionagi.traits.registry import seal_trait
+        from pydapter.traits.registry import seal_trait
 
         seal_trait(Trait.SECURED)
         assert Trait.SECURED in get_global_registry()._sealed_traits
@@ -434,7 +451,9 @@ class TestRegistryValidation:
             pass
 
         # Should pass for non-specific traits
-        result = self.registry._validate_trait_implementation(BasicClass, Trait.HASHABLE)
+        result = self.registry._validate_trait_implementation(
+            BasicClass, Trait.HASHABLE
+        )
         assert result is True
 
     def test_validate_trait_implementation_type_error(self):
@@ -446,7 +465,9 @@ class TestRegistryValidation:
         def raise_(exc):
             raise exc
 
-        result = self.registry._validate_trait_implementation(BadClass, Trait.IDENTIFIABLE)
+        result = self.registry._validate_trait_implementation(
+            BadClass, Trait.IDENTIFIABLE
+        )
         assert result is False
 
     def test_missing_attributes_with_methods(self):

@@ -34,7 +34,13 @@ from .composer import (
     create_trait_composition,
     generate_model,
 )
-from .registry import TraitRegistry, as_trait, get_global_registry, implement, seal_trait
+from .registry import (
+    TraitRegistry,
+    as_trait,
+    get_global_registry,
+    implement,
+    seal_trait,
+)
 
 __all__ = [
     "Trait",

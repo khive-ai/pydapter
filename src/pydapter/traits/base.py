@@ -108,7 +108,9 @@ class TraitDefinition:
             pass
 
         object.__setattr__(
-            self, "_weak_impl_ref", weakref.ref(self.implementation_type, cleanup_callback)
+            self,
+            "_weak_impl_ref",
+            weakref.ref(self.implementation_type, cleanup_callback),
         )
 
     @property
