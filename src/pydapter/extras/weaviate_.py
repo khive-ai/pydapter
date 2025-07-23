@@ -108,6 +108,8 @@ class WeaviateAdapter(Adapter[T]):
         class_name: str,
         vector_field: str = "embedding",
         url: str | None = None,
+        many: bool = True,
+        adapt_meth: str = "model_dump",
         **kw,
     ) -> dict[str, Any]:
         """
@@ -179,7 +181,7 @@ class WeaviateAdapter(Adapter[T]):
                     if not hasattr(it, vector_field):
                         raise AdapterValidationError(
                             f"Vector field '{vector_field}' not found in model",
-                            data=it.model_dump(),
+                            data=getattr(it, adapt_meth)(),
                         )
 
                     # Get vector data
@@ -187,11 +189,11 @@ class WeaviateAdapter(Adapter[T]):
                     if not isinstance(vector, list):
                         raise AdapterValidationError(
                             f"Vector field '{vector_field}' must be a list of floats",
-                            data=it.model_dump(),
+                            data=getattr(it, adapt_meth)(),
                         )
 
                     # Exclude id and vector_field from properties
-                    properties = it.model_dump(exclude={vector_field, "id"})
+                    properties = getattr(it, adapt_meth)(exclude={vector_field, "id"})
 
                     # Generate a UUID based on the model's ID if available
                     obj_uuid = None
@@ -248,7 +250,14 @@ class WeaviateAdapter(Adapter[T]):
     # incoming
     @classmethod
     def from_obj(
-        cls, subj_cls: type[T], obj: dict[str, Any], /, *, many: bool = True, **kw
+        cls,
+        subj_cls: type[T],
+        obj: dict[str, Any],
+        /,
+        *,
+        many: bool = True,
+        adapt_meth: str = "model_validate",
+        **kw,
     ) -> T | list[T]:
         """
         Convert from Weaviate objects to Pydantic models.
@@ -339,8 +348,8 @@ class WeaviateAdapter(Adapter[T]):
                 # Convert to model instances
                 try:
                     if many:
-                        return [subj_cls.model_validate(r) for r in data]
-                    return subj_cls.model_validate(data[0])
+                        return [getattr(subj_cls, adapt_meth)(r) for r in data]
+                    return getattr(subj_cls, adapt_meth)(data[0])
                 except ValidationError as e:
                     raise AdapterValidationError(
                         f"Validation error: {e}",

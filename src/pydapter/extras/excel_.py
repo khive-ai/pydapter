@@ -61,6 +61,7 @@ class ExcelAdapter(Adapter[T]):
         /,
         *,
         many: bool = True,
+        adapt_meth: str = "model_validate",
         sheet_name: str | int = 0,
         **kw: Any,
     ) -> T | list[T]:
@@ -71,6 +72,7 @@ class ExcelAdapter(Adapter[T]):
             subj_cls: The Pydantic model class to instantiate
             obj: Excel file path, file-like object, or bytes
             many: If True, convert all rows; if False, convert only first row
+            adapt_meth: Method name to use for model validation (default: "model_validate")
             sheet_name: Sheet name or index to read (default: 0)
             **kw: Additional arguments passed to pandas.read_excel
 
@@ -86,7 +88,9 @@ class ExcelAdapter(Adapter[T]):
                 df = pd.read_excel(io.BytesIO(obj), sheet_name=sheet_name, **kw)
             else:
                 df = pd.read_excel(obj, sheet_name=sheet_name, **kw)
-            return DataFrameAdapter.from_obj(subj_cls, df, many=many)
+            return DataFrameAdapter.from_obj(
+                subj_cls, df, many=many, adapt_meth=adapt_meth
+            )
         except FileNotFoundError as e:
             raise ResourceError(f"File not found: {e}", resource=str(obj)) from e
         except ValueError as e:
@@ -105,11 +109,25 @@ class ExcelAdapter(Adapter[T]):
         subj: T | list[T],
         /,
         *,
-        many=True,
-        sheet_name="Sheet1",
-        **kw,
+        many: bool = True,
+        adapt_meth: str = "model_dump",
+        sheet_name: str = "Sheet1",
+        **kw: Any,
     ) -> bytes:
-        df = DataFrameAdapter.to_obj(subj, many=many)
+        """
+        Convert Pydantic model instances to Excel bytes.
+
+        Args:
+            subj: Single model instance or list of instances
+            many: If True, handle as multiple instances
+            adapt_meth: Method name to use for model dumping (default: "model_dump")
+            sheet_name: Name of the Excel sheet (default: "Sheet1")
+            **kw: Additional arguments passed to DataFrame constructor
+
+        Returns:
+            Excel file content as bytes
+        """
+        df = DataFrameAdapter.to_obj(subj, many=many, adapt_meth=adapt_meth)
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine="xlsxwriter") as wr:
             df.to_excel(wr, sheet_name=sheet_name, index=False)

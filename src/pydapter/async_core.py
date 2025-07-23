@@ -25,11 +25,26 @@ class AsyncAdapter(Protocol[T]):
 
     @classmethod
     async def from_obj(
-        cls, subj_cls: type[T], obj: Any, /, *, many: bool = False, **kw
+        cls,
+        subj_cls: type[T],
+        obj: Any,
+        /,
+        *,
+        many: bool = False,
+        adapt_meth: str = "model_validate",
+        **kw,
     ) -> T | list[T]: ...
 
     @classmethod
-    async def to_obj(cls, subj: T | list[T], /, *, many: bool = False, **kw) -> Any: ...
+    async def to_obj(
+        cls,
+        subj: T | list[T],
+        /,
+        *,
+        many: bool = False,
+        adapt_meth: str = "model_dump",
+        **kw,
+    ) -> Any: ...
 
 
 # ------------------------------------------------------ AsyncAdapterRegistry
@@ -54,9 +69,19 @@ class AsyncAdapterRegistry:
             ) from exc
 
     # convenience helpers
-    async def adapt_from(self, subj_cls: type[T], obj, *, obj_key: str, **kw):
+    async def adapt_from(
+        self,
+        subj_cls: type[T],
+        obj,
+        *,
+        obj_key: str,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         try:
-            result = await self.get(obj_key).from_obj(subj_cls, obj, **kw)
+            result = await self.get(obj_key).from_obj(
+                subj_cls, obj, adapt_meth=adapt_meth, **kw
+            )
             if result is None:
                 raise AdapterError(
                     f"Async adapter {obj_key} returned None", adapter=obj_key
@@ -71,9 +96,11 @@ class AsyncAdapterRegistry:
                 f"Error in async adapt_from for {obj_key}", original_error=str(exc)
             ) from exc
 
-    async def adapt_to(self, subj, *, obj_key: str, **kw):
+    async def adapt_to(
+        self, subj, *, obj_key: str, adapt_meth: str = "model_dump", **kw
+    ):
         try:
-            result = await self.get(obj_key).to_obj(subj, **kw)
+            result = await self.get(obj_key).to_obj(subj, adapt_meth=adapt_meth, **kw)
             if result is None:
                 raise AdapterError(
                     f"Async adapter {obj_key} returned None", adapter=obj_key
@@ -109,8 +136,16 @@ class AsyncAdaptable:
 
     # helpers
     @classmethod
-    async def adapt_from_async(cls, obj, *, obj_key: str, **kw):
-        return await cls._areg().adapt_from(cls, obj, obj_key=obj_key, **kw)
+    async def adapt_from_async(
+        cls, obj, *, obj_key: str, adapt_meth: str = "model_validate", **kw
+    ):
+        return await cls._areg().adapt_from(
+            cls, obj, obj_key=obj_key, adapt_meth=adapt_meth, **kw
+        )
 
-    async def adapt_to_async(self, *, obj_key: str, **kw):
-        return await self._areg().adapt_to(self, obj_key=obj_key, **kw)
+    async def adapt_to_async(
+        self, *, obj_key: str, adapt_meth: str = "model_dump", **kw
+    ):
+        return await self._areg().adapt_to(
+            self, obj_key=obj_key, adapt_meth=adapt_meth, **kw
+        )

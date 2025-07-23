@@ -50,7 +50,14 @@ class Adapter(Protocol[T]):
 
     @classmethod
     def from_obj(
-        cls, subj_cls: type[T], obj: Any, /, *, many: bool = False, **kw: Any
+        cls,
+        subj_cls: type[T],
+        obj: Any,
+        /,
+        *,
+        many: bool = False,
+        adapt_meth: str = "model_validate",
+        **kw: Any,
     ) -> T | list[T]:
         """
         Convert from external format to Pydantic model instances.
@@ -59,6 +66,7 @@ class Adapter(Protocol[T]):
             subj_cls: The Pydantic model class to instantiate
             obj: The source data in the adapter's format
             many: If True, expect/return a list of instances
+            adapt_meth: Method name to use for model validation (default: "model_validate")
             **kw: Additional adapter-specific arguments
 
         Returns:
@@ -67,13 +75,22 @@ class Adapter(Protocol[T]):
         ...
 
     @classmethod
-    def to_obj(cls, subj: T | list[T], /, *, many: bool = False, **kw: Any) -> Any:
+    def to_obj(
+        cls,
+        subj: T | list[T],
+        /,
+        *,
+        many: bool = False,
+        adapt_meth: str = "model_dump",
+        **kw: Any,
+    ) -> Any:
         """
         Convert from Pydantic model instances to external format.
 
         Args:
             subj: Single model instance or list of instances
             many: If True, handle as list of instances
+            adapt_meth: Method name to use for model dumping (default: "model_dump")
             **kw: Additional adapter-specific arguments
 
         Returns:
@@ -147,7 +164,13 @@ class AdapterRegistry:
             ) from exc
 
     def adapt_from(
-        self, subj_cls: type[T], obj: Any, *, obj_key: str, **kw: Any
+        self,
+        subj_cls: type[T],
+        obj: Any,
+        *,
+        obj_key: str,
+        adapt_meth: str = "model_validate",
+        **kw: Any,
     ) -> T | list[T]:
         """
         Convenience method to convert from external format to Pydantic model.
@@ -156,6 +179,7 @@ class AdapterRegistry:
             subj_cls: The Pydantic model class to instantiate
             obj: The source data in the specified format
             obj_key: The key identifying which adapter to use
+            adapt_meth: Method name to use for model validation (default: "model_validate")
             **kw: Additional adapter-specific arguments
 
         Returns:
@@ -166,7 +190,9 @@ class AdapterRegistry:
             AdapterError: If the adaptation process fails
         """
         try:
-            result = self.get(obj_key).from_obj(subj_cls, obj, **kw)
+            result = self.get(obj_key).from_obj(
+                subj_cls, obj, adapt_meth=adapt_meth, **kw
+            )
             if result is None:
                 raise AdapterError(f"Adapter {obj_key} returned None", adapter=obj_key)
             return result
@@ -179,13 +205,16 @@ class AdapterRegistry:
                 f"Error adapting from {obj_key}", original_error=str(exc)
             ) from exc
 
-    def adapt_to(self, subj: Any, *, obj_key: str, **kw: Any) -> Any:
+    def adapt_to(
+        self, subj: Any, *, obj_key: str, adapt_meth: str = "model_dump", **kw: Any
+    ) -> Any:
         """
         Convenience method to convert from Pydantic model to external format.
 
         Args:
             subj: The model instance(s) to convert
             obj_key: The key identifying which adapter to use
+            adapt_meth: Method name to use for model dumping (default: "model_dump")
             **kw: Additional adapter-specific arguments
 
         Returns:
@@ -196,7 +225,7 @@ class AdapterRegistry:
             AdapterError: If the adaptation process fails
         """
         try:
-            result = self.get(obj_key).to_obj(subj, **kw)
+            result = self.get(obj_key).to_obj(subj, adapt_meth=adapt_meth, **kw)
             if result is None:
                 raise AdapterError(f"Adapter {obj_key} returned None", adapter=obj_key)
             return result
@@ -265,29 +294,39 @@ class Adaptable:
         cls._registry().register(adapter_cls)
 
     @classmethod
-    def adapt_from(cls, obj: Any, *, obj_key: str, **kw: Any) -> Any:
+    def adapt_from(
+        cls, obj: Any, *, obj_key: str, adapt_meth: str = "model_validate", **kw: Any
+    ) -> Any:
         """
         Create model instance(s) from external data format.
 
         Args:
             obj: The source data in the specified format
             obj_key: The key identifying which adapter to use
+            adapt_meth: Method name to use for model validation (default: "model_validate")
             **kw: Additional adapter-specific arguments
 
         Returns:
             Model instance(s) created from the source data
         """
-        return cls._registry().adapt_from(cls, obj, obj_key=obj_key, **kw)
+        return cls._registry().adapt_from(
+            cls, obj, obj_key=obj_key, adapt_meth=adapt_meth, **kw
+        )
 
-    def adapt_to(self, *, obj_key: str, **kw: Any) -> Any:
+    def adapt_to(
+        self, *, obj_key: str, adapt_meth: str = "model_dump", **kw: Any
+    ) -> Any:
         """
         Convert this model instance to external data format.
 
         Args:
             obj_key: The key identifying which adapter to use
+            adapt_meth: Method name to use for model dumping (default: "model_dump")
             **kw: Additional adapter-specific arguments
 
         Returns:
             Data in the specified external format
         """
-        return self._registry().adapt_to(self, obj_key=obj_key, **kw)
+        return self._registry().adapt_to(
+            self, obj_key=obj_key, adapt_meth=adapt_meth, **kw
+        )

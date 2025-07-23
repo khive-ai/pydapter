@@ -113,6 +113,8 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
         url: str = "http://localhost:8080",
         vector_field: str = "embedding",
         create_only: bool = False,  # If True, only create the class, don't add objects
+        many: bool = True,
+        adapt_meth: str = "model_dump",
         **kw,
     ) -> dict[str, Any]:
         """
@@ -199,7 +201,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                         if not hasattr(it, vector_field):
                             raise AdapterValidationError(
                                 f"Vector field '{vector_field}' not found in model",
-                                data=it.model_dump(),
+                                data=getattr(it, adapt_meth)(),
                             )
 
                         # Get vector data
@@ -207,11 +209,13 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                         if not isinstance(vector, list):
                             raise AdapterValidationError(
                                 f"Vector field '{vector_field}' must be a list of floats",
-                                data=it.model_dump(),
+                                data=getattr(it, adapt_meth)(),
                             )
 
                         # Prepare payload - exclude id and vector_field from properties
-                        properties = it.model_dump(exclude={vector_field, "id"})
+                        properties = getattr(it, adapt_meth)(
+                            exclude={vector_field, "id"}
+                        )
 
                         # Generate a UUID based on the model's ID if available
                         obj_uuid = None
@@ -279,7 +283,14 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
     # incoming
     @classmethod
     async def from_obj(
-        cls, subj_cls: type[T], obj: dict[str, Any], /, *, many: bool = True, **kw
+        cls,
+        subj_cls: type[T],
+        obj: dict[str, Any],
+        /,
+        *,
+        many: bool = True,
+        adapt_meth: str = "model_validate",
+        **kw,
     ) -> T | list[T]:
         """
         Convert from Weaviate objects to Pydantic models asynchronously.
@@ -477,8 +488,8 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                 # Convert to model instances
                 try:
                     if many:
-                        return [subj_cls.model_validate(r) for r in recs]
-                    return subj_cls.model_validate(recs[0])
+                        return [getattr(subj_cls, adapt_meth)(r) for r in recs]
+                    return getattr(subj_cls, adapt_meth)(recs[0])
                 except ValidationError as e:
                     raise AdapterValidationError(
                         f"Validation error: {e}",

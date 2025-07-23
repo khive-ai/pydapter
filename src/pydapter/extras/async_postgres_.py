@@ -62,7 +62,16 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
     DEFAULT = "postgresql+asyncpg://test:test@localhost/test"
 
     @classmethod
-    async def from_obj(cls, subj_cls, obj: dict, /, **kw):
+    async def from_obj(
+        cls,
+        subj_cls,
+        obj: dict,
+        /,
+        *,
+        many: bool = True,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         try:
             # Use the provided DSN if available, otherwise use the default
             engine_url = kw.get("dsn", cls.DEFAULT)
@@ -76,7 +85,9 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
 
             # Add PostgreSQL-specific error handling
             try:
-                return await super().from_obj(subj_cls, obj, **kw)
+                return await super().from_obj(
+                    subj_cls, obj, many=many, adapt_meth=adapt_meth, **kw
+                )
             except Exception as e:
                 # Check for common PostgreSQL-specific errors
                 error_str = str(e).lower()
@@ -113,7 +124,9 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
             ) from e
 
     @classmethod
-    async def to_obj(cls, subj, /, **kw):
+    async def to_obj(
+        cls, subj, /, *, many: bool = True, adapt_meth: str = "model_dump", **kw
+    ):
         try:
             # Use the provided DSN if available, otherwise use the default
             engine_url = kw.get("dsn", cls.DEFAULT)
@@ -127,7 +140,9 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
 
             # Add PostgreSQL-specific error handling
             try:
-                return await super().to_obj(subj, **kw)
+                return await super().to_obj(
+                    subj, many=many, adapt_meth=adapt_meth, **kw
+                )
             except Exception as e:
                 # Check for common PostgreSQL-specific errors
                 error_str = str(e).lower()

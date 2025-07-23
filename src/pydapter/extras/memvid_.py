@@ -89,6 +89,8 @@ class MemvidAdapter(Adapter[T]):
         chunk_size: int = 1024,
         overlap: int = 32,
         codec: str = "h265",
+        many: bool = True,
+        adapt_meth: str = "model_dump",
         **_kw,
     ) -> dict:
         try:
@@ -110,7 +112,7 @@ class MemvidAdapter(Adapter[T]):
             if not hasattr(items[0], text_field):
                 raise ValidationError(
                     f"Text field '{text_field}' not found in model",
-                    data=items[0].model_dump(),
+                    data=getattr(items[0], adapt_meth)(),
                 )
 
             # Create encoder
@@ -173,7 +175,16 @@ class MemvidAdapter(Adapter[T]):
 
     # incoming - search video memory and return models
     @classmethod
-    def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=True, **_kw):
+    def from_obj(
+        cls,
+        subj_cls: type[T],
+        obj: dict,
+        /,
+        *,
+        many=True,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         try:
             # Validate required parameters
             if "video_file" not in obj:
@@ -246,13 +257,13 @@ class MemvidAdapter(Adapter[T]):
                         }
 
                         # Add any additional fields that match the model
-                        instance = subj_cls.model_validate(model_data)
+                        instance = getattr(subj_cls, adapt_meth)(model_data)
                         instances.append(instance)
                     except PydanticValidationError:
                         # If strict validation fails, try with just the text
                         # This is a fallback for models with different structures
                         minimal_data = {"text": text_content}
-                        instance = subj_cls.model_validate(minimal_data)
+                        instance = getattr(subj_cls, adapt_meth)(minimal_data)
                         instances.append(instance)
 
                 if many:

@@ -138,6 +138,8 @@ class QdrantAdapter(Adapter[T]):
         vector_field="embedding",
         id_field="id",
         url=None,
+        many: bool = True,
+        adapt_meth: str = "model_dump",
         **kw,
     ) -> None:
         try:
@@ -154,14 +156,14 @@ class QdrantAdapter(Adapter[T]):
             if not hasattr(items[0], vector_field):
                 raise AdapterValidationError(
                     f"Vector field '{vector_field}' not found in model",
-                    data=items[0].model_dump(),
+                    data=getattr(items[0], adapt_meth)(),
                 )
 
             # Validate ID field exists
             if not hasattr(items[0], id_field):
                 raise AdapterValidationError(
                     f"ID field '{id_field}' not found in model",
-                    data=items[0].model_dump(),
+                    data=getattr(items[0], adapt_meth)(),
                 )
 
             # Create client
@@ -214,7 +216,7 @@ class QdrantAdapter(Adapter[T]):
                     # the embedding field to be excluded, but other integration tests
                     # expect it to be included. We'll include it for now and handle
                     # the test case separately.
-                    payload = item.model_dump()
+                    payload = getattr(item, adapt_meth)()
 
                     points.append(
                         qd.PointStruct(
@@ -258,7 +260,16 @@ class QdrantAdapter(Adapter[T]):
 
     # incoming
     @classmethod
-    def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=True, **kw):
+    def from_obj(
+        cls,
+        subj_cls: type[T],
+        obj: dict,
+        /,
+        *,
+        many=True,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         try:
             # Validate required parameters
             if "collection" not in obj:
@@ -323,8 +334,8 @@ class QdrantAdapter(Adapter[T]):
             # Convert documents to model instances
             try:
                 if many:
-                    return [subj_cls.model_validate(d) for d in docs]
-                return subj_cls.model_validate(docs[0])
+                    return [getattr(subj_cls, adapt_meth)(d) for d in docs]
+                return getattr(subj_cls, adapt_meth)(docs[0])
             except ValidationError as e:
                 raise AdapterValidationError(
                     f"Validation error: {e}",

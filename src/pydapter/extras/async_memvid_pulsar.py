@@ -342,6 +342,8 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
         operation: str = "encode",
         async_processing: bool = True,
         result_topic: str | None = None,
+        many: bool = True,
+        adapt_meth: str = "model_dump",
         **_kw,
     ) -> dict[str, Any]:
         """
@@ -384,7 +386,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
             if not hasattr(items[0], text_field):
                 raise ValidationError(
                     f"Text field '{text_field}' not found in model",
-                    data=items[0].model_dump(),
+                    data=getattr(items[0], adapt_meth)(),
                 )
 
             # Create Pulsar client and producer
@@ -402,7 +404,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                             data=text,
                         )
 
-                    chunk_data = {"text": text, "metadata": item.model_dump()}
+                    chunk_data = {"text": text, "metadata": getattr(item, adapt_meth)()}
                     chunks.append(chunk_data)
 
                 # Create Pulsar message
@@ -428,7 +430,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                 )
 
                 # Send message to Pulsar
-                message_data = message.model_dump_json().encode("utf-8")
+                message_data = getattr(message, adapt_meth + "_json")().encode("utf-8")
                 msg_id = producer.send(
                     content=message_data,
                     properties={
@@ -460,7 +462,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
 
                     result.update(
                         {
-                            "operation_result": operation_result.model_dump(),
+                            "operation_result": getattr(operation_result, adapt_meth)(),
                             "success": operation_result.success,
                         }
                     )
@@ -471,9 +473,9 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                             client, result_topic
                         )
                         try:
-                            result_data = operation_result.model_dump_json().encode(
-                                "utf-8"
-                            )
+                            result_data = getattr(
+                                operation_result, adapt_meth + "_json"
+                            )().encode("utf-8")
                             result_producer.send(
                                 content=result_data,
                                 properties={
@@ -503,7 +505,14 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
     # incoming - consume search queries from Pulsar and return results
     @classmethod
     async def from_obj(
-        cls, subj_cls: type[T], obj: dict, /, *, many=True, **_kw
+        cls,
+        subj_cls: type[T],
+        obj: dict,
+        /,
+        *,
+        many=True,
+        adapt_meth: str = "model_validate",
+        **_kw,
     ) -> list[T] | T | None:
         """
         Consume search queries from Pulsar and return model instances.
@@ -531,10 +540,14 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
             # Handle direct search vs streaming consumption
             if "query" in obj:
                 # Direct search mode
-                return await cls._direct_search(subj_cls, obj, many=many)
+                return await cls._direct_search(
+                    subj_cls, obj, many=many, adapt_meth=adapt_meth
+                )
             else:
                 # Streaming consumption mode
-                return await cls._stream_search(subj_cls, obj, many=many)
+                return await cls._stream_search(
+                    subj_cls, obj, many=many, adapt_meth=adapt_meth
+                )
 
         except (ConnectionError, QueryError, ResourceError, ValidationError):
             raise
@@ -546,7 +559,12 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
 
     @classmethod
     async def _direct_search(
-        cls, subj_cls: type[T], obj: dict, *, many: bool = True
+        cls,
+        subj_cls: type[T],
+        obj: dict,
+        *,
+        many: bool = True,
+        adapt_meth: str = "model_validate",
     ) -> list[T] | T | None:
         """Perform direct search without Pulsar streaming."""
         if "video_file" not in obj or "index_file" not in obj:
@@ -595,12 +613,12 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                 }
 
                 try:
-                    instance = subj_cls.model_validate(model_data)
+                    instance = getattr(subj_cls, adapt_meth)(model_data)
                     instances.append(instance)
                 except PydanticValidationError:
                     # Fallback for different model structures
                     minimal_data = {"text": text_content}
-                    instance = subj_cls.model_validate(minimal_data)
+                    instance = getattr(subj_cls, adapt_meth)(minimal_data)
                     instances.append(instance)
 
             if many:
@@ -615,7 +633,12 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
 
     @classmethod
     async def _stream_search(
-        cls, subj_cls: type[T], obj: dict, *, many: bool = True
+        cls,
+        subj_cls: type[T],
+        obj: dict,
+        *,
+        many: bool = True,
+        adapt_meth: str = "model_validate",
     ) -> list[T] | T | None:
         """Consume search queries from Pulsar stream."""
         if "search_topic" not in obj:
@@ -676,11 +699,11 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                             model_data = {"id": str(i), "text": text_content}
 
                             try:
-                                instance = subj_cls.model_validate(model_data)
+                                instance = getattr(subj_cls, adapt_meth)(model_data)
                                 instances.append(instance)
                             except PydanticValidationError:
                                 minimal_data = {"text": text_content}
-                                instance = subj_cls.model_validate(minimal_data)
+                                instance = getattr(subj_cls, adapt_meth)(minimal_data)
                                 instances.append(instance)
 
                         if many:

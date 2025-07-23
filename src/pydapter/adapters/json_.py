@@ -60,7 +60,14 @@ class JsonAdapter(Adapter[T]):
     # ---------------- incoming
     @classmethod
     def from_obj(
-        cls, subj_cls: type[T], obj: str | bytes | Path, /, *, many=False, **kw
+        cls,
+        subj_cls: type[T],
+        obj: str | bytes | Path,
+        /,
+        *,
+        many=False,
+        adapt_meth: str = "model_validate",
+        **kw,
     ):
         try:
             # Handle file path
@@ -97,8 +104,8 @@ class JsonAdapter(Adapter[T]):
                         raise AdapterValidationError(
                             "Expected JSON array for many=True", data=data
                         )
-                    return [subj_cls.model_validate(i) for i in data]
-                return subj_cls.model_validate(data)
+                    return [getattr(subj_cls, adapt_meth)(i) for i in data]
+                return getattr(subj_cls, adapt_meth)(data)
             except ValidationError as e:
                 raise AdapterValidationError(
                     f"Validation error: {e}",
@@ -118,7 +125,9 @@ class JsonAdapter(Adapter[T]):
 
     # ---------------- outgoing
     @classmethod
-    def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> str:
+    def to_obj(
+        cls, subj: T | list[T], /, *, many=False, adapt_meth: str = "model_dump", **kw
+    ) -> str:
         try:
             items = subj if isinstance(subj, list) else [subj]
 
@@ -132,7 +141,11 @@ class JsonAdapter(Adapter[T]):
                 "ensure_ascii": kw.pop("ensure_ascii", False),
             }
 
-            payload = [i.model_dump() for i in items] if many else items[0].model_dump()
+            payload = (
+                [getattr(i, adapt_meth)() for i in items]
+                if many
+                else getattr(items[0], adapt_meth)()
+            )
             return json.dumps(payload, **json_kwargs)
 
         except Exception as e:

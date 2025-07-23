@@ -3001,7 +3001,7 @@ wheels = [
 
 [[package]]
 name = "pydapter"
-version = "0.3.1"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "orjson" },
@@ -3176,7 +3176,7 @@ requires-dist = [
     { name = "mutmut", marker = "extra == 'test'", specifier = ">=3.3.0" },
     { name = "neo4j", marker = "extra == 'neo4j'", specifier = ">=5.20" },
     { name = "openpyxl", marker = "extra == 'excel'", specifier = ">=3.0.0" },
-    { name = "orjson", specifier = ">=3.10.18" },
+    { name = "orjson", specifier = ">=3.10.0" },
     { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.0" },
     { name = "pandas-stubs", marker = "extra == 'docs'", specifier = ">=2.2.3" },
     { name = "pgvector", marker = "extra == 'pgvector'", specifier = ">=0.4.0" },

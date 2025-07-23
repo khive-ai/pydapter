@@ -59,14 +59,25 @@ class PostgresAdapter(SQLAdapter[T]):
     DEFAULT = "postgresql+psycopg://user:pass@localhost/db"
 
     @classmethod
-    def from_obj(cls, subj_cls, obj: dict, /, **kw):
+    def from_obj(
+        cls,
+        subj_cls,
+        obj: dict,
+        /,
+        *,
+        many: bool = True,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         try:
             # Set default connection string if not provided
             obj.setdefault("engine_url", cls.DEFAULT)
 
             # Add PostgreSQL-specific error handling
             try:
-                return super().from_obj(subj_cls, obj, **kw)
+                return super().from_obj(
+                    subj_cls, obj, many=many, adapt_meth=adapt_meth, **kw
+                )
             except Exception as e:
                 # Check for common PostgreSQL-specific errors
                 error_str = str(e).lower()
@@ -103,14 +114,16 @@ class PostgresAdapter(SQLAdapter[T]):
             ) from e
 
     @classmethod
-    def to_obj(cls, subj, /, **kw):
+    def to_obj(
+        cls, subj, /, *, many: bool = True, adapt_meth: str = "model_dump", **kw
+    ):
         try:
             # Set default connection string if not provided
             kw.setdefault("engine_url", cls.DEFAULT)
 
             # Add PostgreSQL-specific error handling
             try:
-                return super().to_obj(subj, **kw)
+                return super().to_obj(subj, many=many, adapt_meth=adapt_meth, **kw)
             except Exception as e:
                 # Check for common PostgreSQL-specific errors
                 error_str = str(e).lower()

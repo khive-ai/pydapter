@@ -130,6 +130,8 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
         vector_field="embedding",
         id_field="id",
         url=None,
+        many: bool = True,
+        adapt_meth: str = "model_dump",
         **kw,
     ):
         try:
@@ -146,14 +148,14 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
             if not hasattr(items[0], vector_field):
                 raise AdapterValidationError(
                     f"Vector field '{vector_field}' not found in model",
-                    data=items[0].model_dump(),
+                    data=getattr(items[0], adapt_meth)(),
                 )
 
             # Validate ID field exists
             if not hasattr(items[0], id_field):
                 raise AdapterValidationError(
                     f"ID field '{id_field}' not found in model",
-                    data=items[0].model_dump(),
+                    data=getattr(items[0], adapt_meth)(),
                 )
 
             # Get vector dimension
@@ -192,7 +194,7 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
                         qd.PointStruct(
                             id=getattr(item, id_field),
                             vector=vector,
-                            payload=item.model_dump(exclude={vector_field}),
+                            payload=getattr(item, adapt_meth)(exclude={vector_field}),
                         )
                     )
             except AdapterValidationError:
@@ -229,7 +231,16 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
 
     # incoming
     @classmethod
-    async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=True, **kw):
+    async def from_obj(
+        cls,
+        subj_cls: type[T],
+        obj: dict,
+        /,
+        *,
+        many=True,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         try:
             if "collection" not in obj:
                 raise AdapterValidationError(
@@ -289,8 +300,8 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
             # Convert documents to model instances
             try:
                 if many:
-                    return [subj_cls.model_validate(d) for d in docs]
-                return subj_cls.model_validate(docs[0])
+                    return [getattr(subj_cls, adapt_meth)(d) for d in docs]
+                return getattr(subj_cls, adapt_meth)(docs[0])
             except ValidationError as e:
                 raise AdapterValidationError(
                     f"Validation error: {e}",
