@@ -1,4 +1,4 @@
-# Pydapter: Adapters for Pydantic Models
+# 🔄 Pydapter: Universal Data Adapter Framework
 
 [![codecov](https://codecov.io/github/khive-ai/pydapter/graph/badge.svg?token=FAE47FY26T)](https://codecov.io/github/khive-ai/pydapter)
 [![PyPI version](https://img.shields.io/pypi/v/pydapter.svg)](https://pypi.org/project/pydapter/)
@@ -6,344 +6,319 @@
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 [![License](https://img.shields.io/github/license/ohdearquant/pydapter.svg)](https://github.com/ohdearquant/pydapter/blob/main/LICENSE)
 
-- docs:
-  [https://khive-ai.github.io/pydapter/](https://khive-ai.github.io/pydapter/)
+> **Stop writing custom data integration code.** Pydapter provides one consistent interface to connect any model with any data source.
 
-Pydapter is a lightweight, type-safe adapter toolkit for Pydantic that enables
-seamless conversion between Pydantic models and various data formats and storage
-systems.
+**🔥 What makes Pydapter different:**
+- **Universal Interface**: Same pattern works for SQL, MongoDB, CSV, JSON, Neo4j, vector databases, and more
+- **Beyond Pydantic**: Dynamic method support works with any model framework, not just Pydantic
+- **Production Ready**: Full async support, connection pooling, comprehensive error handling
+- **Type Safe**: Protocol-based design with complete type hints
 
-## Features
+---
 
-- 🔀 **Two-way Conversion**: Transform data between Pydantic models and external
-  formats/sources
-- 🧩 **Adaptable Mixin**: Add conversion capabilities directly to your models
-- 🔄 **Async Support**: Full support for asynchronous operations
-- 📊 **Multiple Formats**: Support for JSON, CSV, TOML, pandas DataFrames,
-  Excel, and more
-- 💾 **Database Integration**: Connect to PostgreSQL, MongoDB, Neo4j, Qdrant,
-  and others
-- 🛡️ **Type-Safe**: Leverage Pydantic's validation for reliable data handling
-- 🚨 **Error Handling**: Comprehensive error types for different failure
-  scenarios
+## ⚡ See the Power: One Interface, Any Data Source
 
-## Installation
-
-```bash
-# Basic installation
-pip install pydapter
-
-# With database support
-pip install "pydapter[postgres,mongo,neo4j,qdrant]"
-
-# With pandas support
-pip install "pydapter[pandas]"
-```
-
-## Quick Start
-
-### Basic Adapter Usage
+The same simple pattern works everywhere:
 
 ```python
 from pydantic import BaseModel
-from typing import List
-from pydapter.adapters.json_ import JsonAdapter
+from pydapter.adapters.json_ import JSONAdapter
+from pydapter.extras.postgres_ import PostgresAdapter
+from pydapter.extras.mongo_ import MongoAdapter
+from pydapter.adapters.csv_ import CsvAdapter
 
-# Define a Pydantic model
 class User(BaseModel):
-    id: int
+    name: str
+    email: str
+    age: int
+
+# Same pattern for JSON
+users = JSONAdapter.from_obj(User, json_data, many=True)
+JSONAdapter.to_obj(users, many=True)
+
+# Same pattern for PostgreSQL
+users = PostgresAdapter.from_obj(User, {
+    "engine_url": "postgresql://localhost/db",
+    "table": "users"
+}, many=True)
+PostgresAdapter.to_obj(users, engine_url="postgresql://localhost/db", table="users", many=True)
+
+# Same pattern for MongoDB
+users = MongoAdapter.from_obj(User, {
+    "url": "mongodb://localhost:27017",
+    "db": "app",
+    "collection": "users"
+}, many=True)
+MongoAdapter.to_obj(users, url="mongodb://localhost:27017", db="app", collection="users", many=True)
+
+# Same pattern for CSV
+users = CsvAdapter.from_obj(User, csv_data, many=True)
+CsvAdapter.to_obj(users, many=True)
+```
+
+**One interface. Any data source. Complete type safety.**
+
+---
+
+## 🚀 Revolutionary: Works with Any Model Framework
+
+Pydapter v1.0.0 introduces **dynamic method support** - use it with any model system:
+
+```python
+# Works with Pydantic (default)
+user = JSONAdapter.from_obj(PydanticUser, json_data)
+
+# Works with custom model classes
+class CustomNode:
+    def from_dict(self, data): ...
+    def to_dict(self): ...
+
+# Specify custom methods
+node = JSONAdapter.from_obj(CustomNode, json_data, adapt_meth="from_dict")
+json_out = JSONAdapter.to_obj(node, adapt_meth="to_dict")
+
+# Works with dataclasses, attrs, or any class with validation methods
+result = PostgresAdapter.from_obj(DataclassModel, db_config, adapt_meth="from_dict")
+```
+
+**Finally, a universal adapter that works with your existing model system.**
+
+---
+
+## 🎯 Complete Data Source Coverage
+
+| **Category** | **Adapters** | **Async Support** |
+|-------------|-------------|------------------|
+| **Databases** | PostgreSQL, MongoDB, Neo4j, SQLite, MySQL | ✅ |
+| **Vector DBs** | Qdrant, Weaviate | ✅ |
+| **Files** | JSON, CSV, TOML, Excel | ✅ |
+| **Data Science** | Pandas DataFrame, Series | ✅ |
+| **Cloud/AI** | Memvid (video memory) | ✅ |
+
+---
+
+## 📦 Installation
+
+```bash
+# Core installation
+pip install pydapter
+
+# Database support
+pip install "pydapter[postgres,mongo,neo4j,qdrant]"
+
+# All features
+pip install "pydapter[all]"
+```
+
+---
+
+## 🔥 Key Features
+
+### 🎯 **Universal Interface**
+- **One Pattern Everywhere**: Master one interface, work with any data source
+- **Consistent API**: Same `from_obj()`/`to_obj()` pattern across all adapters
+- **Batch Operations**: Built-in `many=True` support for collections
+
+### ⚡ **Production Ready**
+- **Full Async Support**: Async versions of all major adapters
+- **Connection Pooling**: Efficient resource management for databases
+- **Comprehensive Error Handling**: Detailed exceptions with context
+- **Type Safety**: Protocol-based design with complete type hints
+
+### 🔧 **Dynamic & Flexible**
+- **Custom Methods**: Use any validation/serialization methods, not just Pydantic
+- **Extensible**: Protocol-based architecture for custom adapters
+- **Framework Agnostic**: Works with Pydantic, dataclasses, attrs, custom classes
+
+### 🛡️ **Enterprise Grade**
+- **Validation**: Rich error reporting with field-level details
+- **Testing**: >90% code coverage with comprehensive integration tests
+- **Documentation**: Complete guides and API reference
+- **Backward Compatible**: Smooth upgrade path with v1.0.0 stability
+
+---
+
+## 🚀 Quick Start
+
+### Basic Usage
+```python
+from pydantic import BaseModel
+from pydapter.adapters.json_ import JSONAdapter
+
+class User(BaseModel):
     name: str
     email: str
     active: bool = True
-    tags: List[str] = []
 
-# Create a user
-user = User(id=1, name="Alice", email="alice@example.com", tags=["admin"])
+# Parse JSON
+user = JSONAdapter.from_obj(User, '{"name": "Alice", "email": "alice@example.com"}')
 
-# Convert to JSON
-json_data = JsonAdapter.to_obj(user)
-print(json_data)
-
-# Convert back to model
-loaded_user = JsonAdapter.from_obj(User, json_data)
-print(loaded_user)
+# Generate JSON
+json_data = JSONAdapter.to_obj(user)
 ```
 
-### Using the Adaptable Mixin
-
+### Database Integration
 ```python
-from pydantic import BaseModel
-from pydapter.core import Adaptable
-from pydapter.adapters.json_ import JsonAdapter
-from pydapter.adapters.csv_ import CsvAdapter
-
-# Define a model with the Adaptable mixin
-class Product(BaseModel, Adaptable):
-    id: int
-    name: str
-    price: float
-    in_stock: bool = True
-
-# Register adapters
-Product.register_adapter(JsonAdapter)
-Product.register_adapter(CsvAdapter)
-
-# Create a product
-product = Product(id=101, name="Laptop", price=999.99)
-
-# Convert to different formats using the mixin methods
-json_data = product.adapt_to(obj_key="json")
-csv_data = product.adapt_to(obj_key="csv")
-
-# Convert back to models
-product_from_json = Product.adapt_from(json_data, obj_key="json")
-```
-
-## Available Adapters
-
-Pydapter includes adapters for various data formats and storage systems:
-
-### File Format Adapters
-
-- `JsonAdapter`: JSON files and strings
-- `CsvAdapter`: CSV files and strings
-- `TomlAdapter`: TOML files and strings
-
-### Data Analysis Adapters
-
-- `DataFrameAdapter`: pandas DataFrame
-- `SeriesAdapter`: pandas Series
-- `ExcelAdapter`: Excel files (requires pandas and openpyxl/xlsxwriter)
-
-### Database Adapters
-
-- `PostgresAdapter` / `AsyncPostgresAdapter`: PostgreSQL
-- `MongoAdapter` / `AsyncMongoAdapter`: MongoDB
-- `Neo4jAdapter`: Neo4j graph database
-- `QdrantAdapter` / `AsyncQdrantAdapter`: Qdrant vector database
-- `SQLAdapter` / `AsyncSQLAdapter`: Generic SQL (SQLAlchemy)
-
-## Detailed Examples
-
-### Working with PostgreSQL
-
-```python
-from pydantic import BaseModel
-from typing import Optional
 from pydapter.extras.postgres_ import PostgresAdapter
 
-class User(BaseModel):
-    id: Optional[int] = None
-    name: str
-    email: str
+# Query database
+users = PostgresAdapter.from_obj(User, {
+    "engine_url": "postgresql://localhost/myapp",
+    "table": "users",
+    "selectors": {"active": True}  # WHERE active = true
+}, many=True)
 
-# Read from database
-users = PostgresAdapter.from_obj(
-    User,
-    {
-        "engine_url": "postgresql+psycopg://user:pass@localhost/dbname",
-        "table": "users",
-        "selectors": {"active": True}
-    },
-    many=True
-)
-
-# Store in database
-user = User(name="Alice", email="alice@example.com")
-PostgresAdapter.to_obj(
-    user,
-    engine_url="postgresql+psycopg://user:pass@localhost/dbname",
+# Insert data
+new_user = User(name="Bob", email="bob@example.com")
+PostgresAdapter.to_obj(new_user,
+    engine_url="postgresql://localhost/myapp",
     table="users"
 )
 ```
 
-### Working with MongoDB
-
+### Async Operations
 ```python
-from pydantic import BaseModel
-from typing import List
-from pydapter.extras.mongo_ import MongoAdapter
+import asyncio
+from pydapter.extras.async_mongo_ import AsyncMongoAdapter
 
-class Product(BaseModel):
-    id: str
-    name: str
-    price: float
-    categories: List[str] = []
-
-# Query from MongoDB
-products = MongoAdapter.from_obj(
-    Product,
-    {
+async def main():
+    # Async MongoDB query
+    users = await AsyncMongoAdapter.from_obj(User, {
         "url": "mongodb://localhost:27017",
-        "db": "shop",
-        "collection": "products",
-        "filter": {"price": {"$lt": 100}}
-    },
-    many=True
-)
+        "db": "myapp",
+        "collection": "users",
+        "filter": {"active": True}
+    }, many=True)
 
-# Store in MongoDB
-product = Product(id="prod1", name="Headphones", price=49.99, categories=["audio", "accessories"])
-MongoAdapter.to_obj(
-    product,
-    url="mongodb://localhost:27017",
-    db="shop",
-    collection="products"
-)
+    # Async insert
+    await AsyncMongoAdapter.to_obj(users,
+        url="mongodb://localhost:27017",
+        db="myapp",
+        collection="users_backup",
+        many=True
+    )
+
+asyncio.run(main())
 ```
 
+---
+
+## 🔥 Advanced Examples
+
 ### Vector Search with Qdrant
-
 ```python
-from pydantic import BaseModel
-from typing import List
-from sentence_transformers import SentenceTransformer
 from pydapter.extras.qdrant_ import QdrantAdapter
+from sentence_transformers import SentenceTransformer
 
-# Load a model to generate embeddings
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 class Document(BaseModel):
     id: str
     title: str
     content: str
-    embedding: List[float] = []
+    embedding: list[float] = []
 
-    def generate_embedding(self):
-        self.embedding = model.encode(self.content).tolist()
-        return self
+# Store document with embedding
+doc = Document(id="1", title="AI Guide", content="Introduction to AI...")
+doc.embedding = model.encode(doc.content).tolist()
 
-# Create and store a document
-doc = Document(
-    id="doc1",
-    title="Vector Databases",
-    content="Vector databases store high-dimensional vectors for similarity search."
-).generate_embedding()
+QdrantAdapter.to_obj(doc, collection="docs", url="http://localhost:6333")
 
-QdrantAdapter.to_obj(
-    doc,
-    collection="documents",
-    url="http://localhost:6333"
-)
-
-# Search for similar documents
-query_vector = model.encode("How do vector databases work?").tolist()
-results = QdrantAdapter.from_obj(
-    Document,
-    {
-        "collection": "documents",
-        "query_vector": query_vector,
-        "top_k": 5,
-        "url": "http://localhost:6333"
-    },
-    many=True
-)
+# Vector similarity search
+query_vector = model.encode("What is artificial intelligence?").tolist()
+results = QdrantAdapter.from_obj(Document, {
+    "collection": "docs",
+    "query_vector": query_vector,
+    "top_k": 5,
+    "url": "http://localhost:6333"
+}, many=True)
 ```
 
 ### Graph Database with Neo4j
-
 ```python
-from pydantic import BaseModel
-from typing import List
 from pydapter.extras.neo4j_ import Neo4jAdapter
 
 class Person(BaseModel):
-    id: str
     name: str
     age: int
+    skills: list[str] = []
 
-# Store a person in Neo4j
-person = Person(id="p1", name="Alice", age=30)
-Neo4jAdapter.to_obj(
-    person,
+# Store in graph database
+person = Person(name="Alice", age=30, skills=["Python", "AI"])
+Neo4jAdapter.to_obj(person,
     url="bolt://localhost:7687",
     auth=("neo4j", "password"),
     label="Person",
-    merge_on="id"
+    merge_on="name"
 )
 
-# Find people by property
-people = Neo4jAdapter.from_obj(
-    Person,
-    {
-        "url": "bolt://localhost:7687",
-        "auth": ("neo4j", "password"),
-        "label": "Person",
-        "where": "n.age > 25"
-    },
-    many=True
-)
+# Cypher-like queries
+developers = Neo4jAdapter.from_obj(Person, {
+    "url": "bolt://localhost:7687",
+    "auth": ("neo4j", "password"),
+    "label": "Person",
+    "where": "'Python' IN n.skills"
+}, many=True)
 ```
 
-## Asynchronous Adapters
-
-Many adapters have asynchronous counterparts:
-
+### Custom Model Integration
 ```python
-import asyncio
-from pydantic import BaseModel
-from pydapter.async_core import AsyncAdaptable
-from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
+from dataclasses import dataclass
+from pydapter.adapters.json_ import JSONAdapter
 
-class User(BaseModel, AsyncAdaptable):
-    id: int
+@dataclass
+class Product:
     name: str
-    email: str
+    price: float
 
-# Register the async adapter
-User.register_async_adapter(AsyncPostgresAdapter)
+    @classmethod
+    def from_dict(cls, data):
+        return cls(**data)
 
-async def main():
-    # Query from database asynchronously
-    users = await User.adapt_from_async(
-        {
-            "engine_url": "postgresql+asyncpg://user:pass@localhost/dbname",
-            "table": "users"
-        },
-        obj_key="async_pg",
-        many=True
-    )
+    def to_dict(self):
+        return {"name": self.name, "price": self.price}
 
-    # Create a user
-    user = User(id=42, name="Bob", email="bob@example.com")
+# Use custom methods instead of Pydantic defaults
+product = JSONAdapter.from_obj(Product,
+    '{"name": "Laptop", "price": 999.99}',
+    adapt_meth="from_dict"  # Custom deserialization method
+)
 
-    # Store in database asynchronously
-    result = await user.adapt_to_async(
-        obj_key="async_pg",
-        engine_url="postgresql+asyncpg://user:pass@localhost/dbname",
-        table="users"
-    )
-
-# Run the async function
-asyncio.run(main())
+json_data = JSONAdapter.to_obj(product,
+    adapt_meth="to_dict"    # Custom serialization method
+)
 ```
 
-## Error Handling
+---
 
-Pydapter provides a rich set of exceptions for detailed error handling:
+## 🛡️ Error Handling
+
+Comprehensive exception hierarchy for debugging:
 
 ```python
 from pydapter.exceptions import (
-    AdapterError, ValidationError, ParseError,
-    ConnectionError, QueryError, ResourceError
+    ValidationError, ParseError, ConnectionError,
+    QueryError, ResourceError
 )
-from pydapter.adapters.json_ import JsonAdapter
 
 try:
-    # Try to parse invalid JSON
-    JsonAdapter.from_obj(User, "{ invalid json }")
-except ParseError as e:
-    print(f"JSON parsing error: {e}")
+    users = PostgresAdapter.from_obj(User, config, many=True)
+except ConnectionError as e:
+    print(f"Database connection failed: {e}")
+except QueryError as e:
+    print(f"Query error: {e}")
+    print(f"Query: {e.query}")
 except ValidationError as e:
-    print(f"Validation error: {e}")
-    if hasattr(e, 'errors') and callable(e.errors):
-        for error in e.errors():
-            print(f"  - {error['loc']}: {error['msg']}")
+    print(f"Data validation failed: {e}")
+    for error in e.errors():
+        print(f"  {error['loc']}: {error['msg']}")
 ```
 
-## Extension
+---
 
-Creating your own adapter is straightforward:
+## 🔧 Create Custom Adapters
+
+Extend pydapter with your own data sources:
 
 ```python
 from typing import TypeVar
@@ -356,57 +331,91 @@ class MyCustomAdapter(Adapter[T]):
     obj_key = "my_format"
 
     @classmethod
-    def from_obj(cls, subj_cls: type[T], obj: Any, /, *, many=False, **kw):
-        # Convert from your format to Pydantic models
-        ...
+    def from_obj(cls, subj_cls: type[T], obj: Any, /, *,
+                 many: bool = False, adapt_meth: str = "model_validate", **kw):
+        # Your deserialization logic
+        data = parse_my_format(obj)
+        if many:
+            return [getattr(subj_cls, adapt_meth)(item) for item in data]
+        return getattr(subj_cls, adapt_meth)(data)
 
     @classmethod
-    def to_obj(cls, subj: T | List[T], /, *, many=False, **kw):
-        # Convert from Pydantic models to your format
-        ...
+    def to_obj(cls, subj: T | list[T], /, *,
+               many: bool = False, adapt_meth: str = "model_dump", **kw):
+        # Your serialization logic
+        items = subj if isinstance(subj, list) else [subj]
+        data = [getattr(item, adapt_meth)() for item in items]
+        return generate_my_format(data)
 ```
 
-## Contributing
+---
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## 📚 Documentation & Resources
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Run the CI script locally to ensure all tests pass (`python scripts/ci.py`)
-4. Commit your changes (`git commit -m 'Add amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+- **📖 [Full Documentation](https://khive-ai.github.io/pydapter/)** - Complete guides and API reference
+- **🚀 [Getting Started Guide](https://khive-ai.github.io/pydapter/getting_started/)** - Step-by-step tutorials
+- **🏗️ [Architecture Guide](https://khive-ai.github.io/pydapter/guides/architecture/)** - Understanding the design
+- **🔧 [Creating Custom Adapters](https://khive-ai.github.io/pydapter/guides/creating-adapters/)** - Extend pydapter
+- **⚡ [Async Patterns](https://khive-ai.github.io/pydapter/guides/async-patterns/)** - Best practices for async code
 
-### Continuous Integration
+---
 
-This project uses a comprehensive CI system that runs linting, type checking,
-unit tests, integration tests, and coverage reporting. The CI script can be run
-locally to ensure your changes pass all checks before submitting a PR:
+## 🤝 Contributing
 
+We welcome contributions! Pydapter is built by the community, for the community.
+
+1. **Fork** the repository
+2. **Create** your feature branch (`git checkout -b feature/amazing-feature`)
+3. **Test** locally (`python scripts/ci.py`)
+4. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+5. **Push** to the branch (`git push origin feature/amazing-feature`)
+6. **Open** a Pull Request
+
+### 🧪 Local Development
 ```bash
 # Run all checks
 python scripts/ci.py
 
-# Skip integration tests (which require Docker)
+# Skip Docker-dependent integration tests
 python scripts/ci.py --skip-integration
 
-# Run only linting and formatting checks
+# Quick lint/format check
 python scripts/ci.py --skip-unit --skip-integration --skip-type-check --skip-coverage
 ```
 
-For more information, see [the CI documentation](docs/ci.md).
+---
 
-## License
+## 🙏 Acknowledgments
 
-This project is licensed under the Apache-2 License - see the LICENSE file for
-details.
-
-## Acknowledgements
-
-- [Pydantic](https://docs.pydantic.dev/) - The data validation library that
-  makes this possible
-- All the amazing database and format libraries this project integrates with
+**Pydapter is built on the shoulders of giants:**
+- **[Pydantic](https://docs.pydantic.dev/)** - The foundation for type-safe data validation
+- **SQLAlchemy, Motor, Neo4j Driver, Qdrant Client** - The excellent libraries we integrate with
+- **Our Contributors** - The amazing developers who make this project possible
 
 ---
 
-Built with ❤️ by the pydapter team
+## 📄 License
+
+Apache-2.0 License - see [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**🔄 Ready to stop writing custom data integration code?**
+
+**Install Pydapter today and experience the power of universal data adaptation.**
+
+```bash
+pip install pydapter
+```
+
+*One interface. Any data source. Complete type safety.*
+
+---
+
+**Built with ❤️ by the Pydapter community**
+
+[⭐ Star us on GitHub](https://github.com/khive-ai/pydapter) • [📖 Read the docs](https://khive-ai.github.io/pydapter/) • [💬 Join discussions](https://github.com/khive-ai/pydapter/discussions)
+
+</div>
