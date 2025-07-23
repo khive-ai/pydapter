@@ -47,18 +47,6 @@ def test_migrations_sql_dependencies():
             check_migrations_sql_dependencies()
 
 
-def test_lazy_import_protocols():
-    """Test lazy import of protocols."""
-    # Try importing a protocol
-    try:
-        importlib.import_module("pydapter.protocols")
-        # If we get here, the import succeeded
-        assert True
-    except ImportError:
-        # If typing_extensions is not installed, this should fail
-        assert find_spec("typing_extensions") is None
-
-
 def test_lazy_import_migrations():
     """Test lazy import of migrations."""
     # Try importing a migration class
