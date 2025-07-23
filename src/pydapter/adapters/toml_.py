@@ -82,7 +82,16 @@ class TomlAdapter(Adapter[T]):
     obj_key = "toml"
 
     @classmethod
-    def from_obj(cls, subj_cls: type[T], obj: str | Path, /, *, many=False, **kw):
+    def from_obj(
+        cls,
+        subj_cls: type[T],
+        obj: str | Path,
+        /,
+        *,
+        many=False,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         try:
             # Handle file path
             if isinstance(obj, Path):
@@ -112,8 +121,10 @@ class TomlAdapter(Adapter[T]):
             # Validate against model
             try:
                 if many:
-                    return [subj_cls.model_validate(x) for x in _ensure_list(parsed)]
-                return subj_cls.model_validate(parsed)
+                    return [
+                        getattr(subj_cls, adapt_meth)(x) for x in _ensure_list(parsed)
+                    ]
+                return getattr(subj_cls, adapt_meth)(parsed)
             except ValidationError as e:
                 raise AdapterValidationError(
                     f"Validation error: {e}",
@@ -132,7 +143,9 @@ class TomlAdapter(Adapter[T]):
             )
 
     @classmethod
-    def to_obj(cls, subj: T | list[T], /, *, many=False, **kw) -> str:
+    def to_obj(
+        cls, subj: T | list[T], /, *, many=False, adapt_meth: str = "model_dump", **kw
+    ) -> str:
         try:
             items = subj if isinstance(subj, list) else [subj]
 
@@ -140,9 +153,9 @@ class TomlAdapter(Adapter[T]):
                 return ""
 
             payload = (
-                {"items": [i.model_dump() for i in items]}
+                {"items": [getattr(i, adapt_meth)() for i in items]}
                 if many
-                else items[0].model_dump()
+                else getattr(items[0], adapt_meth)()
             )
             return toml.dumps(payload, **kw)
 

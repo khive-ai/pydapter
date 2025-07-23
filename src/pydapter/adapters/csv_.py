@@ -49,7 +49,7 @@ class CsvAdapter(Adapter[T]):
         people = CsvAdapter.from_obj(Person, csv_data, many=True)
 
         # Convert to CSV
-        csv_output = CsvAdapter.to_obj(people)
+        csv_output = CsvAdapter.to_obj(people, many=True)
         ```
     """
 
@@ -72,6 +72,7 @@ class CsvAdapter(Adapter[T]):
         /,
         *,
         many: bool = True,
+        adapt_meth: str = "model_validate",
         **kw,
     ):
         try:
@@ -155,7 +156,7 @@ class CsvAdapter(Adapter[T]):
                 result = []
                 for i, row in enumerate(rows):
                     try:
-                        result.append(subj_cls.model_validate(row))
+                        result.append(getattr(subj_cls, adapt_meth)(row))
                     except ValidationError as e:
                         raise AdapterValidationError(
                             f"Validation error in row {i + 1}: {e}",
@@ -190,7 +191,8 @@ class CsvAdapter(Adapter[T]):
         subj: T | list[T],
         /,
         *,
-        many: bool = True,
+        many: bool = False,
+        adapt_meth: str = "model_dump",
         **kw,
     ) -> str:
         try:
@@ -204,7 +206,7 @@ class CsvAdapter(Adapter[T]):
             # Sanitize any string values to remove NULL bytes
             sanitized_items = []
             for item in items:
-                item_dict = item.model_dump()
+                item_dict = getattr(item, adapt_meth)()
                 for key, value in item_dict.items():
                     if isinstance(value, str):
                         item_dict[key] = value.replace("\0", "")
@@ -215,7 +217,7 @@ class CsvAdapter(Adapter[T]):
             csv_kwargs.update(kw)  # User-provided kwargs override defaults
 
             # Get fieldnames from the first item
-            fieldnames = list(items[0].model_dump().keys())
+            fieldnames = list(getattr(items[0], adapt_meth)().keys())
 
             # Extract specific parameters from csv_kwargs
             delimiter = ","
@@ -245,7 +247,7 @@ class CsvAdapter(Adapter[T]):
                 quoting=quoting,
             )
             writer.writeheader()
-            writer.writerows([i.model_dump() for i in items])
+            writer.writerows([getattr(i, adapt_meth)() for i in items])
             return buf.getvalue()
 
         except Exception as e:
