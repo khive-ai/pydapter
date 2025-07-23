@@ -32,9 +32,9 @@ Traditional thinking: Choose a database, design around its constraints, live wit
 
 ```python
 # One model, multiple destinations based on need
-from pydapter import adapt
+from pydantic import BaseModel
 
-class CustomerInsight:
+class CustomerInsight(BaseModel):
     """Your domain model - doesn't care about storage"""
     customer_id: str
     insight_text: str
