@@ -45,7 +45,6 @@ class CustomerInsight:
 PostgresAdapter.to_obj(insight, table="insights")        # Transactional storage
 QdrantAdapter.to_obj(insight, collection="vectors")      # Similarity search
 Neo4jAdapter.to_obj(insight, label="Insight")           # Relationship mapping
-S3Adapter.to_obj(insight, bucket="archive")             # Long-term storage
 ```
 
 **When integration friction disappears, architecture becomes liquid.**
@@ -86,7 +85,10 @@ Whether it's a local JSON file or a distributed database cluster, the pattern ne
 
 ```python
 from pydantic import BaseModel
-from pydapter.extras import PostgresAdapter, QdrantAdapter, Neo4jAdapter
+from pydapter.extras.postgres_ import PostgresAdapter
+from pydapter.extras.qdrant_ import QdrantAdapter
+from pydapter.extras.neo4j_ import Neo4jAdapter
+
 
 class Document(BaseModel):
     id: str
@@ -162,7 +164,6 @@ PostgresAdapter.to_obj(product,
 | **Vector Stores** | Qdrant, Weaviate, Pinecone | ✅ |
 | **Graph Databases** | Neo4j, ArangoDB | ✅ |
 | **Files** | JSON, CSV, Excel, Parquet | ✅ |
-| **Cloud Storage** | S3, GCS, Azure Blob | ✅ |
 
 ---
 
@@ -174,40 +175,6 @@ pip install pydapter
 # Add specific integrations as needed
 pip install "pydapter[postgres,mongo,qdrant]"
 ```
-
----
-
-## Quick Start
-
-### The Universal Pattern
-
-Every adapter follows the same interface:
-
-```python
-from pydantic import BaseModel
-from pydapter.extras import PostgresAdapter, MongoAdapter, QdrantAdapter
-
-class User(BaseModel):
-    name: str
-    email: str
-    metadata: dict = {}
-
-# Read from any source
-users = PostgresAdapter.from_obj(User, {
-    "engine_url": "postgresql://localhost/db",
-    "table": "users"
-}, many=True)
-
-# Write to any destination
-MongoAdapter.to_obj(users,
-    url="mongodb://localhost:27017",
-    db="app",
-    collection="users",
-    many=True
-)
-```
-
-The beauty is in the consistency. Learn once, use everywhere.
 
 ---
 
