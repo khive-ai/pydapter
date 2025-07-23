@@ -93,7 +93,16 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
 
     # incoming
     @classmethod
-    async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=True, **kw):
+    async def from_obj(
+        cls,
+        subj_cls: type[T],
+        obj: dict,
+        /,
+        *,
+        many=True,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         try:
             # Validate required parameters
             if "engine_url" not in obj:
@@ -168,8 +177,8 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
             try:
                 records = [dict(r) for r in rows]
                 if many:
-                    return [subj_cls.model_validate(r) for r in records]
-                return subj_cls.model_validate(records[0])
+                    return [getattr(subj_cls, adapt_meth)(r) for r in records]
+                return getattr(subj_cls, adapt_meth)(records[0])
             except ValidationError as e:
                 raise AdapterValidationError(
                     f"Validation error: {e}",
@@ -194,7 +203,8 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
         *,
         engine_url: str,
         table: str,
-        many=True,
+        many: bool = True,
+        adapt_meth: str = "model_dump",
         **kw,
     ):
         try:
@@ -219,7 +229,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
             if not items:
                 return None  # Nothing to insert
 
-            rows = [i.model_dump() for i in items]
+            rows = [getattr(i, adapt_meth)() for i in items]
 
             # Execute insert
             try:
@@ -242,7 +252,8 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                         meta.bind = conn
                         tbl = cls._table(meta, table)
                         await conn.execute(sa.insert(tbl), rows)
-                        return {"inserted_count": len(rows)}
+                        result = {"inserted_count": len(rows)}
+                        return result if many else result
                     else:
                         raise
             except ResourceError:

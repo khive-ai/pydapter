@@ -54,7 +54,14 @@ class DataFrameAdapter(Adapter[T]):
 
     @classmethod
     def from_obj(
-        cls, subj_cls: type[T], obj: pd.DataFrame, /, *, many: bool = True, **kw: Any
+        cls,
+        subj_cls: type[T],
+        obj: pd.DataFrame,
+        /,
+        *,
+        many: bool = True,
+        adapt_meth: str = "model_validate",
+        **kw: Any,
     ) -> T | list[T]:
         """
         Convert DataFrame to Pydantic model instances.
@@ -63,18 +70,27 @@ class DataFrameAdapter(Adapter[T]):
             subj_cls: The Pydantic model class to instantiate
             obj: The pandas DataFrame to convert
             many: If True, convert all rows; if False, convert only first row
-            **kw: Additional arguments passed to model_validate
+            adapt_meth: Method name to call on subj_cls (default: "model_validate")
+            **kw: Additional arguments passed to the adaptation method
 
         Returns:
             List of model instances if many=True, single instance if many=False
         """
         if many:
-            return [subj_cls.model_validate(r) for r in obj.to_dict(orient="records")]
-        return subj_cls.model_validate(obj.iloc[0].to_dict(), **kw)
+            return [
+                getattr(subj_cls, adapt_meth)(r) for r in obj.to_dict(orient="records")
+            ]
+        return getattr(subj_cls, adapt_meth)(obj.iloc[0].to_dict(), **kw)
 
     @classmethod
     def to_obj(
-        cls, subj: T | list[T], /, *, many: bool = True, **kw: Any
+        cls,
+        subj: T | list[T],
+        /,
+        *,
+        many: bool = True,
+        adapt_meth: str = "model_dump",
+        **kw: Any,
     ) -> pd.DataFrame:
         """
         Convert Pydantic model instances to pandas DataFrame.
@@ -82,13 +98,14 @@ class DataFrameAdapter(Adapter[T]):
         Args:
             subj: Single model instance or list of instances
             many: If True, handle as multiple instances
+            adapt_meth: Method name to call on model instances (default: "model_dump")
             **kw: Additional arguments passed to DataFrame constructor
 
         Returns:
             pandas DataFrame with model data
         """
         items = subj if isinstance(subj, list) else [subj]
-        return pd.DataFrame([i.model_dump() for i in items], **kw)
+        return pd.DataFrame([getattr(i, adapt_meth)() for i in items], **kw)
 
 
 class SeriesAdapter(Adapter[T]):
@@ -128,7 +145,14 @@ class SeriesAdapter(Adapter[T]):
 
     @classmethod
     def from_obj(
-        cls, subj_cls: type[T], obj: pd.Series, /, *, many: bool = False, **kw: Any
+        cls,
+        subj_cls: type[T],
+        obj: pd.Series,
+        /,
+        *,
+        many: bool = False,
+        adapt_meth: str = "model_validate",
+        **kw: Any,
     ) -> T:
         """
         Convert pandas Series to Pydantic model instance.
@@ -137,7 +161,8 @@ class SeriesAdapter(Adapter[T]):
             subj_cls: The Pydantic model class to instantiate
             obj: The pandas Series to convert
             many: Must be False (Series only supports single records)
-            **kw: Additional arguments passed to model_validate
+            adapt_meth: Method name to call on subj_cls (default: "model_validate")
+            **kw: Additional arguments passed to the adaptation method
 
         Returns:
             Single model instance
@@ -147,12 +172,18 @@ class SeriesAdapter(Adapter[T]):
         """
         if many:
             raise ValueError("SeriesAdapter supports single records only.")
-        return subj_cls.model_validate(obj.to_dict(), **kw)
+        return getattr(subj_cls, adapt_meth)(obj.to_dict(), **kw)
 
     @classmethod
     def to_obj(
-        cls, subj: T | list[T], /, *, many: bool = False, **kw: Any
+        cls,
+        subj: T | list[T],
+        /,
+        *,
+        many: bool = False,
+        adapt_meth: str = "model_dump",
+        **kw: Any,
     ) -> pd.Series:
         if many or isinstance(subj, list):
             raise ValueError("SeriesAdapter supports single records only.")
-        return pd.Series(subj.model_dump(), **kw)
+        return pd.Series(getattr(subj, adapt_meth)(), **kw)

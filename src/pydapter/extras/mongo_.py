@@ -118,7 +118,16 @@ class MongoAdapter(Adapter[T]):
 
     # incoming
     @classmethod
-    def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=True, **kw):
+    def from_obj(
+        cls,
+        subj_cls: type[T],
+        obj: dict,
+        /,
+        *,
+        many=True,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         try:
             # Validate required parameters
             if "url" not in obj:
@@ -183,8 +192,8 @@ class MongoAdapter(Adapter[T]):
             # Convert documents to model instances
             try:
                 if many:
-                    return [subj_cls.model_validate(d) for d in docs]
-                return subj_cls.model_validate(docs[0])
+                    return [getattr(subj_cls, adapt_meth)(d) for d in docs]
+                return getattr(subj_cls, adapt_meth)(docs[0])
             except ValidationError as e:
                 raise AdapterValidationError(
                     f"Validation error: {e}",
@@ -202,7 +211,18 @@ class MongoAdapter(Adapter[T]):
 
     # outgoing
     @classmethod
-    def to_obj(cls, subj: T | Sequence[T], /, *, url, db, collection, many=True, **kw):
+    def to_obj(
+        cls,
+        subj: T | Sequence[T],
+        /,
+        *,
+        url,
+        db,
+        collection,
+        many=True,
+        adapt_meth: str = "model_dump",
+        **kw,
+    ):
         try:
             # Validate required parameters
             if not url:
@@ -221,7 +241,7 @@ class MongoAdapter(Adapter[T]):
             if not items:
                 return None  # Nothing to insert
 
-            payload = [i.model_dump() for i in items]
+            payload = [getattr(i, adapt_meth)() for i in items]
 
             # Execute insert
             try:

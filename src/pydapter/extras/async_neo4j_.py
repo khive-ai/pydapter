@@ -118,7 +118,16 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
 
     # incoming
     @classmethod
-    async def from_obj(cls, subj_cls: type[T], obj: dict, /, *, many=True, **kw):
+    async def from_obj(
+        cls,
+        subj_cls: type[T],
+        obj: dict,
+        /,
+        *,
+        many=True,
+        adapt_meth: str = "model_validate",
+        **kw,
+    ):
         """
         Convert from Neo4j nodes to Pydantic models asynchronously.
 
@@ -216,8 +225,8 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                     # Convert rows to model instances
                     try:
                         if many:
-                            return [subj_cls.model_validate(r) for r in rows]
-                        return subj_cls.model_validate(rows[0])
+                            return [getattr(subj_cls, adapt_meth)(r) for r in rows]
+                        return getattr(subj_cls, adapt_meth)(rows[0])
                     except ValidationError as e:
                         raise AdapterValidationError(
                             f"Validation error: {e}",
@@ -262,6 +271,8 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         auth=None,
         label=None,
         merge_on="id",
+        many: bool = True,
+        adapt_meth: str = "model_dump",
         **kw,
     ):
         """
@@ -310,7 +321,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                 try:
                     results = []
                     for it in items:
-                        props = it.model_dump()
+                        props = getattr(it, adapt_meth)()
 
                         # Check if merge_on property exists
                         if merge_on not in props:

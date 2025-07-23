@@ -104,7 +104,8 @@ class SQLAdapter(Adapter[T]):
         obj: dict,
         /,
         *,
-        many=True,
+        many: bool = True,
+        adapt_meth: str = "model_validate",
         **kw,
     ):
         try:
@@ -168,9 +169,10 @@ class SQLAdapter(Adapter[T]):
 
             # Convert rows to model instances
             try:
+                validate_func = getattr(subj_cls, adapt_meth)
                 if many:
-                    return [subj_cls.model_validate(r._mapping) for r in rows]
-                return subj_cls.model_validate(rows[0]._mapping)
+                    return [validate_func(r._mapping) for r in rows]
+                return validate_func(rows[0]._mapping)
             except ValidationError as e:
                 raise AdapterValidationError(
                     f"Validation error: {e}",
@@ -193,7 +195,8 @@ class SQLAdapter(Adapter[T]):
         *,
         engine_url: str,
         table: str,
-        many=True,
+        many: bool = True,
+        adapt_meth: str = "model_dump",
         **kw,
     ) -> dict[str, Any]:
         try:
@@ -232,7 +235,7 @@ class SQLAdapter(Adapter[T]):
             if not items:
                 return {"success": True, "count": 0}  # Nothing to insert
 
-            rows = [i.model_dump() for i in items]
+            rows = [getattr(i, adapt_meth)() for i in items]
 
             # Execute insert or update (upsert)
             try:
