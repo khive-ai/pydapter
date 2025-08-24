@@ -3219,7 +3219,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'lint'", specifier = ">=0.11.11" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'sql'", specifier = ">=2.0" },
     { name = "testcontainers", extras = ["mongodb", "postgres", "qdrant", "weaviate"], marker = "extra == 'test'", specifier = ">=3.7.0" },
-    { name = "toml", specifier = ">=0.10.0" },
+    { name = "toml", specifier = ">=0.8.0" },
     { name = "trio", marker = "extra == 'test'", specifier = ">=0.22.0" },
     { name = "types-toml", marker = "extra == 'docs'", specifier = ">=0.10.8" },
     { name = "weaviate", marker = "extra == 'weaviate'", specifier = ">=0.1.2" },
