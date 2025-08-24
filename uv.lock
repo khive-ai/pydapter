@@ -124,6 +124,18 @@ wheels = [
 ]
 
 [[package]]
+name = "aiosqlite"
+version = "0.21.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/13/7d/8bca2bf9a247c2c5dfeec1d7a5f40db6518f88d314b8bca9da29670d2671/aiosqlite-0.21.0.tar.gz", hash = "sha256:131bb8056daa3bc875608c631c678cda73922a2d4ba8aec373b19f18c17e7aa3", size = 13454, upload-time = "2025-02-03T07:30:16.235Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f5/10/6c25ed6de94c49f88a91fa5018cb4c0f3625f31d5be9f771ebe5cc7cd506/aiosqlite-0.21.0-py3-none-any.whl", hash = "sha256:2549cf4057f95f53dcba16f2b64e8e2791d7e1adedb13197dd8ed77bb226d7d0", size = 15792, upload-time = "2025-02-03T07:30:13.6Z" },
+]
+
+[[package]]
 name = "alembic"
 version = "1.16.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3020,8 +3032,12 @@ dependencies = [
 aiohttp = [
     { name = "aiohttp" },
 ]
+aiosqlite = [
+    { name = "aiosqlite" },
+]
 all = [
     { name = "aiohttp" },
+    { name = "aiosqlite" },
     { name = "alembic" },
     { name = "asyncpg" },
     { name = "email-validator" },
@@ -3162,6 +3178,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", marker = "extra == 'aiohttp'", specifier = ">=3.12.0" },
+    { name = "aiosqlite", marker = "extra == 'aiosqlite'", specifier = ">=0.18.0" },
     { name = "alembic", marker = "extra == 'migrations-sql'", specifier = ">=1.10.0" },
     { name = "anyio", marker = "extra == 'test'", specifier = ">=4.9.0" },
     { name = "asyncpg", marker = "extra == 'postgres'", specifier = ">=0.28" },
@@ -3197,6 +3214,7 @@ requires-dist = [
     { name = "py-spy", marker = "extra == 'performance'", specifier = ">=0.4.0" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydapter", extras = ["aiohttp"], marker = "extra == 'all'" },
+    { name = "pydapter", extras = ["aiosqlite"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["email"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["excel"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["memvid"], marker = "extra == 'memvid-pulsar'" },
@@ -3236,7 +3254,7 @@ requires-dist = [
     { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.10" },
     { name = "xlsxwriter", marker = "extra == 'excel'", specifier = ">=3.2.5" },
 ]
-provides-extras = ["docs", "lint", "test", "performance", "utils", "pandas", "excel", "sql", "postgres", "pgvector", "mongo", "weaviate", "neo4j", "motor", "qdrant", "memvid", "pulsar", "memvid-pulsar", "aiohttp", "email", "migrations-sql", "migrations", "all"]
+provides-extras = ["docs", "lint", "test", "performance", "utils", "pandas", "excel", "sql", "postgres", "pgvector", "mongo", "weaviate", "neo4j", "motor", "qdrant", "memvid", "pulsar", "memvid-pulsar", "aiohttp", "aiosqlite", "email", "migrations-sql", "migrations", "all"]
 
 [package.metadata.requires-dev]
 dev = [

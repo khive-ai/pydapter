@@ -133,6 +133,11 @@ aiohttp = [
     "aiohttp>=3.12.0",
 ]
 
+aiosqlite = [
+    "aiosqlite>=0.18.0", 
+]
+
+
 email = [
     "email-validator>=2.0.0",
 ]
@@ -159,6 +164,7 @@ all = [
     "pydapter[aiohttp]",
     "pydapter[email]",
     "pydapter[migrations]",
+    "pydapter[aiosqlite]"
 ]
 
 [tool.black]
