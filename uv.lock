@@ -324,6 +324,13 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/09/71/54e999902aed72baf26bca0d50781b01838251a462612966e9fc4891eadd/black-25.1.0-py3-none-any.whl", hash = "sha256:95e8176dae143ba9097f351d174fdaf0ccd29efb414b362ae3fd72bf0f710717", size = 207646, upload-time = "2025-01-29T04:15:38.082Z" },
 ]
 
+[package.optional-dependencies]
+jupyter = [
+    { name = "ipython", version = "8.36.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "ipython", version = "9.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "tokenize-rt" },
+]
+
 [[package]]
 name = "certifi"
 version = "2025.4.26"
@@ -3001,7 +3008,7 @@ wheels = [
 
 [[package]]
 name = "pydapter"
-version = "1.0.0"
+version = "1.0.2"
 source = { editable = "." }
 dependencies = [
     { name = "orjson" },
@@ -3146,7 +3153,10 @@ weaviate = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "black", extra = ["jupyter"] },
+    { name = "isort" },
     { name = "pydapter", extra = ["docs", "lint", "performance", "test", "utils"] },
+    { name = "ruff" },
 ]
 
 [package.metadata]
@@ -3224,12 +3234,17 @@ requires-dist = [
     { name = "types-toml", marker = "extra == 'docs'", specifier = ">=0.10.8" },
     { name = "weaviate", marker = "extra == 'weaviate'", specifier = ">=0.1.2" },
     { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.10" },
-    { name = "xlsxwriter", marker = "extra == 'excel'", specifier = ">=3.0" },
+    { name = "xlsxwriter", marker = "extra == 'excel'", specifier = ">=3.2.5" },
 ]
 provides-extras = ["docs", "lint", "test", "performance", "utils", "pandas", "excel", "sql", "postgres", "pgvector", "mongo", "weaviate", "neo4j", "motor", "qdrant", "memvid", "pulsar", "memvid-pulsar", "aiohttp", "email", "migrations-sql", "migrations", "all"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pydapter", extras = ["docs", "lint", "test", "performance", "utils"] }]
+dev = [
+    { name = "black", extras = ["jupyter"], specifier = ">=25.1.0" },
+    { name = "isort", specifier = ">=6.0.1" },
+    { name = "pydapter", extras = ["docs", "lint", "test", "performance", "utils"] },
+    { name = "ruff", specifier = ">=0.11.11" },
+]
 
 [[package]]
 name = "pygments"
@@ -4289,6 +4304,15 @@ wheels = [
 ]
 
 [[package]]
+name = "tokenize-rt"
+version = "6.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/ed/8f07e893132d5051d86a553e749d5c89b2a4776eb3a579b72ed61f8559ca/tokenize_rt-6.2.0.tar.gz", hash = "sha256:8439c042b330c553fdbe1758e4a05c0ed460dbbbb24a606f11f0dee75da4cad6", size = 5476, upload-time = "2025-05-23T23:48:00.035Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/f0/3fe8c6e69135a845f4106f2ff8b6805638d4e85c264e70114e8126689587/tokenize_rt-6.2.0-py2.py3-none-any.whl", hash = "sha256:a152bf4f249c847a66497a4a95f63376ed68ac6abf092a2f7cfb29d044ecff44", size = 6004, upload-time = "2025-05-23T23:47:58.812Z" },
+]
+
+[[package]]
 name = "tokenizers"
 version = "0.21.1"
 source = { registry = "https://pypi.org/simple" }
@@ -4731,11 +4755,11 @@ wheels = [
 
 [[package]]
 name = "xlsxwriter"
-version = "3.2.3"
+version = "3.2.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a7/d1/e026d33dd5d552e5bf3a873dee54dad66b550230df8290d79394f09b2315/xlsxwriter-3.2.3.tar.gz", hash = "sha256:ad6fd41bdcf1b885876b1f6b7087560aecc9ae5a9cc2ba97dcac7ab2e210d3d5", size = 209135, upload-time = "2025-04-17T10:11:23.481Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/47/7704bac42ac6fe1710ae099b70e6a1e68ed173ef14792b647808c357da43/xlsxwriter-3.2.5.tar.gz", hash = "sha256:7e88469d607cdc920151c0ab3ce9cf1a83992d4b7bc730c5ffdd1a12115a7dbe", size = 213306, upload-time = "2025-06-17T08:59:14.619Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/b1/a252d499f2760b314fcf264d2b36fcc4343a1ecdb25492b210cb0db70a68/XlsxWriter-3.2.3-py3-none-any.whl", hash = "sha256:593f8296e8a91790c6d0378ab08b064f34a642b3feb787cf6738236bd0a4860d", size = 169433, upload-time = "2025-04-17T10:11:21.329Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/34/a22e6664211f0c8879521328000bdcae9bf6dbafa94a923e531f6d5b3f73/xlsxwriter-3.2.5-py3-none-any.whl", hash = "sha256:4f4824234e1eaf9d95df9a8fe974585ff91d0f5e3d3f12ace5b71e443c1c6abd", size = 172347, upload-time = "2025-06-17T08:59:13.453Z" },
 ]
 
 [[package]]
