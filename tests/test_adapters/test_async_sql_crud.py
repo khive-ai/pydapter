@@ -2,7 +2,6 @@
 Tests for async SQL adapter CRUD operations.
 """
 
-import asyncio
 import os
 
 # Import the adapters
@@ -13,15 +12,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
-import sqlalchemy as sa
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import create_async_engine
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/src")
 
-from pydapter.exceptions import QueryError, ValidationError
+from pydapter.exceptions import ValidationError
 from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
-from pydapter.extras.async_sql_ import AsyncSQLAdapter, SQLReadConfig, SQLWriteConfig
+from pydapter.extras.async_sql_ import AsyncSQLAdapter, SQLReadConfig
 
 
 class TestModel(BaseModel):
