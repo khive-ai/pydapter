@@ -370,7 +370,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                                     for r in rows
                                 ]
                                 if (
-                                    subj_cls != dict
+                                    subj_cls is not dict
                                 ):  # Only convert if not using generic dict
                                     if many:
                                         return [

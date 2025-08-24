@@ -134,7 +134,7 @@ aiohttp = [
 ]
 
 aiosqlite = [
-    "aiosqlite>=0.18.0", 
+    "aiosqlite>=0.18.0",
 ]
 
 
