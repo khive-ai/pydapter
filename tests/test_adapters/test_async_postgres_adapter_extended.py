@@ -65,9 +65,7 @@ class TestAsyncPostgresAdapterExtended:
 
             # Verify the parent method was called with the converted DSN
             call_args = mock_from_obj.call_args[0][1]
-            assert (
-                call_args["engine_url"] == "postgresql+asyncpg://user:pass@localhost/db"
-            )
+            assert call_args["dsn"] == "postgresql+asyncpg://user:pass@localhost/db"
 
     @pytest.mark.asyncio
     async def test_async_postgres_from_obj_with_already_converted_dsn(self):
@@ -97,9 +95,7 @@ class TestAsyncPostgresAdapterExtended:
 
             # Verify the parent method was called with the unchanged DSN
             call_args = mock_from_obj.call_args[0][1]
-            assert (
-                call_args["engine_url"] == "postgresql+asyncpg://user:pass@localhost/db"
-            )
+            assert call_args["dsn"] == "postgresql+asyncpg://user:pass@localhost/db"
 
     @pytest.mark.asyncio
     async def test_async_postgres_from_obj_with_default_dsn(self):
@@ -125,7 +121,7 @@ class TestAsyncPostgresAdapterExtended:
 
             # Verify the parent method was called with the default DSN
             call_args = mock_from_obj.call_args[0][1]
-            assert call_args["engine_url"] == AsyncPostgresAdapter.DEFAULT
+            assert call_args["dsn"] == AsyncPostgresAdapter.DEFAULT
 
     @pytest.mark.asyncio
     async def test_async_postgres_to_obj_with_dsn_conversion(
@@ -145,10 +141,7 @@ class TestAsyncPostgresAdapterExtended:
 
             # Verify the parent method was called with the converted DSN
             call_kwargs = mock_to_obj.call_args[1]
-            assert (
-                call_kwargs["engine_url"]
-                == "postgresql+asyncpg://user:pass@localhost/db"
-            )
+            assert call_kwargs["dsn"] == "postgresql+asyncpg://user:pass@localhost/db"
             assert call_kwargs["table"] == "test_table"
 
     @pytest.mark.asyncio
@@ -169,10 +162,7 @@ class TestAsyncPostgresAdapterExtended:
 
             # Verify the parent method was called with the unchanged DSN
             call_kwargs = mock_to_obj.call_args[1]
-            assert (
-                call_kwargs["engine_url"]
-                == "postgresql+asyncpg://user:pass@localhost/db"
-            )
+            assert call_kwargs["dsn"] == "postgresql+asyncpg://user:pass@localhost/db"
             assert call_kwargs["table"] == "test_table"
 
     @pytest.mark.asyncio
@@ -187,7 +177,7 @@ class TestAsyncPostgresAdapterExtended:
 
             # Verify the parent method was called with the default DSN
             call_kwargs = mock_to_obj.call_args[1]
-            assert call_kwargs["engine_url"] == AsyncPostgresAdapter.DEFAULT
+            assert call_kwargs["dsn"] == AsyncPostgresAdapter.DEFAULT
             assert call_kwargs["table"] == "test_table"
 
     @pytest.mark.asyncio
@@ -221,8 +211,5 @@ class TestAsyncPostgresAdapterExtended:
             assert (
                 call_args[0][0] == models
             )  # First positional arg should be the models list
-            assert (
-                call_args[1]["engine_url"]
-                == "postgresql+asyncpg://user:pass@localhost/db"
-            )
+            assert call_args[1]["dsn"] == "postgresql+asyncpg://user:pass@localhost/db"
             assert call_args[1]["table"] == "test_table"
