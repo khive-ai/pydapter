@@ -1,6 +1,6 @@
 [project]
 name            = "pydapter"
-version         = "1.0.1"
+version         = "1.0.2"
 description     = "Tiny trait + adapter toolkit for pydantic models"
 readme          = "README.md"
 requires-python = ">=3.10"
@@ -13,7 +13,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "black[jupyter]>=25.1.0",
+    "isort>=6.0.1",
     "pydapter[docs, lint, test, performance, utils]",
+    "ruff>=0.11.11",
 ]
 
 [project.optional-dependencies]
@@ -71,7 +74,7 @@ pandas = [
 
 excel = [
     "pydapter[pandas]",
-    "xlsxwriter>=3.0",
+    "xlsxwriter>=3.2.5",
     "openpyxl>=3.0.0",
 ]
 
@@ -130,6 +133,11 @@ aiohttp = [
     "aiohttp>=3.12.0",
 ]
 
+aiosqlite = [
+    "aiosqlite>=0.18.0",
+]
+
+
 email = [
     "email-validator>=2.0.0",
 ]
@@ -156,6 +164,7 @@ all = [
     "pydapter[aiohttp]",
     "pydapter[email]",
     "pydapter[migrations]",
+    "pydapter[aiosqlite]"
 ]
 
 [tool.black]

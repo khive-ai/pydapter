@@ -59,10 +59,13 @@ class TestAsyncSQLAdapterErrors:
 
         TestModel.register_async_adapter(AsyncSQLAdapter)
 
-        # Test missing engine_url
+        # Test missing engine_url/dsn/engine
         with pytest.raises(AdapterValidationError) as exc_info:
             await TestModel.adapt_from_async({"table": "test"}, obj_key="async_sql")
-        assert "Missing required parameter 'engine_url'" in str(exc_info.value)
+        assert (
+            "Missing required parameter: one of 'engine', 'dsn', or 'engine_url'"
+            in str(exc_info.value)
+        )
 
         # Test missing table
         with pytest.raises(AdapterValidationError) as exc_info:
