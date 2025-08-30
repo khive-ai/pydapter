@@ -197,8 +197,15 @@ result = await AsyncSQLAdapter.to_obj(
 
 ### Raw SQL Execution
 
+**Important**: Raw SQL operations do NOT require a `table` parameter and do NOT
+perform table inspection. This makes them ideal for:
+- Complex queries across multiple tables
+- Aggregations and analytical queries
+- DDL operations (CREATE, ALTER, DROP)
+- Working with databases where async table inspection isn't supported
+
 ```python
-# Execute custom SQL with parameters
+# Execute custom SQL with parameters (no table parameter needed!)
 config = {
     "dsn": "postgresql+asyncpg://user:pass@localhost/db",
     "operation": "raw_sql",
@@ -215,6 +222,15 @@ config = {
     "params": {"active": True, "min_count": 5}
 }
 results = await AsyncSQLAdapter.from_obj(dict, config, many=True)
+
+# ORDER BY queries (common use case)
+config = {
+    "dsn": "sqlite:///app.db",  # Works with SQLite too!
+    "operation": "raw_sql",
+    "sql": "SELECT * FROM events ORDER BY created_at DESC LIMIT :limit",
+    "params": {"limit": 10}
+}
+recent_events = await AsyncSQLAdapter.from_obj(dict, config, many=True)
 
 # DDL operations (CREATE, ALTER, DROP)
 config = {
@@ -436,8 +452,9 @@ await adapter.to_obj(user, dsn=url, table="users", operation="upsert", conflict_
 ### Common Issues
 
 1. **"Multiple engine parameters provided"**: Only use one of `dsn`, `engine_url`, or `engine`
-2. **"Missing required parameter"**: Ensure you provide either a connection
-   parameter and table name
+2. **"Missing required parameter"**: For select/delete operations, ensure you
+   provide a connection parameter and table name. For raw_sql operations, only
+   the connection parameter and sql are required
 3. **SQL parameter syntax**: Use `:param_name` for SQLAlchemy, not `%(param_name)s`
 4. **None values in primary keys**: The adapter automatically filters out None values
 
@@ -455,14 +472,15 @@ await adapter.to_obj(user, dsn=url, table="users", operation="upsert", conflict_
 Configuration for read operations (`from_obj`):
 
 - `dsn` / `engine_url` / `engine`: Database connection (one required)
-- `table`: Table name (required for select/delete)
+- `table`: Table name (required for select/delete, NOT required for raw_sql)
 - `operation`: "select" (default), "delete", or "raw_sql"
 - `selectors`: WHERE conditions for select/delete
-- `limit`: Maximum records to return
-- `offset`: Number of records to skip
-- `sql`: Raw SQL statement (for raw_sql operation)
+- `limit`: Maximum records to return (select only)
+- `offset`: Number of records to skip (select only)
+- `order_by`: ORDER BY clause (select only)
+- `sql`: Raw SQL statement (required for raw_sql operation)
 - `params`: SQL parameters (for raw_sql operation)
-- `fetch_results`: Whether to fetch results (default: True)
+- `fetch_results`: Whether to fetch results (raw_sql only, default: True)
 
 ### SQLWriteConfig
 

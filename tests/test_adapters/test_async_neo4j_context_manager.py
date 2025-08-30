@@ -114,9 +114,7 @@ class TestAsyncNeo4jContextManager:
         ):
             # Use the adapter as a context manager
             with pytest.raises(Exception) as exc_info:
-                async with AsyncNeo4jAdapter(
-                    url="bolt://localhost:7687"
-                ) as adapter:  # noqa: F841
+                async with AsyncNeo4jAdapter(url="bolt://localhost:7687") as adapter:  # noqa: F841
                     # This should not be executed
                     pass
 
@@ -134,9 +132,7 @@ class TestAsyncNeo4jContextManager:
         ):
             # Use the adapter as a context manager
             with pytest.raises(Exception) as exc_info:
-                async with AsyncNeo4jAdapter(
-                    url="bolt://localhost:7687"
-                ) as adapter:  # noqa: F841
+                async with AsyncNeo4jAdapter(url="bolt://localhost:7687") as adapter:  # noqa: F841
                     # This should not be executed
                     pass
 

@@ -1,5 +1,5 @@
 """
-pydapter - tiny trait + adapter toolkit.
+pydapter - tiny adapter toolkit.
 """
 
 from .async_core import AsyncAdaptable, AsyncAdapter, AsyncAdapterRegistry
@@ -14,4 +14,4 @@ __all__ = (
     "AsyncAdapterRegistry",
 )
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
