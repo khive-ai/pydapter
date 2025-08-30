@@ -1,10 +1,14 @@
 # CRUD Operations with Pydapter
 
-This guide covers the enhanced CRUD (Create, Read, Update, Delete) operations available in pydapter's async SQL adapters.
+This guide covers the enhanced CRUD (Create, Read, Update, Delete) operations
+available in pydapter's async SQL adapters.
 
 ## Overview
 
-Pydapter's async SQL adapters now support full CRUD operations through a clean, config-driven interface. All operations are controlled through configuration dictionaries, maintaining backward compatibility while adding powerful new capabilities.
+Pydapter's async SQL adapters now support full CRUD operations through a clean,
+config-driven interface. All operations are controlled through configuration
+dictionaries, maintaining backward compatibility while adding powerful new
+capabilities.
 
 ## Installation
 
@@ -199,7 +203,7 @@ config = {
     "dsn": "postgresql+asyncpg://user:pass@localhost/db",
     "operation": "raw_sql",
     "sql": """
-        SELECT 
+        SELECT
             department,
             COUNT(*) as user_count,
             AVG(age) as avg_age
@@ -270,7 +274,7 @@ class Customer(BaseModel):
 async def manage_customers():
     # Create a reusable engine for efficiency
     engine = create_async_engine("postgresql+asyncpg://postgres:postgres@localhost/db")
-    
+
     try:
         # 1. Insert new customer
         customer = Customer(
@@ -284,7 +288,7 @@ async def manage_customers():
             table="customers"
         )
         print(f"Created customer: {result}")
-        
+
         # 2. Find customer by username
         config = {
             "engine": engine,
@@ -293,7 +297,7 @@ async def manage_customers():
         }
         found_customer = await AsyncSQLAdapter.from_obj(Customer, config, many=False)
         print(f"Found customer: {found_customer}")
-        
+
         # 3. Update customer email
         found_customer.email = "newemail@example.com"
         result = await AsyncSQLAdapter.to_obj(
@@ -304,13 +308,13 @@ async def manage_customers():
             where={"username": "johndoe"}
         )
         print(f"Updated customer: {result}")
-        
+
         # 4. Get customer statistics
         config = {
             "engine": engine,
             "operation": "raw_sql",
             "sql": """
-                SELECT 
+                SELECT
                     COUNT(*) as total_customers,
                     COUNT(DISTINCT DATE(created_at)) as signup_days
                 FROM customers
@@ -320,7 +324,7 @@ async def manage_customers():
         }
         stats = await AsyncSQLAdapter.from_obj(dict, config, many=False)
         print(f"Customer stats: {stats}")
-        
+
     finally:
         await engine.dispose()
 
@@ -331,15 +335,18 @@ asyncio.run(manage_customers())
 ## Best Practices
 
 1. **Use TypedDict for Configuration**: Provides better IDE support and type safety
+
    ```python
    config: SQLReadConfig = {"dsn": dsn, "table": "users"}
    ```
 
-2. **Reuse Engines for Bulk Operations**: Create one engine and pass it to multiple operations for efficiency
+2. **Reuse Engines for Bulk Operations**: Create one engine and pass it to
+   multiple operations for efficiency
+
    ```python
    # Create engine once for the entire batch operation
    engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
-   
+
    try:
        # Process multiple batches using the same engine
        for batch in data_batches:
@@ -350,26 +357,31 @@ asyncio.run(manage_customers())
                table="users"
            )
            print(f"Inserted {result['inserted_count']} records")
-       
+
        # Or for multiple different operations
        await AsyncSQLAdapter.to_obj(users, engine=engine, table="users")
-       await AsyncSQLAdapter.to_obj(orders, engine=engine, table="orders") 
+       await AsyncSQLAdapter.to_obj(orders, engine=engine, table="orders")
        await AsyncSQLAdapter.to_obj(items, engine=engine, table="items")
-   
+
    finally:
        # Always dispose of the engine when done
        await engine.dispose()
    ```
-   
-   **Note**: SQLAlchemy engines manage their own connection pools internally. You don't use 
-   `async with engine:` context managers with engines - that pattern is for connections/sessions.
 
-3. **Handle None Values**: The adapter automatically excludes None values from INSERT/UPDATE operations
+   **Note**: SQLAlchemy engines manage their own connection pools internally.
+   You don't use `async with engine:` context managers with engines - that pattern
+   is for connections/sessions.
+
+3. **Handle None Values**: The adapter automatically excludes None values from
+   INSERT/UPDATE operations
+
    ```python
    user = User(id=None, name="John")  # id=None will be excluded
    ```
 
-4. **Use Parameterized Queries**: Always use parameters for raw SQL to prevent SQL injection
+4. **Use Parameterized Queries**: Always use parameters for raw SQL to prevent
+   SQL injection
+
    ```python
    config = {
        "operation": "raw_sql",
@@ -379,9 +391,10 @@ asyncio.run(manage_customers())
    ```
 
 5. **Error Handling**: Use specific exception types for better error handling
+
    ```python
    from pydapter.exceptions import ConnectionError, QueryError, ValidationError
-   
+
    try:
        result = await AsyncSQLAdapter.from_obj(User, config)
    except ConnectionError:
@@ -423,7 +436,8 @@ await adapter.to_obj(user, dsn=url, table="users", operation="upsert", conflict_
 ### Common Issues
 
 1. **"Multiple engine parameters provided"**: Only use one of `dsn`, `engine_url`, or `engine`
-2. **"Missing required parameter"**: Ensure you provide either a connection parameter and table name
+2. **"Missing required parameter"**: Ensure you provide either a connection
+   parameter and table name
 3. **SQL parameter syntax**: Use `:param_name` for SQLAlchemy, not `%(param_name)s`
 4. **None values in primary keys**: The adapter automatically filters out None values
 
@@ -462,4 +476,6 @@ Configuration for write operations (`to_obj` kwargs):
 
 ## Support
 
-For issues or questions, please refer to the [pydapter GitHub repository](https://github.com/lion-agi/pydapter) or the comprehensive test suite in `tests/test_async_sql_crud.py`.
+For issues or questions, please refer to the
+[pydapter GitHub repository](https://github.com/khive-ai/pydapter) or the
+comprehensive test suite in `tests/test_async_sql_crud.py`.
