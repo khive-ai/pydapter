@@ -1,10 +1,14 @@
 # CRUD Operations with Pydapter
 
-This guide covers the enhanced CRUD (Create, Read, Update, Delete) operations available in pydapter's async SQL adapters.
+This guide covers the enhanced CRUD (Create, Read, Update, Delete) operations
+available in pydapter's async SQL adapters.
 
 ## Overview
 
-Pydapter's async SQL adapters now support full CRUD operations through a clean, config-driven interface. All operations are controlled through configuration dictionaries, maintaining backward compatibility while adding powerful new capabilities.
+Pydapter's async SQL adapters now support full CRUD operations through a clean,
+config-driven interface. All operations are controlled through configuration
+dictionaries, maintaining backward compatibility while adding powerful new
+capabilities.
 
 ## Installation
 
@@ -331,11 +335,14 @@ asyncio.run(manage_customers())
 ## Best Practices
 
 1. **Use TypedDict for Configuration**: Provides better IDE support and type safety
+
    ```python
    config: SQLReadConfig = {"dsn": dsn, "table": "users"}
    ```
 
-2. **Reuse Engines for Bulk Operations**: Create one engine and pass it to multiple operations for efficiency
+2. **Reuse Engines for Bulk Operations**: Create one engine and pass it to
+   multiple operations for efficiency
+
    ```python
    # Create engine once for the entire batch operation
    engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
@@ -361,15 +368,20 @@ asyncio.run(manage_customers())
        await engine.dispose()
    ```
 
-   **Note**: SQLAlchemy engines manage their own connection pools internally. You don't use
-   `async with engine:` context managers with engines - that pattern is for connections/sessions.
+   **Note**: SQLAlchemy engines manage their own connection pools internally.
+   You don't use `async with engine:` context managers with engines - that pattern
+   is for connections/sessions.
 
-3. **Handle None Values**: The adapter automatically excludes None values from INSERT/UPDATE operations
+3. **Handle None Values**: The adapter automatically excludes None values from
+   INSERT/UPDATE operations
+
    ```python
    user = User(id=None, name="John")  # id=None will be excluded
    ```
 
-4. **Use Parameterized Queries**: Always use parameters for raw SQL to prevent SQL injection
+4. **Use Parameterized Queries**: Always use parameters for raw SQL to prevent
+   SQL injection
+
    ```python
    config = {
        "operation": "raw_sql",
@@ -379,6 +391,7 @@ asyncio.run(manage_customers())
    ```
 
 5. **Error Handling**: Use specific exception types for better error handling
+
    ```python
    from pydapter.exceptions import ConnectionError, QueryError, ValidationError
 
@@ -423,7 +436,8 @@ await adapter.to_obj(user, dsn=url, table="users", operation="upsert", conflict_
 ### Common Issues
 
 1. **"Multiple engine parameters provided"**: Only use one of `dsn`, `engine_url`, or `engine`
-2. **"Missing required parameter"**: Ensure you provide either a connection parameter and table name
+2. **"Missing required parameter"**: Ensure you provide either a connection
+   parameter and table name
 3. **SQL parameter syntax**: Use `:param_name` for SQLAlchemy, not `%(param_name)s`
 4. **None values in primary keys**: The adapter automatically filters out None values
 
@@ -462,4 +476,6 @@ Configuration for write operations (`to_obj` kwargs):
 
 ## Support
 
-For issues or questions, please refer to the [pydapter GitHub repository](https://github.com/lion-agi/pydapter) or the comprehensive test suite in `tests/test_async_sql_crud.py`.
+For issues or questions, please refer to the
+[pydapter GitHub repository](https://github.com/khive-ai/pydapter) or the
+comprehensive test suite in `tests/test_async_sql_crud.py`.
