@@ -101,7 +101,11 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
                     obj["dsn"] = dsn
 
                 # Convert PostgreSQL URL to SQLAlchemy format if needed
-                if not dsn.startswith("postgresql+asyncpg://"):
+                # BUT skip this for SQLite DSNs
+                if dsn.startswith("sqlite"):
+                    # Keep SQLite DSN as-is
+                    pass
+                elif not dsn.startswith("postgresql+asyncpg://"):
                     obj["dsn"] = dsn.replace("postgresql://", "postgresql+asyncpg://")
 
             # Add PostgreSQL-specific error handling
