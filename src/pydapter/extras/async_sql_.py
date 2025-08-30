@@ -38,14 +38,14 @@ class SQLReadConfig(TypedDict):
     # Operation type
     operation: NotRequired[Literal["select", "delete", "raw_sql"]]  # Default: "select"
 
-    # For select/delete operations
-    table: NotRequired[str]  # Table name
+    # For select/delete operations (table required for these)
+    table: NotRequired[str]  # Table name (NOT required for raw_sql)
     selectors: NotRequired[dict[str, Any]]  # WHERE conditions
     limit: NotRequired[int]  # LIMIT clause
     offset: NotRequired[int]  # OFFSET clause
     order_by: NotRequired[str]  # ORDER BY clause
 
-    # For raw_sql operation
+    # For raw_sql operation (table NOT required)
     sql: NotRequired[str]  # Raw SQL statement
     params: NotRequired[dict[str, Any]]  # SQL parameters for safe binding
     fetch_results: NotRequired[bool]  # Whether to fetch results (default: True)
@@ -123,12 +123,20 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
             "selectors": {"id": 123}
         })
 
-        # Raw SQL execution
+        # Raw SQL execution (note: table parameter NOT required)
         result = await AsyncSQLAdapter.from_obj(User, {
             "dsn": "postgresql+asyncpg://user:pass@localhost/db",
             "operation": "raw_sql",
             "sql": "SELECT * FROM users WHERE created_at > :since",
             "params": {"since": "2024-01-01"}
+        }, many=True)
+
+        # Or with dict for flexible results (no model validation)
+        result = await AsyncSQLAdapter.from_obj(dict, {
+            "dsn": "postgresql+asyncpg://user:pass@localhost/db",
+            "operation": "raw_sql",
+            "sql": "SELECT * FROM users ORDER BY created_at DESC LIMIT :limit",
+            "params": {"limit": 10}
         }, many=True)
 
         # INSERT (default operation)
