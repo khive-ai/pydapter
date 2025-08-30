@@ -43,6 +43,7 @@ class SQLReadConfig(TypedDict):
     selectors: NotRequired[dict[str, Any]]  # WHERE conditions
     limit: NotRequired[int]  # LIMIT clause
     offset: NotRequired[int]  # OFFSET clause
+    order_by: NotRequired[str]  # ORDER BY clause
 
     # For raw_sql operation
     sql: NotRequired[str]  # Raw SQL statement
@@ -264,6 +265,9 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                                 stmt = stmt.limit(obj["limit"])
                             if "offset" in obj:
                                 stmt = stmt.offset(obj["offset"])
+                            # Add order_by if specified
+                            if "order_by" in obj:
+                                stmt = stmt.order_by(text(obj["order_by"]))
 
                             result = sync_conn.execute(stmt)
                             # Convert Row objects to dicts
