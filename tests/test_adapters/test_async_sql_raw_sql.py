@@ -2,8 +2,9 @@
 Tests for Async SQL adapter raw SQL functionality.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from pydantic import BaseModel
 
 from pydapter.extras.async_sql_ import AsyncSQLAdapter
@@ -95,7 +96,7 @@ async def test_raw_sql_with_dict_model():
         "engine": mock_engine,
         "operation": "raw_sql",
         "sql": """
-            SELECT 
+            SELECT
                 department,
                 COUNT(*) as count,
                 AVG(salary) as avg_salary
