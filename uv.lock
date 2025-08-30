@@ -3020,7 +3020,7 @@ wheels = [
 
 [[package]]
 name = "pydapter"
-version = "1.0.3"
+version = "1.0.4"
 source = { editable = "." }
 dependencies = [
     { name = "orjson" },
