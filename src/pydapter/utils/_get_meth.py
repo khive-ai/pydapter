@@ -45,7 +45,7 @@ def truncate_for_display(
     if isinstance(obj, bytes):
         try:
             text = obj.decode("utf-8", errors="replace")
-        except:
+        except Exception:
             text = repr(obj)
     elif isinstance(obj, (str, int, float, bool)):
         text = str(obj)

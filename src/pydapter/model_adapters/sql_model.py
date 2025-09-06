@@ -2,18 +2,9 @@
 from __future__ import annotations
 
 import types
+from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import (
-    Annotated,
-    Any,
-    Callable,
-    Optional,
-    TypeVar,
-    Union,
-    cast,
-    get_args,
-    get_origin,
-)
+from typing import Annotated, Any, Optional, TypeVar, Union, cast, get_args, get_origin
 from uuid import UUID
 
 from pydantic import BaseModel, Field, create_model
@@ -424,7 +415,7 @@ class SQLModelAdapter:
                 py_type = cls._python_type_for(col)
 
             # Don't make nullable in the test assertions
-            if col.nullable and not name_suffix == "Schema":
+            if col.nullable and name_suffix != "Schema":
                 py_type = py_type | None  # Optional[...]
 
             # scalar server defaults captured as literal values
@@ -503,7 +494,7 @@ class SQLModelAdapter:
         # For backward compatibility
         pyd_cls.model_config["orm_mode"] = True
 
-        return cast(type[T], pyd_cls)
+        return cast("type[T]", pyd_cls)
 
     # -------------------------------------------------------------------------
     @classmethod

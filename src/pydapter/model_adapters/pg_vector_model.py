@@ -32,7 +32,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
     ):
         """Add vector_dim metadata when converting back to Pydantic."""
 
-        mapper = cast(Any, inspect(orm_cls))
+        mapper = cast("Any", inspect(orm_cls))
         fields: dict[str, tuple[type, Any]] = {}
 
         for col in mapper.columns:

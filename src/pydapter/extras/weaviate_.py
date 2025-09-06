@@ -18,9 +18,6 @@ from ..core import Adapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
-# Defer weaviate imports to avoid circular imports
-
-
 T = TypeVar("T", bound=BaseModel)
 
 

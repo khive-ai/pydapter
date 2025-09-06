@@ -5,10 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -635,7 +635,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                 try:
                     instance = adapt_from(subj_cls, model_data, adapt_meth, adapt_kw)
                     instances.append(instance)
-                except ValidationError as e:
+                except ValidationError:
                     # Fallback for different model structures
                     minimal_data = {"text": text_content}
                     try:
@@ -739,7 +739,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                                     subj_cls, model_data, adapt_meth, adapt_kw
                                 )
                                 instances.append(instance)
-                            except ValidationError as e:
+                            except ValidationError:
                                 try:
                                     minimal_data = {"text": text_content}
                                     instance = adapt_from(

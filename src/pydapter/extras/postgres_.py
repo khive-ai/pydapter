@@ -4,11 +4,9 @@ PostgresAdapter - thin preset over SQLAdapter (pgvector-ready if you add vec col
 
 from __future__ import annotations
 
-from ..exceptions import ConnectionError, QueryError, ResourceError, ValidationError
+from ..exceptions import ConnectionError
 from ..utils import T
 from .sql_ import SQLAdapter
-
-_CUSTOM_ERROR = (ConnectionError, QueryError, ResourceError, ValidationError)
 
 
 class PostgresAdapter(SQLAdapter[T]):

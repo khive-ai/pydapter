@@ -5,16 +5,9 @@ Memvid adapter - uses `memvid` for video-based AI memory.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 from ..core import Adapter
-from ..exceptions import (
-    ConnectionError,
-    ParseError,
-    QueryError,
-    ResourceError,
-    ValidationError,
-)
+from ..exceptions import ConnectionError, QueryError, ResourceError, ValidationError
 from ..utils import T, adapt_dump, adapt_from
 
 

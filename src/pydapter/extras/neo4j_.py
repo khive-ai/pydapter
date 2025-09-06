@@ -15,8 +15,6 @@ from ..core import Adapter
 from ..exceptions import ConnectionError, QueryError, ResourceError, ValidationError
 from ..utils import T, adapt_dump, adapt_from
 
-_CUSTOM_ERROR = (ConnectionError, QueryError, ResourceError, ValidationError)
-
 
 class Neo4jAdapter(Adapter[T]):
     """

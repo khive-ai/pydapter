@@ -66,8 +66,8 @@ class SQLAdapter(Adapter[T]):
 
     obj_key = "sql"
 
-    @staticmethod
-    def _table(metadata: sa.MetaData, table: str, engine=None) -> sa.Table:
+    @classmethod
+    def _table(cls, metadata: sa.MetaData, table: str, engine=None) -> sa.Table:
         """
         Helper method to get a SQLAlchemy Table object with autoloading.
 

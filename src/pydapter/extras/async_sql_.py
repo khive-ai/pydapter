@@ -5,21 +5,15 @@ Generic async SQL adapter - SQLAlchemy 2.x asyncio + asyncpg driver.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, NotRequired, Required, TypedDict
 
 import sqlalchemy as sa
 import sqlalchemy.exc as sa_exc
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.sql import text
-from typing_extensions import NotRequired, Required
 
 from ..async_core import AsyncAdapter
-from ..exceptions import (
-    ConnectionError,
-    QueryError,
-    ResourceError,
-    ValidationError,
-)
+from ..exceptions import ConnectionError, QueryError, ResourceError, ValidationError
 from ..utils import T, adapt_dump, adapt_from
 
 

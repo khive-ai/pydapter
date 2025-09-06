@@ -231,7 +231,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                         namespace = uuid.UUID(
                             "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
                         )  # UUID namespace
-                        model_id = getattr(it, "id")
+                        model_id = it.id
                         # Store the model ID in the UUID by using a prefix
                         obj_uuid = str(uuid.uuid5(namespace, f"id-{model_id}"))
 

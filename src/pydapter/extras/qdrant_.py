@@ -70,8 +70,8 @@ class QdrantAdapter(Adapter[T]):
 
     obj_key = "qdrant"
 
-    @staticmethod
-    def _client(url: str | None):
+    @classmethod
+    def _client(cls, url: str | None):
         """
         Create a Qdrant client with proper error handling.
 

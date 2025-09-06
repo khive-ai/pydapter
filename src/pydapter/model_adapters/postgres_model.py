@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import ipaddress
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, get_args, get_origin
+from typing import Any, get_args, get_origin
 
 from pydantic import BaseModel
 from sqlalchemy import Column, String
