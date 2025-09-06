@@ -69,7 +69,7 @@ class TestAsyncPulsarMemvidAdapterBasics:
                 await AsyncPulsarMemvidAdapter._import_dependencies()
 
             assert "Failed to import pulsar-client" in str(exc_info.value)
-            assert exc_info.value.details["adapter_obj_key"] == "pulsar_memvid"
+            assert exc_info.value.adapter == "pulsar_memvid"
 
     @pytest.mark.asyncio
     async def test_import_dependencies_memvid_missing(self):

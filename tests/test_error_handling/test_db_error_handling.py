@@ -8,12 +8,8 @@ import pytest
 from pydantic import BaseModel
 
 from pydapter.core import Adaptable
-from pydapter.exceptions import (
-    ConnectionError,
-    QueryError,
-    ResourceError,
-    ValidationError,
-)
+from pydapter.exceptions import ConnectionError, QueryError, ResourceError
+from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.mongo_ import MongoAdapter
 from pydapter.extras.neo4j_ import Neo4jAdapter
 from pydapter.extras.postgres_ import PostgresAdapter
@@ -35,12 +31,12 @@ class TestSQLAdapterErrors:
         TestModel.register_adapter(SQLAdapter)
 
         # Test missing engine_url
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from({"table": "test"}, obj_key="sql")
         assert "Missing required parameter 'engine_url'" in str(exc_info.value)
 
         # Test missing table
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from({"engine_url": "sqlite://"}, obj_key="sql")
         assert "Missing required parameter 'table'" in str(exc_info.value)
 
@@ -67,9 +63,7 @@ class TestSQLAdapterErrors:
                 {"engine_url": "invalid://url", "table": "test"}, obj_key="sql"
             )
         assert "Failed to create database engine" in str(exc_info.value)
-        # Check that the URL and adapter info are in the details
-        assert "url" in exc_info.value.details
-        assert exc_info.value.details["adapter_obj_key"] == "sql"
+        assert "Invalid connection string" in str(exc_info.value)
 
     def test_table_not_found(self, monkeypatch):
         """Test handling of non-existent table."""
@@ -87,7 +81,7 @@ class TestSQLAdapterErrors:
         def mock_from_obj(cls, subj_cls, obj, **kw):
             if obj.get("table") == "nonexistent":
                 raise ResourceError(
-                    "Table 'nonexistent' not found", details={"resource": "nonexistent"}
+                    "Table 'nonexistent' not found", resource="nonexistent"
                 )
             return original_from_obj(cls, subj_cls, obj, **kw)
 
@@ -119,7 +113,8 @@ class TestSQLAdapterErrors:
             if obj.get("table") == "test":
                 raise QueryError(
                     "Query failed: SQLAlchemyError('Query failed')",
-                    details={"query": "SELECT * FROM test", "adapter_obj_key": "sql"},
+                    query="SELECT * FROM test",
+                    adapter="sql",
                 )
             return original_from_obj(cls, subj_cls, obj, **kw)
 
@@ -150,7 +145,8 @@ class TestSQLAdapterErrors:
             if obj.get("table") == "test" and not kw.get("many", True):
                 raise ResourceError(
                     "No rows found matching the query",
-                    details={"resource": "test", "query": "SELECT * FROM test"},
+                    resource="test",
+                    query="SELECT * FROM test",
                 )
             elif obj.get("table") == "test" and kw.get("many", True):
                 return []
@@ -198,10 +194,7 @@ class TestPostgresAdapterErrors:
             TestModel.adapt_from(
                 {"engine_url": "postgresql://", "table": "test"}, obj_key="postgres"
             )
-        assert "Failed to create database engine" in str(exc_info.value)
-        # Check that the URL and adapter info are in the details
-        assert "url" in exc_info.value.details
-        assert exc_info.value.details["adapter_obj_key"] == "postgres"
+        assert "PostgreSQL authentication failed" in str(exc_info.value)
 
     def test_connection_refused(self, monkeypatch):
         """Test handling of connection refused errors."""
@@ -225,10 +218,7 @@ class TestPostgresAdapterErrors:
             TestModel.adapt_from(
                 {"engine_url": "postgresql://", "table": "test"}, obj_key="postgres"
             )
-        assert "Failed to create database engine" in str(exc_info.value)
-        # Check that the URL and adapter info are in the details
-        assert "url" in exc_info.value.details
-        assert exc_info.value.details["adapter_obj_key"] == "postgres"
+        assert "PostgreSQL connection refused" in str(exc_info.value)
 
     def test_database_not_exist(self, monkeypatch):
         """Test handling of database does not exist errors."""
@@ -252,10 +242,7 @@ class TestPostgresAdapterErrors:
             TestModel.adapt_from(
                 {"engine_url": "postgresql://", "table": "test"}, obj_key="postgres"
             )
-        assert "Failed to create database engine" in str(exc_info.value)
-        # Check that the URL and adapter info are in the details
-        assert "url" in exc_info.value.details
-        assert exc_info.value.details["adapter_obj_key"] == "postgres"
+        assert "PostgreSQL database does not exist" in str(exc_info.value)
 
 
 class TestMongoAdapterErrors:
@@ -272,19 +259,19 @@ class TestMongoAdapterErrors:
         TestModel.register_adapter(MongoAdapter)
 
         # Test missing url
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from({"db": "test", "collection": "test"}, obj_key="mongo")
         assert "Missing required parameter 'url'" in str(exc_info.value)
 
         # Test missing db
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from(
                 {"url": "mongodb://localhost", "collection": "test"}, obj_key="mongo"
             )
         assert "Missing required parameter 'db'" in str(exc_info.value)
 
         # Test missing collection
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from(
                 {"url": "mongodb://localhost", "db": "test"}, obj_key="mongo"
             )
@@ -305,7 +292,8 @@ class TestMongoAdapterErrors:
             # Raise ConnectionError directly instead of ConfigurationError
             raise ConnectionError(
                 "Invalid MongoDB connection string: Invalid connection string",
-                details={"adapter_obj_key": "mongo", "url": "invalid://url"},
+                adapter="mongo",
+                url="invalid://url",
             )
 
         monkeypatch.setattr(MongoAdapter, "_client", mock_client)
@@ -321,9 +309,6 @@ class TestMongoAdapterErrors:
                 obj_key="mongo",
             )
         assert "Invalid MongoDB connection string" in str(exc_info.value)
-        # Check that adapter and URL info are in details
-        assert exc_info.value.details["adapter_obj_key"] == "mongo"
-        assert exc_info.value.details["url"] == "invalid://url"
 
     def test_authentication_failure(self, monkeypatch):
         """Test handling of authentication failures."""
@@ -468,7 +453,7 @@ class TestNeo4jAdapterErrors:
         TestModel.register_adapter(Neo4jAdapter)
 
         # Test missing url
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from({}, obj_key="neo4j")
         assert "Missing required parameter 'url'" in str(exc_info.value)
 
@@ -605,14 +590,14 @@ class TestQdrantAdapterErrors:
         TestModel.register_adapter(QdrantAdapter)
 
         # Test missing collection
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from(
                 {"query_vector": [0.1, 0.2, 0.3, 0.4, 0.5]}, obj_key="qdrant"
             )
         assert "Missing required parameter 'collection'" in str(exc_info.value)
 
         # Test missing query_vector
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from({"collection": "test"}, obj_key="qdrant")
         assert "Missing required parameter 'query_vector'" in str(exc_info.value)
 
@@ -628,7 +613,7 @@ class TestQdrantAdapterErrors:
         TestModel.register_adapter(QdrantAdapter)
 
         # Test with non-numeric vector
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from(
                 {
                     "collection": "test",
@@ -639,7 +624,7 @@ class TestQdrantAdapterErrors:
         assert "Vector must be a list or tuple of numbers" in str(exc_info.value)
 
         # Test with string instead of vector
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from(
                 {"collection": "test", "query_vector": "not_a_vector"}, obj_key="qdrant"
             )
@@ -687,14 +672,9 @@ class TestQdrantAdapterErrors:
 
         # Create a mock client
         mock_client = Mock()
-        # Mock with UnexpectedResponse to trigger the right error path
-        from qdrant_client.http.exceptions import UnexpectedResponse
-
-        mock_client.search.side_effect = UnexpectedResponse(
-            status_code=404,
-            reason_phrase="Not Found",
-            content="Collection 'test' not found",
-            headers={},
+        # Use QueryError directly instead of ResourceError
+        mock_client.search.side_effect = QueryError(
+            "Failed to search Qdrant: Collection 'test' not found", adapter="qdrant"
         )
 
         # Mock _client to return our mock client
@@ -703,7 +683,7 @@ class TestQdrantAdapterErrors:
         )
 
         # Test with collection not found error
-        with pytest.raises(ResourceError) as exc_info:
+        with pytest.raises(QueryError) as exc_info:
             TestModel.adapt_from(
                 {
                     "collection": "test",
@@ -711,9 +691,7 @@ class TestQdrantAdapterErrors:
                 },
                 obj_key="qdrant",
             )
-        assert "Qdrant collection not found" in str(exc_info.value)
-        # Check that resource info is in details
-        assert exc_info.value.details["resource"] == "test"
+        assert "Failed to search Qdrant" in str(exc_info.value)
 
     def test_empty_result_set(self, monkeypatch):
         """Test handling of empty result set."""

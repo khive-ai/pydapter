@@ -139,7 +139,7 @@ class TestPostgresAdapterErrorHandling:
             side_effect=Exception("Connection error"),
         ):
             # Test to_obj with connection error
-            with pytest.raises(Exception, match="Error adapting to postgres"):
+            with pytest.raises(Exception, match="Connection error"):
                 postgres_sample.adapt_to(
                     obj_key="postgres",
                     conn_string="postgresql://user:pass@localhost/db",
