@@ -5,22 +5,32 @@ Generic async SQL adapter - SQLAlchemy 2.x asyncio + asyncpg driver.
 from __future__ import annotations
 
 import sys
-from collections.abc import Sequence
-from typing import Any, Literal
 
-if sys.version_info >= (3, 11):
-    from typing import NotRequired, Required, TypedDict
-else:
+if sys.version_info < (3, 11):
     from typing_extensions import NotRequired, Required, TypedDict
+else:
+    from typing import NotRequired, Required, TypedDict
+
+from collections.abc import Sequence
+from typing import Any, Literal, TypeVar
 
 import sqlalchemy as sa
 import sqlalchemy.exc as sa_exc
+from pydantic import BaseModel
+from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.sql import text
 
 from ..async_core import AsyncAdapter
-from ..exceptions import ConnectionError, QueryError, ResourceError, ValidationError
-from ..utils import T, adapt_dump, adapt_from
+from ..exceptions import (
+    AdapterError,
+    ConnectionError,
+    QueryError,
+    ResourceError,
+    ValidationError,
+)
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class SQLReadConfig(TypedDict):
@@ -202,247 +212,238 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
         adapt_kw: dict | None = None,
         **kw,
     ):
-        # Get operation type (default: "select" for backward compatibility)
-        operation = obj.get("operation", "select").lower()
+        try:
+            # Get operation type (default: "select" for backward compatibility)
+            operation = obj.get("operation", "select").lower()
 
-        # Validate only one engine parameter is provided
-        engine_params = sum(["engine" in obj, "dsn" in obj, "engine_url" in obj])
+            # Validate only one engine parameter is provided
+            engine_params = sum(["engine" in obj, "dsn" in obj, "engine_url" in obj])
 
-        if engine_params == 0:
-            raise ValidationError.from_adapter(
-                cls,
-                "Missing required parameter: one of 'engine', 'dsn', or 'engine_url'",
-                data=obj,
-            )
-        elif engine_params > 1:
-            raise ValidationError.from_adapter(
-                cls,
-                "Multiple engine parameters provided. Use only one of: 'engine', 'dsn', or 'engine_url'",
-                data=obj,
-            )
-
-        # Get engine - either passed directly or create from DSN
-        if "engine" in obj:
-            eng = obj["engine"]  # Use provided engine
-        elif "dsn" in obj:
-            # Create new engine from DSN
-            try:
-                eng = create_async_engine(obj["dsn"], future=True)
-            except Exception as e:
-                raise ConnectionError.from_adapter(
-                    cls,
-                    "Failed to create async database engine",
-                    url=obj["dsn"],
-                    cause=e,
+            if engine_params == 0:
+                raise ValidationError(
+                    "Missing required parameter: one of 'engine', 'dsn', or 'engine_url'",
+                    data=obj,
                 )
-        else:  # engine_url
-            # Create new engine from URL
-            try:
-                eng = create_async_engine(obj["engine_url"], future=True)
-            except Exception as e:
-                raise ConnectionError.from_adapter(
-                    cls,
-                    "Failed to create async database engine",
-                    url=obj["engine_url"],
-                    cause=e,
-                )
-
-        # Handle different operations
-        if operation == "select":
-            # Standard SELECT operation (existing behavior)
-            if "table" not in obj:
-                raise ValidationError.from_adapter(
-                    cls, "Missing required parameter 'table'", data=obj
-                )
-
-            try:
-                async with eng.begin() as conn:
-                    # Use run_sync for table reflection
-                    def sync_select(sync_conn):
-                        meta = sa.MetaData()
-                        tbl = sa.Table(obj["table"], meta, autoload_with=sync_conn)
-
-                        # Build query with optional selectors
-                        stmt = sa.select(tbl)
-                        if "selectors" in obj and obj["selectors"]:
-                            for key, value in obj["selectors"].items():
-                                stmt = stmt.where(getattr(tbl.c, key) == value)
-
-                        # Add limit/offset if specified
-                        if "limit" in obj:
-                            stmt = stmt.limit(obj["limit"])
-                        if "offset" in obj:
-                            stmt = stmt.offset(obj["offset"])
-                        # Add order_by if specified
-                        if "order_by" in obj:
-                            stmt = stmt.order_by(text(obj["order_by"]))
-
-                        result = sync_conn.execute(stmt)
-                        # Convert Row objects to dicts
-                        return [dict(row._mapping) for row in result.fetchall()]
-
-                    rows = await conn.run_sync(sync_select)
-
-            except sa_exc.SQLAlchemyError as e:
-                raise QueryError.from_adapter(
-                    cls,
-                    "Error executing async SQL query",
-                    query=str(obj.get("selectors", {})),
-                    cause=e,
-                )
-            except Exception as e:
-                raise QueryError.from_adapter(
-                    cls, "Unexpected error in async SQL adapter", cause=e
-                )
-
-            # Handle empty result set
-            if not rows:
-                if many:
-                    return []
-                raise ResourceError.from_adapter(
-                    cls,
-                    "No rows found matching the query",
-                    resource=obj["table"],
-                    selectors=obj.get("selectors", {}),
-                )
-
-            # Convert rows to model instances (rows are already dicts from run_sync)
-            try:
-                if many:
-                    return [adapt_from(subj_cls, r, adapt_meth, adapt_kw) for r in rows]
-                return adapt_from(subj_cls, rows[0], adapt_meth, adapt_kw)
-            except Exception as e:
-                raise ValidationError.from_adapter(
-                    cls,
-                    "Data conversion failed",
-                    data=rows[0] if not many else rows,
-                    adapt_method=adapt_meth,
-                    cause=e,
-                )
-
-        elif operation == "delete":
-            # DELETE operation
-            if "table" not in obj:
-                raise ValidationError.from_adapter(
-                    cls,
-                    "Missing required parameter 'table' for delete operation",
+            elif engine_params > 1:
+                raise ValidationError(
+                    "Multiple engine parameters provided. Use only one of: 'engine', 'dsn', or 'engine_url'",
                     data=obj,
                 )
 
-            try:
-                async with eng.begin() as conn:
-                    # Use run_sync for table reflection
-                    def sync_delete(sync_conn):
-                        meta = sa.MetaData()
-                        tbl = sa.Table(obj["table"], meta, autoload_with=sync_conn)
+            # Get engine - either passed directly or create from DSN
+            if "engine" in obj:
+                eng = obj["engine"]  # Use provided engine
+            elif "dsn" in obj:
+                # Create new engine from DSN
+                try:
+                    eng = create_async_engine(obj["dsn"], future=True)
+                except Exception as e:
+                    raise ConnectionError(
+                        f"Failed to create async database engine: {e}",
+                        adapter="async_sql",
+                        url=obj["dsn"],
+                    ) from e
+            else:  # engine_url
+                # Create new engine from URL
+                try:
+                    eng = create_async_engine(obj["engine_url"], future=True)
+                except Exception as e:
+                    raise ConnectionError(
+                        f"Failed to create async database engine: {e}",
+                        adapter="async_sql",
+                        url=obj["engine_url"],
+                    ) from e
 
-                        # Build DELETE statement with selectors
-                        stmt = sa.delete(tbl)
-                        if "selectors" in obj and obj["selectors"]:
-                            for key, value in obj["selectors"].items():
-                                stmt = stmt.where(getattr(tbl.c, key) == value)
-                        else:
-                            raise ValidationError.from_adapter(
-                                cls,
-                                "DELETE operation requires 'selectors' to prevent accidental full table deletion",
-                                data=obj,
-                            )
+            # Handle different operations
+            if operation == "select":
+                # Standard SELECT operation (existing behavior)
+                if "table" not in obj:
+                    raise ValidationError(
+                        "Missing required parameter 'table'", data=obj
+                    )
 
-                        result = sync_conn.execute(stmt)
-                        return result.rowcount
+                try:
+                    async with eng.begin() as conn:
+                        # Use run_sync for table reflection
+                        def sync_select(sync_conn):
+                            meta = sa.MetaData()
+                            tbl = sa.Table(obj["table"], meta, autoload_with=sync_conn)
 
-                    deleted = await conn.run_sync(sync_delete)
-                    return {"deleted_count": deleted}
+                            # Build query with optional selectors
+                            stmt = sa.select(tbl)
+                            if "selectors" in obj and obj["selectors"]:
+                                for key, value in obj["selectors"].items():
+                                    stmt = stmt.where(getattr(tbl.c, key) == value)
 
-            except sa_exc.SQLAlchemyError as e:
-                raise QueryError.from_adapter(
-                    cls, "Error executing async SQL delete", cause=e
-                )
-            except Exception as e:
-                raise QueryError.from_adapter(
-                    cls, "Unexpected error in async SQL adapter", cause=e
-                )
+                            # Add limit/offset if specified
+                            if "limit" in obj:
+                                stmt = stmt.limit(obj["limit"])
+                            if "offset" in obj:
+                                stmt = stmt.offset(obj["offset"])
+                            # Add order_by if specified
+                            if "order_by" in obj:
+                                stmt = stmt.order_by(text(obj["order_by"]))
 
-        elif operation == "raw_sql":
-            # Raw SQL execution
-            if "sql" not in obj:
-                raise ValidationError.from_adapter(
-                    cls,
-                    "Missing required parameter 'sql' for raw_sql operation",
-                    data=obj,
-                )
-
-            try:
-                async with eng.begin() as conn:
-                    # Use SQLAlchemy text() for parameterized queries
-                    stmt = text(obj["sql"])
-                    params = obj.get("params", {})
-                    result = await conn.execute(stmt, params)
-
-                    # Handle result based on fetch_results flag and SQL type
-                    fetch_results = obj.get("fetch_results", True)
-                    if fetch_results and result.returns_rows:
-                        rows = result.fetchall()
-                        if not rows:
-                            return [] if many else None
-
-                        # Try to convert to Pydantic models if possible
-                        try:
+                            result = sync_conn.execute(stmt)
                             # Convert Row objects to dicts
-                            records = [
-                                (
-                                    dict(r._mapping)
-                                    if hasattr(r, "_mapping")
-                                    else dict(r)
-                                )
-                                for r in rows
-                            ]
-                            if (
-                                subj_cls is not dict
-                            ):  # Only convert if not using generic dict
-                                if many:
-                                    return [
-                                        adapt_from(subj_cls, r, adapt_meth, adapt_kw)
-                                        for r in records
-                                    ]
-                                return adapt_from(
-                                    subj_cls, records[0], adapt_meth, adapt_kw
-                                )
-                            else:
-                                return records if many else records[0]
-                        except (Exception, TypeError):
-                            # If conversion fails, return raw dicts
-                            records = [
-                                (
-                                    dict(r._mapping)
-                                    if hasattr(r, "_mapping")
-                                    else dict(r)
-                                )
-                                for r in rows
-                            ]
-                            return records if many else records[0]
-                    else:
-                        # For DDL, procedures, or when fetch_results=False
-                        return {
-                            "affected_rows": (
-                                result.rowcount if result.rowcount != -1 else 0
-                            )
-                        }
+                            return [dict(row._mapping) for row in result.fetchall()]
 
-            except sa_exc.SQLAlchemyError as e:
-                raise QueryError.from_adapter(cls, "Error executing raw SQL", cause=e)
-            except Exception as e:
-                raise QueryError.from_adapter(
-                    cls, "Unexpected error in async SQL adapter", cause=e
+                        rows = await conn.run_sync(sync_select)
+
+                except sa_exc.SQLAlchemyError as e:
+                    raise QueryError(
+                        f"Error executing async SQL query: {e}",
+                        query=str(obj.get("selectors", {})),
+                        adapter="async_sql",
+                    ) from e
+
+                # Handle empty result set
+                if not rows:
+                    if many:
+                        return []
+                    raise ResourceError(
+                        "No rows found matching the query",
+                        resource=obj["table"],
+                        selectors=obj.get("selectors", {}),
+                    )
+
+                # Convert rows to model instances (rows are already dicts from run_sync)
+                try:
+                    if many:
+                        return [
+                            getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {}))
+                            for r in rows
+                        ]
+                    return getattr(subj_cls, adapt_meth)(rows[0], **(adapt_kw or {}))
+                except PydanticValidationError as e:
+                    raise ValidationError(
+                        f"Validation error: {e}", data=rows[0] if not many else rows
+                    ) from e
+
+            elif operation == "delete":
+                # DELETE operation
+                if "table" not in obj:
+                    raise ValidationError(
+                        "Missing required parameter 'table' for delete operation",
+                        data=obj,
+                    )
+
+                try:
+                    async with eng.begin() as conn:
+                        # Use run_sync for table reflection
+                        def sync_delete(sync_conn):
+                            meta = sa.MetaData()
+                            tbl = sa.Table(obj["table"], meta, autoload_with=sync_conn)
+
+                            # Build DELETE statement with selectors
+                            stmt = sa.delete(tbl)
+                            if "selectors" in obj and obj["selectors"]:
+                                for key, value in obj["selectors"].items():
+                                    stmt = stmt.where(getattr(tbl.c, key) == value)
+                            else:
+                                raise ValidationError(
+                                    "DELETE operation requires 'selectors' to prevent accidental full table deletion",
+                                    data=obj,
+                                )
+
+                            result = sync_conn.execute(stmt)
+                            return result.rowcount
+
+                        deleted = await conn.run_sync(sync_delete)
+                        return {"deleted_count": deleted}
+
+                except sa_exc.SQLAlchemyError as e:
+                    raise QueryError(
+                        f"Error executing async SQL delete: {e}",
+                        adapter="async_sql",
+                    ) from e
+
+            elif operation == "raw_sql":
+                # Raw SQL execution
+                if "sql" not in obj:
+                    raise ValidationError(
+                        "Missing required parameter 'sql' for raw_sql operation",
+                        data=obj,
+                    )
+
+                try:
+                    async with eng.begin() as conn:
+                        # Use SQLAlchemy text() for parameterized queries
+                        stmt = text(obj["sql"])
+                        params = obj.get("params", {})
+                        result = await conn.execute(stmt, params)
+
+                        # Handle result based on fetch_results flag and SQL type
+                        fetch_results = obj.get("fetch_results", True)
+                        if fetch_results and result.returns_rows:
+                            rows = result.fetchall()
+                            if not rows:
+                                return [] if many else None
+
+                            # Try to convert to Pydantic models if possible
+                            try:
+                                # Convert Row objects to dicts
+                                records = [
+                                    (
+                                        dict(r._mapping)
+                                        if hasattr(r, "_mapping")
+                                        else dict(r)
+                                    )
+                                    for r in rows
+                                ]
+                                if (
+                                    subj_cls is not dict
+                                ):  # Only convert if not using generic dict
+                                    if many:
+                                        return [
+                                            getattr(subj_cls, adapt_meth)(
+                                                r, **(adapt_kw or {})
+                                            )
+                                            for r in records
+                                        ]
+                                    return getattr(subj_cls, adapt_meth)(
+                                        records[0], **(adapt_kw or {})
+                                    )
+                                else:
+                                    return records if many else records[0]
+                            except (PydanticValidationError, TypeError):
+                                # If conversion fails, return raw dicts
+                                records = [
+                                    (
+                                        dict(r._mapping)
+                                        if hasattr(r, "_mapping")
+                                        else dict(r)
+                                    )
+                                    for r in rows
+                                ]
+                                return records if many else records[0]
+                        else:
+                            # For DDL, procedures, or when fetch_results=False
+                            return {
+                                "affected_rows": (
+                                    result.rowcount if result.rowcount != -1 else 0
+                                )
+                            }
+
+                except sa_exc.SQLAlchemyError as e:
+                    raise QueryError(
+                        f"Error executing raw SQL: {e}",
+                        adapter="async_sql",
+                    ) from e
+
+            else:
+                raise ValidationError(
+                    f"Unsupported operation '{operation}' for from_obj. "
+                    f"Supported operations: select, delete, raw_sql",
+                    data=obj,
                 )
 
-        else:
-            raise ValidationError.from_adapter(
-                cls,
-                f"Unsupported operation '{operation}' for from_obj. "
-                f"Supported operations: select, delete, raw_sql",
-                data=obj,
-            )
+        except AdapterError:
+            raise
+        except Exception as e:
+            raise QueryError(
+                f"Unexpected error in async SQL adapter: {e}", adapter="async_sql"
+            ) from e
 
     # outgoing
     @classmethod
@@ -456,225 +457,218 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
         adapt_kw: dict | None = None,
         **kw,
     ):
-        # Get operation type (default: "insert" for backward compatibility)
-        operation = kw.get("operation", "insert").lower()
+        try:
+            # Get operation type (default: "insert" for backward compatibility)
+            operation = kw.get("operation", "insert").lower()
 
-        # Validate required parameters
-        if "table" not in kw:
-            raise ValidationError.from_adapter(
-                cls, "Missing required parameter 'table'"
-            )
+            # Validate required parameters
+            if "table" not in kw:
+                raise ValidationError("Missing required parameter 'table'")
 
-        table = kw["table"]
+            table = kw["table"]
 
-        # Validate only one engine parameter is provided
-        engine_params = sum(["engine" in kw, "dsn" in kw, "engine_url" in kw])
+            # Validate only one engine parameter is provided
+            engine_params = sum(["engine" in kw, "dsn" in kw, "engine_url" in kw])
 
-        if engine_params == 0:
-            raise ValidationError.from_adapter(
-                cls,
-                "Missing required parameter: one of 'engine', 'dsn', or 'engine_url'",
-            )
-        elif engine_params > 1:
-            raise ValidationError.from_adapter(
-                cls,
-                "Multiple engine parameters provided. Use only one of: 'engine', 'dsn', or 'engine_url'",
-            )
-
-        # Get engine - either passed directly or create from DSN
-        if "engine" in kw:
-            eng = kw["engine"]  # Use provided engine
-        elif "dsn" in kw:
-            # Create new engine from DSN
-            try:
-                eng = create_async_engine(kw["dsn"], future=True)
-            except Exception as e:
-                raise ConnectionError.from_adapter(
-                    cls,
-                    "Failed to create async database engine",
-                    url=kw["dsn"],
-                    cause=e,
+            if engine_params == 0:
+                raise ValidationError(
+                    "Missing required parameter: one of 'engine', 'dsn', or 'engine_url'"
                 )
-        else:  # engine_url
-            # Create new engine from URL
-            try:
-                eng = create_async_engine(kw["engine_url"], future=True)
-            except Exception as e:
-                raise ConnectionError.from_adapter(
-                    cls,
-                    "Failed to create async database engine",
-                    url=kw["engine_url"],
-                    cause=e,
+            elif engine_params > 1:
+                raise ValidationError(
+                    "Multiple engine parameters provided. Use only one of: 'engine', 'dsn', or 'engine_url'"
                 )
 
-        # Prepare data
-        items = subj if isinstance(subj, Sequence) else [subj]
-        if not items:
-            return {"affected_count": 0}
+            # Get engine - either passed directly or create from DSN
+            if "engine" in kw:
+                eng = kw["engine"]  # Use provided engine
+            elif "dsn" in kw:
+                # Create new engine from DSN
+                try:
+                    eng = create_async_engine(kw["dsn"], future=True)
+                except Exception as e:
+                    raise ConnectionError(
+                        f"Failed to create async database engine: {e}",
+                        adapter="async_sql",
+                        url=kw["dsn"],
+                    ) from e
+            else:  # engine_url
+                # Create new engine from URL
+                try:
+                    eng = create_async_engine(kw["engine_url"], future=True)
+                except Exception as e:
+                    raise ConnectionError(
+                        f"Failed to create async database engine: {e}",
+                        adapter="async_sql",
+                        url=kw["engine_url"],
+                    ) from e
 
-        # Handle different operations
-        if operation == "insert":
-            # Standard INSERT operation (existing behavior)
-            rows = [adapt_dump(i, adapt_meth, adapt_kw) for i in items]
+            # Prepare data
+            items = subj if isinstance(subj, Sequence) else [subj]
+            if not items:
+                return {"affected_count": 0}
 
-            try:
-                async with eng.begin() as conn:
-                    # Use run_sync to handle table reflection properly
-                    def sync_insert(sync_conn):
-                        meta = sa.MetaData()
-                        tbl = sa.Table(table, meta, autoload_with=sync_conn)
-                        # Filter out None values from rows to let DB handle defaults
-                        clean_rows = [
-                            {k: v for k, v in row.items() if v is not None}
-                            for row in rows
-                        ]
-                        sync_conn.execute(sa.insert(tbl), clean_rows)
-                        return len(clean_rows)
+            # Handle different operations
+            if operation == "insert":
+                # Standard INSERT operation (existing behavior)
+                rows = [getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items]
 
-                    count = await conn.run_sync(sync_insert)
-                    return {"inserted_count": count}
+                try:
+                    async with eng.begin() as conn:
+                        # Use run_sync to handle table reflection properly
+                        def sync_insert(sync_conn):
+                            meta = sa.MetaData()
+                            tbl = sa.Table(table, meta, autoload_with=sync_conn)
+                            # Filter out None values from rows to let DB handle defaults
+                            clean_rows = [
+                                {k: v for k, v in row.items() if v is not None}
+                                for row in rows
+                            ]
+                            sync_conn.execute(sa.insert(tbl), clean_rows)
+                            return len(clean_rows)
 
-            except sa_exc.SQLAlchemyError as e:
-                raise QueryError.from_adapter(
-                    cls,
-                    "Error executing async SQL insert",
-                    query=f"INSERT INTO {table}",
-                    cause=e,
-                )
-            except Exception as e:
-                raise QueryError.from_adapter(
-                    cls, "Unexpected error in async SQL adapter", cause=e
-                )
+                        count = await conn.run_sync(sync_insert)
+                        return {"inserted_count": count}
 
-        elif operation == "update":
-            # UPDATE operation
-            if "where" not in kw:
-                raise ValidationError.from_adapter(
-                    cls, "UPDATE operation requires 'where' parameter"
-                )
+                except sa_exc.SQLAlchemyError as e:
+                    raise QueryError(
+                        f"Error executing async SQL insert: {e}",
+                        query=f"INSERT INTO {table}",
+                        adapter="async_sql",
+                    ) from e
 
-            where_conditions = kw["where"]
-            update_data = [adapt_dump(i, adapt_meth, adapt_kw) for i in items]
+            elif operation == "update":
+                # UPDATE operation
+                if "where" not in kw:
+                    raise ValidationError("UPDATE operation requires 'where' parameter")
 
-            try:
-                async with eng.begin() as conn:
-                    # Use run_sync for table reflection
-                    def sync_update(sync_conn):
-                        meta = sa.MetaData()
-                        tbl = sa.Table(table, meta, autoload_with=sync_conn)
+                where_conditions = kw["where"]
+                update_data = [
+                    getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items
+                ]
 
-                        total_updated = 0
-                        for data in update_data:
-                            # Filter out None values and don't update primary keys
-                            clean_data = {
-                                k: v
-                                for k, v in data.items()
-                                if v is not None and k != "id"
-                            }
-                            if not clean_data:
-                                continue
+                try:
+                    async with eng.begin() as conn:
+                        # Use run_sync for table reflection
+                        def sync_update(sync_conn):
+                            meta = sa.MetaData()
+                            tbl = sa.Table(table, meta, autoload_with=sync_conn)
 
-                            # Build WHERE clause from conditions
-                            stmt = sa.update(tbl)
-                            for key, value in where_conditions.items():
-                                stmt = stmt.where(getattr(tbl.c, key) == value)
-
-                            # Apply updates
-                            stmt = stmt.values(**clean_data)
-                            result = sync_conn.execute(stmt)
-                            total_updated += result.rowcount
-
-                        return total_updated
-
-                    count = await conn.run_sync(sync_update)
-                    return {"updated_count": count}
-
-            except sa_exc.SQLAlchemyError as e:
-                raise QueryError.from_adapter(
-                    cls, "Error executing async SQL update", cause=e
-                )
-            except Exception as e:
-                raise QueryError.from_adapter(
-                    cls, "Unexpected error in async SQL adapter", cause=e
-                )
-
-        elif operation == "upsert":
-            # UPSERT operation (basic implementation, PostgreSQL adapter has better version)
-            if "conflict_columns" not in kw:
-                raise ValidationError.from_adapter(
-                    cls, "UPSERT operation requires 'conflict_columns' parameter"
-                )
-
-            # For basic SQL adapter, implement as INSERT with error handling
-            # PostgreSQL adapter will override with proper ON CONFLICT
-            rows = [adapt_dump(i, adapt_meth, adapt_kw) for i in items]
-            conflict_columns = kw["conflict_columns"]
-
-            try:
-                async with eng.begin() as conn:
-                    # Use run_sync for table reflection
-                    def sync_upsert(sync_conn):
-                        meta = sa.MetaData()
-                        tbl = sa.Table(table, meta, autoload_with=sync_conn)
-
-                        inserted_count = 0
-                        updated_count = 0
-
-                        for row in rows:
-                            # Clean the row data - remove None values
-                            clean_row = {k: v for k, v in row.items() if v is not None}
-
-                            # Check if record exists
-                            select_stmt = sa.select(tbl)
-                            for col in conflict_columns:
-                                if col in clean_row:
-                                    select_stmt = select_stmt.where(
-                                        getattr(tbl.c, col) == clean_row[col]
-                                    )
-
-                            existing = sync_conn.execute(select_stmt).fetchone()
-
-                            if existing:
-                                # Update existing record - don't update primary keys
-                                update_data = {
-                                    k: v for k, v in clean_row.items() if k != "id"
+                            total_updated = 0
+                            for data in update_data:
+                                # Filter out None values and don't update primary keys
+                                clean_data = {
+                                    k: v
+                                    for k, v in data.items()
+                                    if v is not None and k != "id"
                                 }
-                                if update_data:
-                                    update_stmt = sa.update(tbl)
-                                    for col in conflict_columns:
-                                        if col in clean_row:
-                                            update_stmt = update_stmt.where(
-                                                getattr(tbl.c, col) == clean_row[col]
-                                            )
-                                    update_stmt = update_stmt.values(**update_data)
-                                    sync_conn.execute(update_stmt)
-                                updated_count += 1
-                            else:
-                                # Insert new record
-                                insert_stmt = sa.insert(tbl).values(**clean_row)
-                                sync_conn.execute(insert_stmt)
-                                inserted_count += 1
+                                if not clean_data:
+                                    continue
 
-                        return {
-                            "inserted_count": inserted_count,
-                            "updated_count": updated_count,
-                            "total_count": inserted_count + updated_count,
-                        }
+                                # Build WHERE clause from conditions
+                                stmt = sa.update(tbl)
+                                for key, value in where_conditions.items():
+                                    stmt = stmt.where(getattr(tbl.c, key) == value)
 
-                    return await conn.run_sync(sync_upsert)
+                                # Apply updates
+                                stmt = stmt.values(**clean_data)
+                                result = sync_conn.execute(stmt)
+                                total_updated += result.rowcount
 
-            except sa_exc.SQLAlchemyError as e:
-                raise QueryError.from_adapter(
-                    cls, "Error executing async SQL upsert", cause=e
+                            return total_updated
+
+                        count = await conn.run_sync(sync_update)
+                        return {"updated_count": count}
+
+                except sa_exc.SQLAlchemyError as e:
+                    raise QueryError(
+                        f"Error executing async SQL update: {e}",
+                        adapter="async_sql",
+                    ) from e
+
+            elif operation == "upsert":
+                # UPSERT operation (basic implementation, PostgreSQL adapter has better version)
+                if "conflict_columns" not in kw:
+                    raise ValidationError(
+                        "UPSERT operation requires 'conflict_columns' parameter"
+                    )
+
+                # For basic SQL adapter, implement as INSERT with error handling
+                # PostgreSQL adapter will override with proper ON CONFLICT
+                rows = [getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items]
+                conflict_columns = kw["conflict_columns"]
+
+                try:
+                    async with eng.begin() as conn:
+                        # Use run_sync for table reflection
+                        def sync_upsert(sync_conn):
+                            meta = sa.MetaData()
+                            tbl = sa.Table(table, meta, autoload_with=sync_conn)
+
+                            inserted_count = 0
+                            updated_count = 0
+
+                            for row in rows:
+                                # Clean the row data - remove None values
+                                clean_row = {
+                                    k: v for k, v in row.items() if v is not None
+                                }
+
+                                # Check if record exists
+                                select_stmt = sa.select(tbl)
+                                for col in conflict_columns:
+                                    if col in clean_row:
+                                        select_stmt = select_stmt.where(
+                                            getattr(tbl.c, col) == clean_row[col]
+                                        )
+
+                                existing = sync_conn.execute(select_stmt).fetchone()
+
+                                if existing:
+                                    # Update existing record - don't update primary keys
+                                    update_data = {
+                                        k: v for k, v in clean_row.items() if k != "id"
+                                    }
+                                    if update_data:
+                                        update_stmt = sa.update(tbl)
+                                        for col in conflict_columns:
+                                            if col in clean_row:
+                                                update_stmt = update_stmt.where(
+                                                    getattr(tbl.c, col)
+                                                    == clean_row[col]
+                                                )
+                                        update_stmt = update_stmt.values(**update_data)
+                                        sync_conn.execute(update_stmt)
+                                    updated_count += 1
+                                else:
+                                    # Insert new record
+                                    insert_stmt = sa.insert(tbl).values(**clean_row)
+                                    sync_conn.execute(insert_stmt)
+                                    inserted_count += 1
+
+                            return {
+                                "inserted_count": inserted_count,
+                                "updated_count": updated_count,
+                                "total_count": inserted_count + updated_count,
+                            }
+
+                        return await conn.run_sync(sync_upsert)
+
+                except sa_exc.SQLAlchemyError as e:
+                    raise QueryError(
+                        f"Error executing async SQL upsert: {e}",
+                        adapter="async_sql",
+                    ) from e
+
+            else:
+                raise ValidationError(
+                    f"Unsupported operation '{operation}' for to_obj. "
+                    f"Supported operations: insert, update, upsert"
                 )
-            except Exception as e:
-                raise QueryError.from_adapter(
-                    cls, "Unexpected error in async SQL adapter", cause=e
-                )
 
-        else:
-            raise ValidationError.from_adapter(
-                cls,
-                f"Unsupported operation '{operation}' for to_obj. "
-                f"Supported operations: insert, update, upsert",
-            )
+        except AdapterError:
+            raise
+        except Exception as e:
+            raise QueryError(
+                f"Unexpected error in async SQL adapter: {e}", adapter="async_sql"
+            ) from e

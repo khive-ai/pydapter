@@ -1,17 +1,23 @@
-"""AsyncQdrantAdapter, obj_key = 'async_qdrant'"""
+"""
+AsyncQdrantAdapter - vector upsert / search using AsyncQdrantClient.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import TypeVar
 
 import grpc
+from pydantic import BaseModel, ValidationError
 from qdrant_client.async_qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models as qd
 from qdrant_client.http.exceptions import UnexpectedResponse
 
 from ..async_core import AsyncAdapter
-from ..exceptions import ConnectionError, QueryError, ResourceError, ValidationError
-from ..utils import T, adapt_dump, adapt_from
+from ..exceptions import AdapterError, ConnectionError, QueryError, ResourceError
+from ..exceptions import ValidationError as AdapterValidationError
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class AsyncQdrantAdapter(AsyncAdapter[T]):
@@ -69,8 +75,8 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
 
     obj_key = "async_qdrant"
 
-    @classmethod
-    def _client(cls, url: str | None):
+    @staticmethod
+    def _client(url: str | None):
         """
         Create an async Qdrant client with proper error handling.
 
@@ -86,13 +92,15 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
         try:
             return AsyncQdrantClient(url=url) if url else AsyncQdrantClient(":memory:")
         except UnexpectedResponse as e:
-            raise ConnectionError.from_adapter(
-                cls, "Failed to connect to Qdrant", url=url, cause=e
-            )
+            raise ConnectionError(
+                f"Failed to connect to Qdrant: {e}", adapter="async_qdrant", url=url
+            ) from e
         except Exception as e:
-            raise ConnectionError.from_adapter(
-                cls, "Unexpected error connecting to Qdrant", url=url, cause=e
-            )
+            raise ConnectionError(
+                f"Unexpected error connecting to Qdrant: {e}",
+                adapter="async_qdrant",
+                url=url,
+            ) from e
 
     @staticmethod
     def _validate_vector_dimensions(vector, expected_dim=None):
@@ -100,14 +108,15 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
         if not isinstance(vector, (list, tuple)) or not all(
             isinstance(x, (int, float)) for x in vector
         ):
-            raise ValidationError(
-                "Vector must be a list or tuple of numbers", details={"data": vector}
+            raise AdapterValidationError(
+                "Vector must be a list or tuple of numbers",
+                data=vector,
             )
 
         if expected_dim is not None and len(vector) != expected_dim:
-            raise ValidationError(
+            raise AdapterValidationError(
                 f"Vector dimension mismatch: expected {expected_dim}, got {len(vector)}",
-                details={"data": vector},
+                data=vector,
             )
 
     # outgoing
@@ -126,99 +135,101 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
         adapt_kw: dict | None = None,
         **kw,
     ):
-        # Validate required parameters
-        if not collection:
-            raise ValidationError.from_adapter(
-                cls, "Missing required parameter 'collection'"
-            )
-
-        # Prepare data
-        items = subj if isinstance(subj, Sequence) else [subj]
-        if not items:
-            return None  # Nothing to insert
-
-        # Validate vector field exists
-        if not hasattr(items[0], vector_field):
-            raise ValidationError.from_adapter(
-                cls,
-                f"Vector field '{vector_field}' not found in model",
-                data=adapt_dump(items[0], adapt_meth, adapt_kw),
-            )
-
-        # Validate ID field exists
-        if not hasattr(items[0], id_field):
-            raise ValidationError.from_adapter(
-                cls,
-                f"ID field '{id_field}' not found in model",
-                data=adapt_dump(items[0], adapt_meth, adapt_kw),
-            )
-
-        # Get vector dimension
-        vector = getattr(items[0], vector_field)
-        cls._validate_vector_dimensions(vector)
-        dim = len(vector)
-
-        # Create client
-        client = cls._client(url)
-
-        # Create or recreate collection
         try:
-            await client.recreate_collection(
-                collection,
-                vectors_config=qd.VectorParams(size=dim, distance="Cosine"),
-            )
-        except UnexpectedResponse as e:
-            raise QueryError.from_adapter(
-                cls,
-                "Failed to create Qdrant collection",
-                collection_name=collection,
-                cause=e,
-            )
-        except Exception as e:
-            raise QueryError.from_adapter(
-                cls,
-                "Unexpected error creating Qdrant collection",
-                collection_name=collection,
-                cause=e,
-            )
+            # Validate required parameters
+            if not collection:
+                raise AdapterValidationError("Missing required parameter 'collection'")
 
-        # Create points
-        try:
-            points = []
-            for i, item in enumerate(items):
-                vector = getattr(item, vector_field)
-                cls._validate_vector_dimensions(vector, dim)
+            # Prepare data
+            items = subj if isinstance(subj, Sequence) else [subj]
+            if not items:
+                return None  # Nothing to insert
 
-                points.append(
-                    qd.PointStruct(
-                        id=getattr(item, id_field),
-                        vector=vector,
-                        payload=adapt_dump(
-                            item,
-                            adapt_meth,
-                            {**(adapt_kw or {}), "exclude": {vector_field}},
-                        ),
-                    )
+            # Validate vector field exists
+            if not hasattr(items[0], vector_field):
+                raise AdapterValidationError(
+                    f"Vector field '{vector_field}' not found in model",
+                    data=getattr(items[0], adapt_meth)(**(adapt_kw or {})),
                 )
-        except ValidationError:
-            # Re-raise validation errors
-            raise
-        except Exception as e:
-            raise ValidationError.from_adapter(
-                cls, "Error creating Qdrant points", data=items, cause=e
-            )
 
-        # Upsert points
-        try:
-            await client.upsert(collection, points)
-            return {"upserted_count": len(points)}
-        except UnexpectedResponse as e:
-            raise QueryError.from_adapter(
-                cls, "Failed to upsert points to Qdrant", cause=e
-            )
+            # Validate ID field exists
+            if not hasattr(items[0], id_field):
+                raise AdapterValidationError(
+                    f"ID field '{id_field}' not found in model",
+                    data=getattr(items[0], adapt_meth)(**(adapt_kw or {})),
+                )
+
+            # Get vector dimension
+            vector = getattr(items[0], vector_field)
+            cls._validate_vector_dimensions(vector)
+            dim = len(vector)
+
+            # Create client
+            client = cls._client(url)
+
+            # Create or recreate collection
+            try:
+                await client.recreate_collection(
+                    collection,
+                    vectors_config=qd.VectorParams(size=dim, distance="Cosine"),
+                )
+            except UnexpectedResponse as e:
+                raise QueryError(
+                    f"Failed to create Qdrant collection: {e}",
+                    adapter="async_qdrant",
+                ) from e
+            except Exception as e:
+                raise QueryError(
+                    f"Unexpected error creating Qdrant collection: {e}",
+                    adapter="async_qdrant",
+                ) from e
+
+            # Create points
+            try:
+                points = []
+                for i, item in enumerate(items):
+                    vector = getattr(item, vector_field)
+                    cls._validate_vector_dimensions(vector, dim)
+
+                    points.append(
+                        qd.PointStruct(
+                            id=getattr(item, id_field),
+                            vector=vector,
+                            payload=getattr(item, adapt_meth)(
+                                exclude={vector_field}, **(adapt_kw or {})
+                            ),
+                        )
+                    )
+            except AdapterValidationError:
+                # Re-raise validation errors
+                raise
+            except Exception as e:
+                raise AdapterValidationError(
+                    f"Error creating Qdrant points: {e}",
+                    data=items,
+                ) from e
+
+            # Upsert points
+            try:
+                await client.upsert(collection, points)
+                return {"upserted_count": len(points)}
+            except UnexpectedResponse as e:
+                raise QueryError(
+                    f"Failed to upsert points to Qdrant: {e}",
+                    adapter="async_qdrant",
+                ) from e
+            except Exception as e:
+                raise QueryError(
+                    f"Unexpected error upserting points to Qdrant: {e}",
+                    adapter="async_qdrant",
+                ) from e
+
+        except AdapterError:
+            raise
+
         except Exception as e:
-            raise QueryError.from_adapter(
-                cls, "Unexpected error upserting points to Qdrant", cause=e
+            raise QueryError(
+                f"Unexpected error in async Qdrant adapter: {e}", adapter="async_qdrant"
             )
 
     # incoming
@@ -234,75 +245,81 @@ class AsyncQdrantAdapter(AsyncAdapter[T]):
         adapt_kw: dict | None = None,
         **kw,
     ):
-        if "collection" not in obj:
-            raise ValidationError.from_adapter(
-                cls, "Missing required parameter 'collection'", data=obj
-            )
-        if "query_vector" not in obj:
-            raise ValidationError.from_adapter(
-                cls, "Missing required parameter 'query_vector'", data=obj
-            )
-
-        # Validate query vector & Create client
-        cls._validate_vector_dimensions(obj["query_vector"])
-        client = cls._client(obj.get("url"))
-
-        # Execute search
         try:
-            res = await client.search(
-                obj["collection"],
-                obj["query_vector"],
-                limit=obj.get("top_k", 5),
-                with_payload=True,
-            )
-        except UnexpectedResponse as e:
-            if "not found" in str(e).lower():
-                raise ResourceError.from_adapter(
-                    cls,
-                    "Qdrant collection not found",
-                    resource=obj["collection"],
-                    cause=e,
+            if "collection" not in obj:
+                raise AdapterValidationError(
+                    "Missing required parameter 'collection'", data=obj
                 )
-            raise QueryError.from_adapter(
-                cls,
-                "Failed to search Qdrant",
-                query_vector=obj["query_vector"],
-                cause=e,
-            )
-        except grpc.RpcError as e:
-            raise ConnectionError.from_adapter(
-                cls, "Qdrant RPC error", url=obj.get("url"), cause=e
-            )
+            if "query_vector" not in obj:
+                raise AdapterValidationError(
+                    "Missing required parameter 'query_vector'", data=obj
+                )
+
+            # Validate query vector & Create client
+            cls._validate_vector_dimensions(obj["query_vector"])
+            client = cls._client(obj.get("url"))
+
+            # Execute search
+            try:
+                res = await client.search(
+                    obj["collection"],
+                    obj["query_vector"],
+                    limit=obj.get("top_k", 5),
+                    with_payload=True,
+                )
+            except UnexpectedResponse as e:
+                if "not found" in str(e).lower():
+                    raise ResourceError(
+                        f"Qdrant collection not found: {e}",
+                        resource=obj["collection"],
+                    ) from e
+                raise QueryError(
+                    f"Failed to search Qdrant: {e}",
+                    adapter="async_qdrant",
+                ) from e
+            except grpc.RpcError as e:
+                raise ConnectionError(
+                    f"Qdrant RPC error: {e}",
+                    adapter="async_qdrant",
+                    url=obj.get("url"),
+                ) from e
+            except Exception as e:
+                raise QueryError(
+                    f"Unexpected error searching Qdrant: {e}",
+                    adapter="async_qdrant",
+                ) from e
+
+            # Extract payloads
+            docs = [r.payload for r in res]
+
+            # Handle empty result set
+            if not docs:
+                if many:
+                    return []
+                raise ResourceError(
+                    "No points found matching the query vector",
+                    resource=obj["collection"],
+                )
+
+            # Convert documents to model instances
+            try:
+                if many:
+                    return [
+                        getattr(subj_cls, adapt_meth)(d, **(adapt_kw or {}))
+                        for d in docs
+                    ]
+                return getattr(subj_cls, adapt_meth)(docs[0], **(adapt_kw or {}))
+            except ValidationError as e:
+                raise AdapterValidationError(
+                    f"Validation error: {e}",
+                    data=docs[0] if not many else docs,
+                    errors=e.errors(),
+                ) from e
+
+        except AdapterError:
+            raise
+
         except Exception as e:
-            raise QueryError.from_adapter(
-                cls,
-                "Unexpected error searching Qdrant",
-                query_vector=obj["query_vector"],
-                cause=e,
-            )
-
-        # Extract payloads
-        docs = [r.payload for r in res]
-
-        # Handle empty result set
-        if not docs:
-            if many:
-                return []
-            raise ResourceError.from_adapter(
-                cls,
-                "No points found matching the query vector",
-                resource=obj["collection"],
-            )
-
-        # Convert documents to model instances
-        try:
-            if many:
-                return [adapt_from(subj_cls, d, adapt_meth, adapt_kw) for d in docs]
-            return adapt_from(subj_cls, docs[0], adapt_meth, adapt_kw)
-        except ValidationError as e:
-            raise ValidationError.from_adapter(
-                cls,
-                "Validation error converting to model",
-                data=docs[0] if not many else docs,
-                cause=e,
+            raise QueryError(
+                f"Unexpected error in async Qdrant adapter: {e}", adapter="async_qdrant"
             )

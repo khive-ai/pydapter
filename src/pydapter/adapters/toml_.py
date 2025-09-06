@@ -1,14 +1,24 @@
-"""TOML Adapter, obj_key = 'toml'"""
+"""
+TOML Adapter for Pydantic Models.
+
+This module provides the TomlAdapter class for converting between Pydantic models
+and TOML data formats. It supports reading from TOML files or strings and writing
+Pydantic models to TOML format.
+"""
 
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TypeVar
 
 import toml
+from pydantic import BaseModel, ValidationError
 
 from ..core import Adapter
-from ..exceptions import ParseError, ResourceError, ValidationError
-from ..utils import T, adapt_dump, adapt_from
+from ..exceptions import ParseError
+from ..exceptions import ValidationError as AdapterValidationError
+
+T = TypeVar("T", bound=BaseModel)
 
 
 def _ensure_list(d):
@@ -28,23 +38,44 @@ class TomlAdapter(Adapter[T]):
     """
     Adapter for converting between Pydantic models and TOML data.
 
-    Parameters:
-        adapt_kw: Parameters passed to Pydantic model methods (model_validate/model_dump)
-        **kw: Parameters passed to TOML operations (toml.dumps)
+    This adapter handles TOML files and strings, providing methods to:
+    - Parse TOML data into Pydantic model instances
+    - Convert Pydantic models to TOML format
+    - Handle both single objects and arrays of objects
+
+    Attributes:
+        obj_key: The key identifier for this adapter type ("toml")
 
     Example:
         ```python
-        # Parse with validation options
-        person = TomlAdapter.from_obj(
-            Person, toml_data,
-            adapt_kw={"strict": True}  # To model_validate
-        )
+        from pydantic import BaseModel
+        from pydapter.adapters.toml_ import TomlAdapter
 
-        # Convert with custom options
-        toml_output = TomlAdapter.to_obj(
-            person,
-            adapt_kw={"exclude_unset": True}  # To model_dump
-        )
+        class Person(BaseModel):
+            name: str
+            age: int
+
+        # Parse TOML data
+        toml_data = '''
+        name = "John"
+        age = 30
+        '''
+        person = TomlAdapter.from_obj(Person, toml_data)
+
+        # Parse TOML array
+        toml_array = '''
+        [[people]]
+        name = "John"
+        age = 30
+
+        [[people]]
+        name = "Jane"
+        age = 25
+        '''
+        people = TomlAdapter.from_obj(Person, toml_array, many=True)
+
+        # Convert to TOML
+        toml_output = TomlAdapter.to_obj(person)
         ```
     """
 
@@ -68,46 +99,49 @@ class TomlAdapter(Adapter[T]):
                 try:
                     text = Path(obj).read_text()
                 except Exception as e:
-                    raise ResourceError.from_adapter(
-                        cls, "Failed to read TOML file", source=obj, cause=e
-                    )
+                    raise ParseError(f"Failed to read TOML file: {e}", source=str(obj))
             else:
                 text = obj
 
             # Check for empty input
             if not text or (isinstance(text, str) and not text.strip()):
-                raise ParseError.from_adapter(cls, "Empty TOML content", source=obj)
+                raise ParseError(
+                    "Empty TOML content",
+                    source=str(obj)[:100] if isinstance(obj, str) else str(obj),
+                )
 
             # Parse TOML
             try:
                 parsed = toml.loads(text, **kw)
             except toml.TomlDecodeError as e:
-                raise ParseError.from_adapter(cls, "Invalid TOML", source=text, cause=e)
+                raise ParseError(
+                    f"Invalid TOML: {e}",
+                    source=str(text)[:100] if isinstance(text, str) else str(text),
+                )
 
             # Validate against model
             try:
                 if many:
                     return [
-                        adapt_from(subj_cls, x, adapt_meth, adapt_kw)
+                        getattr(subj_cls, adapt_meth)(x, **(adapt_kw or {}))
                         for x in _ensure_list(parsed)
                     ]
-                return adapt_from(subj_cls, parsed, adapt_meth, adapt_kw)
-            except Exception as e:
-                raise ValidationError.from_adapter(
-                    cls,
-                    "Data conversion failed",
+                return getattr(subj_cls, adapt_meth)(parsed, **(adapt_kw or {}))
+            except ValidationError as e:
+                raise AdapterValidationError(
+                    f"Validation error: {e}",
                     data=parsed,
-                    adapt_method=adapt_meth,
-                    cause=e,
+                    errors=e.errors(),
                 )
 
-        except (ParseError, ResourceError, ValidationError):
+        except (ParseError, AdapterValidationError):
             # Re-raise our custom exceptions
             raise
         except Exception as e:
             # Wrap other exceptions
-            raise ParseError.from_adapter(
-                cls, "Unexpected error parsing TOML", source=obj, cause=e
+            raise ParseError(
+                f"Unexpected error parsing TOML: {e}",
+                source=str(obj)[:100] if isinstance(obj, str) else str(obj),
             )
 
     @classmethod
@@ -121,19 +155,19 @@ class TomlAdapter(Adapter[T]):
         adapt_kw: dict | None = None,
         **kw,
     ) -> str:
-        items = subj if isinstance(subj, list) else [subj]
-
-        if not items:
-            return ""
-
-        if many:
-            payload = {"items": [adapt_dump(i, adapt_meth, adapt_kw) for i in items]}
-        else:
-            payload = adapt_dump(items[0], adapt_meth, adapt_kw)
-
         try:
-            return toml.dumps(payload, **kw)
-        except Exception as e:
-            raise ParseError.from_adapter(
-                cls, "Error generating TOML", adapt_method=adapt_meth, cause=e
+            items = subj if isinstance(subj, list) else [subj]
+
+            if not items:
+                return ""
+
+            payload = (
+                {"items": [getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items]}
+                if many
+                else getattr(items[0], adapt_meth)(**(adapt_kw or {}))
             )
+            return toml.dumps(payload, **kw)
+
+        except Exception as e:
+            # Wrap exceptions
+            raise ParseError(f"Error generating TOML: {e}")

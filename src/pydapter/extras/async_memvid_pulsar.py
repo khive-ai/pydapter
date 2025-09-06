@@ -1,4 +1,6 @@
-"""Async Pulsar-enhanced Memvid adapter, obj_key = 'pulsar_memvid'"""
+"""
+Async Pulsar-enhanced Memvid adapter - combines `memvid` with Apache Pulsar for enterprise streaming.
+"""
 
 from __future__ import annotations
 
@@ -8,13 +10,15 @@ import uuid
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
+from pydantic import ValidationError as PydanticValidationError
 
 from ..async_core import AsyncAdapter
 from ..exceptions import ConnectionError, QueryError, ResourceError, ValidationError
-from ..utils import T, adapt_dump, adapt_from
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class PulsarMemvidMessage(BaseModel):
@@ -103,8 +107,8 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
 
     obj_key = "pulsar_memvid"
 
-    @classmethod
-    async def _import_dependencies(cls):
+    @staticmethod
+    async def _import_dependencies():
         """Import required dependencies with proper error handling."""
         try:
             import pulsar
@@ -113,17 +117,15 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
             return pulsar, MemvidEncoder, MemvidRetriever
         except ImportError as e:
             missing_lib = "pulsar-client" if "pulsar" in str(e) else "memvid"
-            raise ConnectionError.from_adapter(
-                cls,
-                f"Failed to import {missing_lib}",
-                install_hint=f"pip install {missing_lib}",
-                cause=e,
-            )
+            raise ConnectionError(
+                f"Failed to import {missing_lib}: {e}. Install with: pip install {missing_lib}",
+                adapter="pulsar_memvid",
+            ) from e
 
-    @classmethod
-    async def _create_pulsar_client(cls, pulsar_url: str, **client_kwargs):
+    @staticmethod
+    async def _create_pulsar_client(pulsar_url: str, **client_kwargs):
         """Create Pulsar client with connection validation."""
-        pulsar, _, _ = await cls._import_dependencies()
+        pulsar, _, _ = await AsyncPulsarMemvidAdapter._import_dependencies()
 
         try:
             client = pulsar.Client(
@@ -131,12 +133,11 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
             )
             return client
         except Exception as e:
-            raise ConnectionError.from_adapter(
-                cls,
-                "Failed to create Pulsar client",
-                broker_url=pulsar_url,
-                cause=e,
-            )
+            raise ConnectionError(
+                f"Failed to create Pulsar client: {e}",
+                adapter="pulsar_memvid",
+                url=pulsar_url,
+            ) from e
 
     @classmethod
     async def _create_producer(cls, client, topic: str, **producer_kwargs):
@@ -156,12 +157,10 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
             producer = client.create_producer(**producer_config)
             return producer
         except Exception as e:
-            raise ConnectionError.from_adapter(
-                cls,
-                "Failed to create Pulsar producer",
-                topic=topic,
-                cause=e,
-            )
+            raise ConnectionError(
+                f"Failed to create Pulsar producer for topic '{topic}': {e}",
+                adapter="pulsar_memvid",
+            ) from e
 
     @classmethod
     async def _create_consumer(
@@ -183,13 +182,10 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
             consumer = client.subscribe(**consumer_config)
             return consumer
         except Exception as e:
-            raise ConnectionError.from_adapter(
-                cls,
-                "Failed to create Pulsar consumer",
-                topic=topic,
-                subscription_name=subscription,
-                cause=e,
-            )
+            raise ConnectionError(
+                f"Failed to create Pulsar consumer for topic '{topic}': {e}",
+                adapter="pulsar_memvid",
+            ) from e
 
     @classmethod
     async def _process_memory_operation(
@@ -369,151 +365,150 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
             async_processing: Whether to process asynchronously
             result_topic: Topic to publish results (if async_processing=True)
         """
-        # Validate required parameters
-        if not pulsar_url:
-            raise ValidationError.from_adapter(
-                cls, "Missing required parameter 'pulsar_url'"
-            )
-        if not topic:
-            raise ValidationError.from_adapter(
-                cls, "Missing required parameter 'topic'"
-            )
-        if not memory_id:
-            raise ValidationError.from_adapter(
-                cls, "Missing required parameter 'memory_id'"
-            )
-        if not video_file:
-            raise ValidationError.from_adapter(
-                cls, "Missing required parameter 'video_file'"
-            )
-        if not index_file:
-            raise ValidationError.from_adapter(
-                cls, "Missing required parameter 'index_file'"
-            )
-
-        # Prepare data
-        items = subj if isinstance(subj, Sequence) else [subj]
-        if not items:
-            return {"message_count": 0, "memory_id": memory_id}
-
-        # Validate text field exists
-        if not hasattr(items[0], text_field):
-            raise ValidationError.from_adapter(
-                cls,
-                f"Text field '{text_field}' not found in model",
-                text_field=text_field,
-                data=adapt_dump(items[0], adapt_meth, adapt_kw),
-            )
-
-        # Create Pulsar client and producer
-        client = await cls._create_pulsar_client(pulsar_url)
-        producer = await cls._create_producer(client, topic)
-
         try:
-            # Prepare chunks from models
-            chunks = []
-            for item in items:
-                text = getattr(item, text_field)
-                if not isinstance(text, str):
-                    raise ValidationError.from_adapter(
-                        cls,
-                        f"Text field '{text_field}' must be a string",
-                        text_field=text_field,
-                        data=text,
-                    )
+            # Validate required parameters
+            if not pulsar_url:
+                raise ValidationError("Missing required parameter 'pulsar_url'")
+            if not topic:
+                raise ValidationError("Missing required parameter 'topic'")
+            if not memory_id:
+                raise ValidationError("Missing required parameter 'memory_id'")
+            if not video_file:
+                raise ValidationError("Missing required parameter 'video_file'")
+            if not index_file:
+                raise ValidationError("Missing required parameter 'index_file'")
 
-                chunk_data = {
-                    "text": text,
-                    "metadata": adapt_dump(item, adapt_meth, adapt_kw),
-                }
-                chunks.append(chunk_data)
+            # Prepare data
+            items = subj if isinstance(subj, Sequence) else [subj]
+            if not items:
+                return {"message_count": 0, "memory_id": memory_id}
 
-            # Create Pulsar message
-            message = PulsarMemvidMessage(
-                message_id=str(uuid.uuid4()),
-                timestamp=datetime.now(),
-                operation=operation,
-                payload={
-                    "chunks": chunks,
-                    "chunk_size": chunk_size,
-                    "overlap": overlap,
-                    "codec": codec,
-                    "video_file": video_file,
-                    "index_file": index_file,
-                },
-                memory_id=memory_id,
-                source="pydapter",
-                metadata={
-                    "item_count": len(items),
-                    "text_field": text_field,
-                    "async_processing": async_processing,
-                },
-            )
+            # Validate text field exists
+            if not hasattr(items[0], text_field):
+                raise ValidationError(
+                    f"Text field '{text_field}' not found in model",
+                    data=getattr(items[0], adapt_meth)(**(adapt_kw or {})),
+                )
 
-            # Send message to Pulsar
-            message_data = adapt_dump(message, adapt_meth + "_json", None).encode(
-                "utf-8"
-            )
-            msg_id = producer.send(
-                content=message_data,
-                properties={
+            # Create Pulsar client and producer
+            client = await cls._create_pulsar_client(pulsar_url)
+            producer = await cls._create_producer(client, topic)
+
+            try:
+                # Prepare chunks from models
+                chunks = []
+                for item in items:
+                    text = getattr(item, text_field)
+                    if not isinstance(text, str):
+                        raise ValidationError(
+                            f"Text field '{text_field}' must be a string",
+                            data=text,
+                        )
+
+                    chunk_data = {
+                        "text": text,
+                        "metadata": getattr(item, adapt_meth)(**(adapt_kw or {})),
+                    }
+                    chunks.append(chunk_data)
+
+                # Create Pulsar message
+                message = PulsarMemvidMessage(
+                    message_id=str(uuid.uuid4()),
+                    timestamp=datetime.now(),
+                    operation=operation,
+                    payload={
+                        "chunks": chunks,
+                        "chunk_size": chunk_size,
+                        "overlap": overlap,
+                        "codec": codec,
+                        "video_file": video_file,
+                        "index_file": index_file,
+                    },
+                    memory_id=memory_id,
+                    source="pydapter",
+                    metadata={
+                        "item_count": len(items),
+                        "text_field": text_field,
+                        "async_processing": async_processing,
+                    },
+                )
+
+                # Send message to Pulsar
+                message_data = getattr(message, adapt_meth + "_json")(
+                    **(adapt_kw or {})
+                ).encode("utf-8")
+                msg_id = producer.send(
+                    content=message_data,
+                    properties={
+                        "memory_id": memory_id,
+                        "operation": operation,
+                        "message_id": message.message_id,
+                    },
+                )
+
+                result = {
+                    "message_sent": True,
+                    "message_id": message.message_id,
+                    "pulsar_message_id": str(msg_id),
                     "memory_id": memory_id,
                     "operation": operation,
-                    "message_id": message.message_id,
-                },
-            )
+                    "item_count": len(items),
+                    "async_processing": async_processing,
+                }
 
-            result = {
-                "message_sent": True,
-                "message_id": message.message_id,
-                "pulsar_message_id": str(msg_id),
-                "memory_id": memory_id,
-                "operation": operation,
-                "item_count": len(items),
-                "async_processing": async_processing,
-            }
+                # If not async, process immediately
+                if not async_processing:
+                    operation_result = await cls._process_memory_operation(
+                        operation=operation,
+                        payload=message.payload,
+                        memory_id=memory_id,
+                        video_file=video_file,
+                        index_file=index_file,
+                    )
 
-            # If not async, process immediately
-            if not async_processing:
-                operation_result = await cls._process_memory_operation(
-                    operation=operation,
-                    payload=message.payload,
-                    memory_id=memory_id,
-                    video_file=video_file,
-                    index_file=index_file,
-                )
+                    result.update(
+                        {
+                            "operation_result": getattr(operation_result, adapt_meth)(
+                                **(adapt_kw or {})
+                            ),
+                            "success": operation_result.success,
+                        }
+                    )
 
-                result.update(
-                    {
-                        "operation_result": getattr(operation_result, adapt_meth)(),
-                        "success": operation_result.success,
-                    }
-                )
-
-                # Publish result if result topic provided
-                if result_topic and operation_result.success:
-                    result_producer = await cls._create_producer(client, result_topic)
-                    try:
-                        result_data = getattr(
-                            operation_result, adapt_meth + "_json"
-                        )().encode("utf-8")
-                        result_producer.send(
-                            content=result_data,
-                            properties={
-                                "memory_id": memory_id,
-                                "operation": operation,
-                                "message_id": message.message_id,
-                                "success": str(operation_result.success),
-                            },
+                    # Publish result if result topic provided
+                    if result_topic and operation_result.success:
+                        result_producer = await cls._create_producer(
+                            client, result_topic
                         )
-                    finally:
-                        result_producer.close()
+                        try:
+                            result_data = getattr(
+                                operation_result, adapt_meth + "_json"
+                            )(**(adapt_kw or {})).encode("utf-8")
+                            result_producer.send(
+                                content=result_data,
+                                properties={
+                                    "memory_id": memory_id,
+                                    "operation": operation,
+                                    "message_id": message.message_id,
+                                    "success": str(operation_result.success),
+                                },
+                            )
+                        finally:
+                            result_producer.close()
 
-            return result
+                return result
 
-        finally:
-            producer.close()
-            client.close()
+            finally:
+                producer.close()
+                client.close()
+
+        except (ConnectionError, QueryError, ValidationError):
+            raise
+        except Exception as e:
+            raise QueryError(
+                f"Unexpected error in Pulsar Memvid adapter: {e}",
+                adapter="pulsar_memvid",
+            )
 
     # incoming - consume search queries from Pulsar and return results
     @classmethod
@@ -523,9 +518,8 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
         obj: dict,
         /,
         *,
-        many: bool = True,
+        many=True,
         adapt_meth: str = "model_validate",
-        adapt_kw: dict | None = None,
         **_kw,
     ) -> list[T] | T | None:
         """
@@ -544,32 +538,31 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                 - index_file: Index file path
             many: Whether to return multiple results
         """
-        # Validate required parameters
-        if "pulsar_url" not in obj:
-            raise ValidationError.from_adapter(
-                cls,
-                "Missing required parameter 'pulsar_url'",
-                data=obj,
-            )
-
-        # Handle direct search vs streaming consumption
         try:
+            # Validate required parameters
+            if "pulsar_url" not in obj:
+                raise ValidationError(
+                    "Missing required parameter 'pulsar_url'", data=obj
+                )
+
+            # Handle direct search vs streaming consumption
             if "query" in obj:
                 # Direct search mode
                 return await cls._direct_search(
-                    subj_cls, obj, many=many, adapt_meth=adapt_meth, adapt_kw=adapt_kw
+                    subj_cls, obj, many=many, adapt_meth=adapt_meth
                 )
             else:
                 # Streaming consumption mode
                 return await cls._stream_search(
-                    subj_cls, obj, many=many, adapt_meth=adapt_meth, adapt_kw=adapt_kw
+                    subj_cls, obj, many=many, adapt_meth=adapt_meth
                 )
+
+        except (ConnectionError, QueryError, ResourceError, ValidationError):
+            raise
         except Exception as e:
-            raise QueryError.from_adapter(
-                cls,
-                "Unexpected error in Pulsar Memvid adapter",
-                operation="from_obj",
-                cause=e,
+            raise QueryError(
+                f"Unexpected error in Pulsar Memvid adapter: {e}",
+                adapter="pulsar_memvid",
             )
 
     @classmethod
@@ -584,8 +577,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
     ) -> list[T] | T | None:
         """Perform direct search without Pulsar streaming."""
         if "video_file" not in obj or "index_file" not in obj:
-            raise ValidationError.from_adapter(
-                cls,
+            raise ValidationError(
                 "Missing required parameters 'video_file' and 'index_file' for direct search",
                 data=obj,
             )
@@ -602,11 +594,9 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
         if not operation_result.success:
             if many:
                 return []
-            raise ResourceError.from_adapter(
-                cls,
-                "Search failed",
+            raise ResourceError(
+                f"Search failed: {operation_result.error}",
                 resource=f"{obj['video_file']}, {obj['index_file']}",
-                error=operation_result.error,
             )
 
         # Convert results to model instances
@@ -614,8 +604,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
         if not search_results:
             if many:
                 return []
-            raise ResourceError.from_adapter(
-                cls,
+            raise ResourceError(
                 "No results found for query",
                 resource=obj["video_file"],
                 query=obj["query"],
@@ -633,36 +622,27 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                 }
 
                 try:
-                    instance = adapt_from(subj_cls, model_data, adapt_meth, adapt_kw)
+                    instance = getattr(subj_cls, adapt_meth)(
+                        model_data, **(adapt_kw or {})
+                    )
                     instances.append(instance)
-                except ValidationError:
+                except PydanticValidationError:
                     # Fallback for different model structures
                     minimal_data = {"text": text_content}
-                    try:
-                        instance = adapt_from(
-                            subj_cls, minimal_data, adapt_meth, adapt_kw
-                        )
-                        instances.append(instance)
-                    except ValidationError as fallback_error:
-                        raise ValidationError.from_adapter(
-                            cls,
-                            "Validation failed for both full and minimal model data",
-                            model_data=model_data,
-                            minimal_data=minimal_data,
-                            cause=fallback_error,
-                        )
+                    instance = getattr(subj_cls, adapt_meth)(
+                        minimal_data, **(adapt_kw or {})
+                    )
+                    instances.append(instance)
 
             if many:
                 return instances
             return instances[0] if instances else None
 
-        except ValidationError as e:
-            raise ValidationError.from_adapter(
-                cls,
-                "Validation error converting search results",
+        except PydanticValidationError as e:
+            raise ValidationError(
+                f"Validation error converting search results: {e}",
                 data=search_results[0] if search_results else None,
-                cause=e,
-            )
+            ) from e
 
     @classmethod
     async def _stream_search(
@@ -676,8 +656,7 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
     ) -> list[T] | T | None:
         """Consume search queries from Pulsar stream."""
         if "search_topic" not in obj:
-            raise ValidationError.from_adapter(
-                cls,
+            raise ValidationError(
                 "Missing required parameter 'search_topic' for streaming search",
                 data=obj,
             )
@@ -711,9 +690,8 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                     index_file = payload.get("index_file") or obj.get("index_file")
 
                     if not video_file or not index_file:
-                        raise ValidationError.from_adapter(
-                            cls,
-                            "Missing video_file or index_file in message payload or config",
+                        raise ValidationError(
+                            "Missing video_file or index_file in message payload or config"
                         )
 
                     # Perform search
@@ -735,48 +713,35 @@ class AsyncPulsarMemvidAdapter(AsyncAdapter[T]):
                             model_data = {"id": str(i), "text": text_content}
 
                             try:
-                                instance = adapt_from(
-                                    subj_cls, model_data, adapt_meth, adapt_kw
+                                instance = getattr(subj_cls, adapt_meth)(
+                                    model_data, **(adapt_kw or {})
                                 )
                                 instances.append(instance)
-                            except ValidationError:
-                                try:
-                                    minimal_data = {"text": text_content}
-                                    instance = adapt_from(
-                                        subj_cls, minimal_data, adapt_meth, adapt_kw
-                                    )
-                                    instances.append(instance)
-                                except ValidationError as fallback_error:
-                                    raise ValidationError.from_adapter(
-                                        cls,
-                                        "Validation failed for both full and minimal model data",
-                                        model_data=model_data,
-                                        minimal_data=minimal_data,
-                                        cause=fallback_error,
-                                    )
+                            except PydanticValidationError:
+                                minimal_data = {"text": text_content}
+                                instance = getattr(subj_cls, adapt_meth)(
+                                    minimal_data, **(adapt_kw or {})
+                                )
+                                instances.append(instance)
 
                         if many:
                             return instances
                         return instances[0] if instances else None
                     else:
-                        raise QueryError.from_adapter(
-                            cls,
-                            "Search operation failed",
-                            error=operation_result.error,
+                        raise QueryError(
+                            f"Search operation failed: {operation_result.error}",
+                            adapter="pulsar_memvid",
                         )
                 else:
-                    raise ValidationError.from_adapter(
-                        cls,
-                        f"Expected search operation, got: {pulsar_message.operation}",
-                        operation=pulsar_message.operation,
+                    raise ValidationError(
+                        f"Expected search operation, got: {pulsar_message.operation}"
                     )
 
             except Exception as receive_error:
                 if "timeout" in str(receive_error).lower():
                     if many:
                         return []
-                    raise ResourceError.from_adapter(
-                        cls,
+                    raise ResourceError(
                         "No search queries received within timeout",
                         resource=obj["search_topic"],
                     )

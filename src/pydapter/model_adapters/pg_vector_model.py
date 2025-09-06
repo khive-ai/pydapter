@@ -32,7 +32,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
     ):
         """Add vector_dim metadata when converting back to Pydantic."""
 
-        mapper = cast("Any", inspect(orm_cls))
+        mapper = cast(Any, inspect(orm_cls))
         fields: dict[str, tuple[type, Any]] = {}
 
         for col in mapper.columns:
@@ -137,21 +137,14 @@ class PGVectorModelAdapter(SQLModelAdapter):
         if not isinstance(vector, list):
             raise TypeConversionError(
                 f"Expected list for vector, got {type(vector)}",
-                details={
-                    "source_type": type(vector),
-                    "target_type": list,
-                    "received_value": vector,
-                },
+                source_type=type(vector),
+                target_type=list,
             )
 
         if expected_dim is not None and len(vector) != expected_dim:
             raise ValidationError(
                 f"Vector has {len(vector)} dimensions, expected {expected_dim}",
-                details={
-                    "data": vector,
-                    "expected_dimensions": expected_dim,
-                    "actual_dimensions": len(vector),
-                },
+                data=vector,
             )
 
         return vector
@@ -202,7 +195,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
         else:
             raise ConfigurationError(
                 f"Unsupported index type: {index_type}",
-                details={"config": {"index_type": index_type, "params": params}},
+                config={"index_type": index_type, "params": params},
             )
 
     @classmethod
@@ -252,7 +245,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
         else:
             raise ConfigurationError(
                 f"Unsupported similarity metric: {metric}",
-                details={"config": {"metric": metric}},
+                config={"metric": metric},
             )
 
     @classmethod
