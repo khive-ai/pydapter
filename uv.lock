@@ -3023,7 +3023,6 @@ version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "orjson" },
-    { name = "pydantic" },
     { name = "toml" },
 ]
 
@@ -3211,7 +3210,6 @@ requires-dist = [
     { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = ">=2.8.0" },
     { name = "pulsar-client", marker = "extra == 'pulsar'", specifier = ">=3.7.0" },
     { name = "py-spy", marker = "extra == 'performance'", specifier = ">=0.4.0" },
-    { name = "pydantic", specifier = ">=2.6" },
     { name = "pydapter", extras = ["aiohttp"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["aiosqlite"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["email"], marker = "extra == 'all'" },
