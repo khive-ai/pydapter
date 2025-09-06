@@ -5,7 +5,7 @@ Integration tests for migrations in pydapter.migrations.
 import os
 import shutil
 import tempfile
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import pytest
 import sqlalchemy as sa
@@ -426,7 +426,7 @@ def downgrade():
             migration_key: ClassVar[str] = "custom"
 
             _migrations: ClassVar[list[str]] = []
-            _current_revision: ClassVar[Optional[str]] = None
+            _current_revision: ClassVar[str | None] = None
 
             @classmethod
             def init_migrations(cls, directory: str, **kwargs) -> None:
@@ -468,7 +468,7 @@ def downgrade():
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return cls._current_revision
 
             @classmethod

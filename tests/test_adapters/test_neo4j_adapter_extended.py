@@ -43,7 +43,9 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
+            mock_session
+        )
 
         # Mock the result of the query
         mock_result = [
@@ -68,7 +70,9 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
+            mock_session
+        )
 
         # Mock the result of the query
         mock_result = [
@@ -93,7 +97,9 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
+            mock_session
+        )
 
         # Test to_obj with custom label
         neo4j_sample.adapt_to(
@@ -111,7 +117,9 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
+            mock_session
+        )
 
         # Test to_obj with custom merge_on
         neo4j_sample.adapt_to(
@@ -141,7 +149,9 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
+            mock_session
+        )
 
         # Test to_obj with first model
         model1.adapt_to(obj_key="neo4j", url="bolt://localhost:7687")

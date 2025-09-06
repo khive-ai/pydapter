@@ -7,7 +7,6 @@ import os
 # Import the adapters
 import sys
 from datetime import datetime
-from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -25,12 +24,12 @@ from pydapter.extras.async_sql_ import AsyncSQLAdapter, SQLReadConfig
 class TestModel(BaseModel):
     """Test model for CRUD operations."""
 
-    id: Optional[int] = None
+    id: int | None = None
     name: str
     email: str
     age: int
     active: bool = True
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
 
 
 @pytest_asyncio.fixture

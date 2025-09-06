@@ -4,7 +4,8 @@ Type registry for mapping between Python and SQL types.
 
 from __future__ import annotations
 
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 

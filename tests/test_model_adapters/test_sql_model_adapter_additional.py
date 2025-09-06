@@ -192,11 +192,11 @@ def test_sql_model_to_pydantic_unsupported_type():
     # The test is specifically handled in lines 326-332
     # We'll just verify that the TypeConversionError class exists and has the right attributes
     error = TypeConversionError(
-        "Unsupported SQL type JSONB", source_type=None, target_type=None
+        "Unsupported SQL type JSONB", details={"source_type": None, "target_type": None}
     )
     assert error.message == "Unsupported SQL type JSONB"
-    assert error.source_type is None
-    assert error.target_type is None
+    assert error.details["source_type"] is None
+    assert error.details["target_type"] is None
 
 
 def test_sql_model_to_pydantic_all_types():

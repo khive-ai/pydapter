@@ -2,7 +2,7 @@
 Tests for async migration registry in pydapter.migrations.registry.
 """
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -53,7 +53,7 @@ class TestAsyncMigrationRegistry:
                 return None
 
             @classmethod
-            async def get_current_revision(cls, **kwargs) -> Optional[str]:
+            async def get_current_revision(cls, **kwargs) -> str | None:
                 return "async_revision123"
 
             @classmethod
@@ -95,7 +95,7 @@ class TestAsyncMigrationRegistry:
                 return None
 
             @classmethod
-            async def get_current_revision(cls, **kwargs) -> Optional[str]:
+            async def get_current_revision(cls, **kwargs) -> str | None:
                 return "async_revision123"
 
             @classmethod
@@ -126,7 +126,7 @@ class TestAsyncMigrationRegistry:
                 return None
 
             @classmethod
-            async def get_current_revision(cls, **kwargs) -> Optional[str]:
+            async def get_current_revision(cls, **kwargs) -> str | None:
                 return "async_revision456"
 
             @classmethod
@@ -184,7 +184,7 @@ class TestAsyncMigrationRegistry:
                 return None
 
             @classmethod
-            async def get_current_revision(cls, **kwargs) -> Optional[str]:
+            async def get_current_revision(cls, **kwargs) -> str | None:
                 return "async_revision123"
 
             @classmethod
@@ -228,7 +228,7 @@ def mock_async_adapter():
             return None
 
         @classmethod
-        async def get_current_revision(cls, **kwargs) -> Optional[str]:
+        async def get_current_revision(cls, **kwargs) -> str | None:
             return "mock_async_revision"
 
         @classmethod
@@ -378,7 +378,7 @@ def error_raising_async_adapter():
             raise RuntimeError("Async downgrade error")
 
         @classmethod
-        async def get_current_revision(cls, **kwargs) -> Optional[str]:
+        async def get_current_revision(cls, **kwargs) -> str | None:
             raise RuntimeError("Async revision error")
 
         @classmethod

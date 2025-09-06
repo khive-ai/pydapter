@@ -32,6 +32,7 @@ class AsyncAdapter(Protocol[T]):
         *,
         many: bool = False,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw,
     ) -> T | list[T]: ...
 
@@ -43,6 +44,7 @@ class AsyncAdapter(Protocol[T]):
         *,
         many: bool = False,
         adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
         **kw,
     ) -> Any: ...
 
@@ -56,7 +58,8 @@ class AsyncAdapterRegistry:
         key = getattr(adapter_cls, "obj_key", None)
         if not key:
             raise ConfigurationError(
-                "AsyncAdapter must define 'obj_key'", adapter_cls=adapter_cls.__name__
+                "AsyncAdapter must define 'obj_key'",
+                details={"adapter_cls": adapter_cls.__name__},
             )
         self._reg[key] = adapter_cls
 
@@ -65,8 +68,10 @@ class AsyncAdapterRegistry:
             return self._reg[obj_key]
         except KeyError as exc:
             raise AdapterNotFoundError(
-                f"No async adapter for '{obj_key}'", obj_key=obj_key
-            ) from exc
+                f"No async adapter for '{obj_key}'",
+                details={"obj_key": obj_key},
+                cause=exc,
+            )
 
     # convenience helpers
     async def adapt_from(
@@ -76,15 +81,17 @@ class AsyncAdapterRegistry:
         *,
         obj_key: str,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw,
     ):
         try:
             result = await self.get(obj_key).from_obj(
-                subj_cls, obj, adapt_meth=adapt_meth, **kw
+                subj_cls, obj, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
             )
             if result is None:
                 raise AdapterError(
-                    f"Async adapter {obj_key} returned None", adapter=obj_key
+                    f"Async adapter {obj_key} returned None",
+                    details={"adapter": obj_key},
                 )
             return result
         except Exception as exc:
@@ -93,17 +100,28 @@ class AsyncAdapterRegistry:
 
             # Wrap other exceptions with context
             raise AdapterError(
-                f"Error in async adapt_from for {obj_key}", original_error=str(exc)
-            ) from exc
+                f"Error in async adapt_from for {obj_key}",
+                details={"adapter": obj_key, "error": str(exc)},
+                cause=exc,
+            )
 
     async def adapt_to(
-        self, subj, *, obj_key: str, adapt_meth: str = "model_dump", **kw
+        self,
+        subj,
+        *,
+        obj_key: str,
+        adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
+        **kw,
     ):
         try:
-            result = await self.get(obj_key).to_obj(subj, adapt_meth=adapt_meth, **kw)
+            result = await self.get(obj_key).to_obj(
+                subj, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
+            )
             if result is None:
                 raise AdapterError(
-                    f"Async adapter {obj_key} returned None", adapter=obj_key
+                    f"Async adapter {obj_key} returned None",
+                    details={"adapter": obj_key},
                 )
             return result
         except Exception as exc:
@@ -111,8 +129,10 @@ class AsyncAdapterRegistry:
                 raise
 
             raise AdapterError(
-                f"Error in async adapt_to for {obj_key}", original_error=str(exc)
-            ) from exc
+                f"Error in async adapt_to for {obj_key}",
+                details={"adapter": obj_key, "error": str(exc)},
+                cause=exc,
+            )
 
 
 # -------------------------------------------------------------- AsyncAdaptable
@@ -137,15 +157,26 @@ class AsyncAdaptable:
     # helpers
     @classmethod
     async def adapt_from_async(
-        cls, obj, *, obj_key: str, adapt_meth: str = "model_validate", **kw
+        cls,
+        obj,
+        *,
+        obj_key: str,
+        adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
+        **kw,
     ):
         return await cls._areg().adapt_from(
-            cls, obj, obj_key=obj_key, adapt_meth=adapt_meth, **kw
+            cls, obj, obj_key=obj_key, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
         )
 
     async def adapt_to_async(
-        self, *, obj_key: str, adapt_meth: str = "model_dump", **kw
+        self,
+        *,
+        obj_key: str,
+        adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
+        **kw,
     ):
         return await self._areg().adapt_to(
-            self, obj_key=obj_key, adapt_meth=adapt_meth, **kw
+            self, obj_key=obj_key, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
         )

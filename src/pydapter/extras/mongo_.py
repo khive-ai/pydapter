@@ -5,19 +5,16 @@ MongoDB adapter (requires `pymongo`).
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TypeVar
 
 import pymongo
 import pymongo.errors
-from pydantic import BaseModel, ValidationError
 from pymongo import MongoClient
 
 from ..core import Adapter
-from ..exceptions import AdapterError, ConnectionError, QueryError, ResourceError
-from ..exceptions import ValidationError as AdapterValidationError
+from ..exceptions import ConnectionError, QueryError, ResourceError, ValidationError
+from ..utils import T, adapt_dump, adapt_from
 
-T = TypeVar("T", bound=BaseModel)
-
+_CUSTOM_ERROR = (ConnectionError, QueryError, ResourceError, ValidationError)
 
 __all__ = (
     "MongoAdapter",
@@ -87,13 +84,13 @@ class MongoAdapter(Adapter[T]):
         try:
             return pymongo.MongoClient(url, serverSelectionTimeoutMS=5000)
         except pymongo.errors.ConfigurationError as e:
-            raise ConnectionError(
-                f"Invalid MongoDB connection string: {e}", adapter="mongo", url=url
-            ) from e
+            raise ConnectionError.from_adapter(
+                cls, "Invalid MongoDB connection string", url=url, cause=e
+            )
         except Exception as e:
-            raise ConnectionError(
-                f"Failed to create MongoDB client: {e}", adapter="mongo", url=url
-            ) from e
+            raise ConnectionError.from_adapter(
+                cls, "Failed to create MongoDB client", url=url, cause=e
+            )
 
     @classmethod
     def _validate_connection(cls, client: pymongo.MongoClient) -> None:
@@ -102,19 +99,19 @@ class MongoAdapter(Adapter[T]):
             # This will raise an exception if the connection fails
             client.admin.command("ping")
         except pymongo.errors.ServerSelectionTimeoutError as e:
-            raise ConnectionError(
-                f"MongoDB server selection timeout: {e}", adapter="mongo"
-            ) from e
+            raise ConnectionError.from_adapter(
+                cls, "MongoDB server selection timeout", cause=e
+            )
         except pymongo.errors.OperationFailure as e:
             if "auth failed" in str(e).lower():
-                raise ConnectionError(
-                    f"MongoDB authentication failed: {e}", adapter="mongo"
-                ) from e
-            raise QueryError(f"MongoDB operation failure: {e}", adapter="mongo") from e
+                raise ConnectionError.from_adapter(
+                    cls, "MongoDB authentication failed", cause=e
+                )
+            raise QueryError.from_adapter(cls, "MongoDB operation failure", cause=e)
         except Exception as e:
-            raise ConnectionError(
-                f"Failed to connect to MongoDB: {e}", adapter="mongo"
-            ) from e
+            raise ConnectionError.from_adapter(
+                cls, "Failed to connect to MongoDB", cause=e
+            )
 
     # incoming
     @classmethod
@@ -126,87 +123,78 @@ class MongoAdapter(Adapter[T]):
         *,
         many=True,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw,
     ):
+        # Validate required parameters
+        if "url" not in obj:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'url'", data=obj
+            )
+        if "db" not in obj:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'db'", data=obj
+            )
+        if "collection" not in obj:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'collection'", data=obj
+            )
+
+        # Create client and validate connection
+        client = cls._client(obj["url"])
+        cls._validate_connection(client)
+
+        # Get collection and execute query
         try:
-            # Validate required parameters
-            if "url" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'url'", data=obj
-                )
-            if "db" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'db'", data=obj
-                )
-            if "collection" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'collection'", data=obj
+            coll = client[obj["db"]][obj["collection"]]
+            filter_query = obj.get("filter") or {}
+
+            # Validate filter query if provided
+            if filter_query and not isinstance(filter_query, dict):
+                raise ValidationError.from_adapter(
+                    cls, "Filter must be a dictionary", data=filter_query
                 )
 
-            # Create client and validate connection
-            client = cls._client(obj["url"])
-            cls._validate_connection(client)
-
-            # Get collection and execute query
-            try:
-                coll = client[obj["db"]][obj["collection"]]
-                filter_query = obj.get("filter") or {}
-
-                # Validate filter query if provided
-                if filter_query and not isinstance(filter_query, dict):
-                    raise AdapterValidationError(
-                        "Filter must be a dictionary",
-                        data=filter_query,
-                    )
-
-                docs = list(coll.find(filter_query))
-            except pymongo.errors.OperationFailure as e:
-                if "not authorized" in str(e).lower():
-                    raise ConnectionError(
-                        f"Not authorized to access {obj['db']}.{obj['collection']}: {e}",
-                        adapter="mongo",
-                        url=obj["url"],
-                    ) from e
-                raise QueryError(
-                    f"MongoDB query error: {e}",
-                    query=filter_query,
-                    adapter="mongo",
-                ) from e
-            except Exception as e:
-                raise QueryError(
-                    f"Error executing MongoDB query: {e}",
-                    query=filter_query,
-                    adapter="mongo",
-                ) from e
-
-            # Handle empty result set
-            if not docs:
-                if many:
-                    return []
-                raise ResourceError(
-                    "No documents found matching the query",
-                    resource=f"{obj['db']}.{obj['collection']}",
-                    filter=filter_query,
+            docs = list(coll.find(filter_query))
+        except pymongo.errors.OperationFailure as e:
+            if "not authorized" in str(e).lower():
+                raise ConnectionError.from_adapter(
+                    cls,
+                    f"Not authorized to access {obj['db']}.{obj['collection']}",
+                    url=obj["url"],
+                    cause=e,
                 )
-
-            # Convert documents to model instances
-            try:
-                if many:
-                    return [getattr(subj_cls, adapt_meth)(d) for d in docs]
-                return getattr(subj_cls, adapt_meth)(docs[0])
-            except ValidationError as e:
-                raise AdapterValidationError(
-                    f"Validation error: {e}",
-                    data=docs[0] if not many else docs,
-                    errors=e.errors(),
-                ) from e
-
-        except AdapterError:
-            raise
-
+            raise QueryError.from_adapter(
+                cls, "MongoDB query error", query=filter_query, cause=e
+            )
         except Exception as e:
-            raise QueryError(
-                f"Unexpected error in MongoDB adapter: {e}", adapter="mongo"
+            raise QueryError.from_adapter(
+                cls, "Error executing MongoDB query", query=filter_query, cause=e
+            )
+
+        # Handle empty result set
+        if not docs:
+            if many:
+                return []
+            raise ResourceError.from_adapter(
+                cls,
+                "No documents found matching the query",
+                resource=f"{obj['db']}.{obj['collection']}",
+                filter=filter_query,
+            )
+
+        # Convert documents to model instances
+        try:
+            if many:
+                return [adapt_from(subj_cls, d, adapt_meth, adapt_kw) for d in docs]
+            return adapt_from(subj_cls, docs[0], adapt_meth, adapt_kw)
+        except Exception as e:
+            raise ValidationError.from_adapter(
+                cls,
+                "Data conversion failed",
+                data=docs[0] if not many else docs,
+                adapt_method=adapt_meth,
+                cause=e,
             )
 
     # outgoing
@@ -221,59 +209,46 @@ class MongoAdapter(Adapter[T]):
         collection,
         many=True,
         adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
         **kw,
     ):
+        # Validate required parameters
+        if not url:
+            raise ValidationError.from_adapter(cls, "Missing required parameter 'url'")
+        if not db:
+            raise ValidationError.from_adapter(cls, "Missing required parameter 'db'")
+        if not collection:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'collection'"
+            )
+
+        # Create client and validate connection
+        client = cls._client(url)
+        cls._validate_connection(client)
+
+        # Prepare data
+        items = subj if isinstance(subj, Sequence) else [subj]
+        if not items:
+            return None  # Nothing to insert
+
+        payload = [adapt_dump(i, adapt_meth, adapt_kw) for i in items]
+
+        # Execute insert
         try:
-            # Validate required parameters
-            if not url:
-                raise AdapterValidationError("Missing required parameter 'url'")
-            if not db:
-                raise AdapterValidationError("Missing required parameter 'db'")
-            if not collection:
-                raise AdapterValidationError("Missing required parameter 'collection'")
-
-            # Create client and validate connection
-            client = cls._client(url)
-            cls._validate_connection(client)
-
-            # Prepare data
-            items = subj if isinstance(subj, Sequence) else [subj]
-            if not items:
-                return None  # Nothing to insert
-
-            payload = [getattr(i, adapt_meth)() for i in items]
-
-            # Execute insert
-            try:
-                result = client[db][collection].insert_many(payload)
-                return {"inserted_count": result.inserted_ids}
-            except pymongo.errors.BulkWriteError as e:
-                raise QueryError(
-                    f"MongoDB bulk write error: {e}",
-                    adapter="mongo",
-                ) from e
-            except pymongo.errors.OperationFailure as e:
-                if "not authorized" in str(e).lower():
-                    raise ConnectionError(
-                        f"Not authorized to write to {db}.{collection}: {e}",
-                        adapter="mongo",
-                        url=url,
-                    ) from e
-                raise QueryError(
-                    f"MongoDB operation failure: {e}",
-                    adapter="mongo",
-                ) from e
-            except Exception as e:
-                raise QueryError(
-                    f"Error inserting documents into MongoDB: {e}",
-                    adapter="mongo",
-                ) from e
-
-        except AdapterError:
-            raise
-
+            result = client[db][collection].insert_many(payload)
+            return {"inserted_count": len(result.inserted_ids)}
+        except pymongo.errors.BulkWriteError as e:
+            raise QueryError.from_adapter(cls, "MongoDB bulk write error", cause=e)
+        except pymongo.errors.OperationFailure as e:
+            if "not authorized" in str(e).lower():
+                raise ConnectionError.from_adapter(
+                    cls,
+                    f"Not authorized to write to {db}.{collection}",
+                    url=url,
+                    cause=e,
+                )
+            raise QueryError.from_adapter(cls, "MongoDB operation failure", cause=e)
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(
-                f"Unexpected error in MongoDB adapter: {e}", adapter="mongo"
+            raise QueryError.from_adapter(
+                cls, "Error inserting documents into MongoDB", cause=e
             )

@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import ipaddress
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, get_args, get_origin
+from typing import Any, get_args, get_origin
 
 from pydantic import BaseModel
 from sqlalchemy import Column, String
@@ -141,9 +142,12 @@ class PostgresModelAdapter(SQLModelAdapter):
                     return value.model_dump()
                 raise TypeConversionError(
                     f"Expected dict or {nested_model.__name__}, got {type(value).__name__}",
-                    source_type=type(value),
-                    target_type=nested_model,
-                    field_name=field_name,
+                    details={
+                        "source_type": type(value),
+                        "target_type": nested_model,
+                        "field_name": field_name,
+                        "received_value": value,
+                    },
                 )
 
             return (
@@ -194,7 +198,10 @@ class PostgresModelAdapter(SQLModelAdapter):
         if sql_type_factory is None:
             raise TypeConversionError(
                 f"Unsupported array item type: {item_type}",
-                source_type=item_type,
+                details={
+                    "source_type": item_type,
+                    "context": "array_item_type_conversion",
+                },
             )
 
         return Column(
@@ -356,10 +363,12 @@ class PostgresModelAdapter(SQLModelAdapter):
             if col_type_factory is None:
                 raise TypeConversionError(
                     f"Unsupported type {origin!r}",
-                    source_type=origin,
-                    target_type=None,
-                    field_name=name,
-                    model_name=model.__name__,
+                    details={
+                        "source_type": origin,
+                        "target_type": None,
+                        "field_name": name,
+                        "model_name": model.__name__,
+                    },
                 )
 
             kwargs: dict[str, Any] = {

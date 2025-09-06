@@ -1,6 +1,6 @@
 import ipaddress
 from datetime import date, datetime
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 from pydantic import BaseModel, Field
@@ -73,7 +73,7 @@ class JsonbModel(BaseModel):
         default_factory=dict, json_schema_extra={"db_type": "jsonb"}
     )
     nested_model: NestedModel = Field(..., json_schema_extra={"db_type": "jsonb"})
-    optional_nested: Optional[NestedModel] = Field(
+    optional_nested: NestedModel | None = Field(
         None, json_schema_extra={"db_type": "jsonb"}
     )
 

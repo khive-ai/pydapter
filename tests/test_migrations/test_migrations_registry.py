@@ -2,7 +2,7 @@
 Tests for migration registry in pydapter.migrations.registry.
 """
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 import pytest
 
@@ -46,7 +46,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return "revision123"
 
             @classmethod
@@ -86,7 +86,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return "revision123"
 
             @classmethod
@@ -115,7 +115,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return "revision456"
 
             @classmethod
@@ -172,7 +172,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return "revision123"
 
             @classmethod
@@ -201,7 +201,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return "revision456"
 
             @classmethod
@@ -245,7 +245,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return "revision123"
 
             @classmethod
@@ -286,7 +286,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return "revision123"
 
             @classmethod
@@ -330,7 +330,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return "revision123"
 
             @classmethod
@@ -371,7 +371,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def get_current_revision(cls, **kwargs) -> Optional[str]:
+            def get_current_revision(cls, **kwargs) -> str | None:
                 return "revision123"
 
             @classmethod

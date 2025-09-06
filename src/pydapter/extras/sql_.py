@@ -5,18 +5,15 @@ Generic SQL adapter using SQLAlchemy Core (requires `sqlalchemy>=2.0`).
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, TypeVar
+from typing import Any
 
 import sqlalchemy as sa
-from pydantic import BaseModel, ValidationError
 from sqlalchemy import exc as sq_exc
 from sqlalchemy.dialects import postgresql
 
 from ..core import Adapter
-from ..exceptions import AdapterError, ConnectionError, QueryError, ResourceError
-from ..exceptions import ValidationError as AdapterValidationError
-
-T = TypeVar("T", bound=BaseModel)
+from ..exceptions import ConnectionError, QueryError, ResourceError, ValidationError
+from ..utils import T, adapt_dump, adapt_from
 
 
 class SQLAdapter(Adapter[T]):
@@ -69,8 +66,8 @@ class SQLAdapter(Adapter[T]):
 
     obj_key = "sql"
 
-    @staticmethod
-    def _table(metadata: sa.MetaData, table: str, engine=None) -> sa.Table:
+    @classmethod
+    def _table(cls, metadata: sa.MetaData, table: str, engine=None) -> sa.Table:
         """
         Helper method to get a SQLAlchemy Table object with autoloading.
 
@@ -90,11 +87,13 @@ class SQLAdapter(Adapter[T]):
             autoload_with = engine if engine is not None else metadata.bind  # type: ignore
             return sa.Table(table, metadata, autoload_with=autoload_with)
         except sq_exc.NoSuchTableError as e:
-            raise ResourceError(f"Table '{table}' not found", resource=table) from e
+            raise ResourceError.from_adapter(
+                cls, f"Table '{table}' not found", resource=table, cause=e
+            )
         except Exception as e:
-            raise ResourceError(
-                f"Error accessing table '{table}': {e}", resource=table
-            ) from e
+            raise ResourceError.from_adapter(
+                cls, f"Error accessing table '{table}'", resource=table, cause=e
+            )
 
     # ---- incoming
     @classmethod
@@ -106,85 +105,96 @@ class SQLAdapter(Adapter[T]):
         *,
         many: bool = True,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw,
     ):
+        # Validate required parameters
+        if "engine_url" not in obj:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'engine_url'", data=obj
+            )
+        if "table" not in obj:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'table'", data=obj
+            )
+
+        # Create engine and connect to database
         try:
-            # Validate required parameters
-            if "engine_url" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'engine_url'", data=obj
-                )
-            if "table" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'table'", data=obj
-                )
-
-            # Create engine and connect to database
-            try:
-                eng = sa.create_engine(obj["engine_url"], future=True)
-            except Exception as e:
-                raise ConnectionError(
-                    f"Failed to create database engine: {e}",
-                    adapter="sql",
-                    url=obj["engine_url"],
-                ) from e
-
-            # Create metadata and get table
-            try:
-                md = sa.MetaData()
-                md.reflect(bind=eng)
-                tbl = cls._table(md, obj["table"], engine=eng)
-            except ResourceError:
-                # Re-raise ResourceError from _table
-                raise
-            except Exception as e:
-                raise ResourceError(
-                    f"Error accessing table metadata: {e}",
-                    resource=obj["table"],
-                ) from e
-
-            # Build query
-            stmt = sa.select(tbl).filter_by(**obj.get("selectors", {}))
-
-            # Execute query
-            try:
-                with eng.begin() as conn:
-                    rows = conn.execute(stmt).fetchall()
-            except Exception as e:
-                raise QueryError(
-                    f"Error executing query: {e}",
-                    query=str(stmt),
-                    adapter="sql",
-                ) from e
-
-            # Handle empty result set
-            if not rows:
-                if many:
-                    return []
-                raise ResourceError(
-                    "No rows found matching the query",
-                    resource=obj["table"],
-                    selectors=obj.get("selectors", {}),
-                )
-
-            # Convert rows to model instances
-            try:
-                validate_func = getattr(subj_cls, adapt_meth)
-                if many:
-                    return [validate_func(r._mapping) for r in rows]
-                return validate_func(rows[0]._mapping)
-            except ValidationError as e:
-                raise AdapterValidationError(
-                    f"Validation error: {e}",
-                    data=rows[0]._mapping if not many else [r._mapping for r in rows],
-                    errors=e.errors(),
-                ) from e
-
-        except AdapterError:
-            raise
+            eng = sa.create_engine(obj["engine_url"], future=True)
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(f"Unexpected error in SQL adapter: {e}", adapter="sql")
+            raise ConnectionError.from_adapter(
+                cls, "Failed to create database engine", url=obj["engine_url"], cause=e
+            )
+
+        # Create metadata and get table
+        try:
+            md = sa.MetaData()
+            md.reflect(bind=eng)
+            tbl = cls._table(md, obj["table"], engine=eng)
+        except Exception as e:
+            # Check if this is a connection-related error
+            error_str = str(e).lower()
+            if any(
+                keyword in error_str
+                for keyword in [
+                    "authentication",
+                    "connection",
+                    "refused",
+                    "timeout",
+                    "password",
+                    "auth",
+                    "access denied",
+                    "login",
+                ]
+            ):
+                raise ConnectionError.from_adapter(
+                    cls,
+                    "Connection failed during metadata reflection",
+                    url=obj["engine_url"],
+                    cause=e,
+                )
+            raise ResourceError.from_adapter(
+                cls, "Error accessing table metadata", resource=obj["table"], cause=e
+            )
+
+        # Build query
+        stmt = sa.select(tbl).filter_by(**obj.get("selectors", {}))
+
+        # Execute query
+        try:
+            with eng.begin() as conn:
+                rows = conn.execute(stmt).fetchall()
+        except Exception as e:
+            raise QueryError.from_adapter(
+                cls, "Error executing query", query=str(stmt), cause=e
+            )
+
+        # Handle empty result set
+        if not rows:
+            if many:
+                return []
+            raise ResourceError.from_adapter(
+                cls,
+                "No rows found matching the query",
+                resource=obj["table"],
+                selectors=obj.get("selectors", {}),
+            )
+
+        # Convert rows to model instances
+        try:
+            if many:
+                return [
+                    adapt_from(subj_cls, r._mapping, adapt_meth, adapt_kw) for r in rows
+                ]
+            return adapt_from(subj_cls, rows[0]._mapping, adapt_meth, adapt_kw)
+        except Exception as e:
+            raise ValidationError.from_adapter(
+                cls,
+                "Data conversion failed",
+                data=(rows[0]._mapping if not many else [r._mapping for r in rows]),
+                adapt_method=adapt_meth,
+                cause=e,
+            )
 
     # ---- outgoing
     @classmethod
@@ -197,84 +207,98 @@ class SQLAdapter(Adapter[T]):
         table: str,
         many: bool = True,
         adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
         **kw,
     ) -> dict[str, Any]:
+        # Validate required parameters
+        if not engine_url:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'engine_url'"
+            )
+        if not table:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'table'"
+            )
+
+        # Create engine and connect to database
         try:
-            # Validate required parameters
-            if not engine_url:
-                raise AdapterValidationError("Missing required parameter 'engine_url'")
-            if not table:
-                raise AdapterValidationError("Missing required parameter 'table'")
-
-            # Create engine and connect to database
-            try:
-                eng = sa.create_engine(engine_url, future=True)
-            except Exception as e:
-                raise ConnectionError(
-                    f"Failed to create database engine: {e}",
-                    adapter="sql",
-                    url=engine_url,
-                ) from e
-
-            # Create metadata and get table
-            try:
-                md = sa.MetaData()
-                md.reflect(bind=eng)
-                tbl = cls._table(md, table, engine=eng)
-            except ResourceError:
-                # Re-raise ResourceError from _table
-                raise
-            except Exception as e:
-                raise ResourceError(
-                    f"Error accessing table metadata: {e}",
-                    resource=table,
-                ) from e
-
-            # Prepare data
-            items = subj if isinstance(subj, Sequence) else [subj]
-            if not items:
-                return {"success": True, "count": 0}  # Nothing to insert
-
-            rows = [getattr(i, adapt_meth)() for i in items]
-
-            # Execute insert or update (upsert)
-            try:
-                with eng.begin() as conn:
-                    # Get primary key columns
-                    pk_columns = [c.name for c in tbl.primary_key.columns]
-
-                    if not pk_columns:
-                        # If no primary key, just insert
-                        conn.execute(sa.insert(tbl), rows)
-                    else:
-                        # For PostgreSQL, use ON CONFLICT DO UPDATE
-                        for row in rows:
-                            # Build the values to update (excluding primary key columns)
-                            update_values = {
-                                k: v for k, v in row.items() if k not in pk_columns
-                            }
-                            if not update_values:
-                                # If only primary key columns, just try to insert
-                                stmt = sa.insert(tbl).values(**row)
-                            else:
-                                # Otherwise, do an upsert
-                                stmt = postgresql.insert(tbl).values(**row)
-                                stmt = stmt.on_conflict_do_update(
-                                    index_elements=pk_columns, set_=update_values
-                                )
-                            conn.execute(stmt)
-            except Exception as e:
-                raise QueryError(
-                    f"Error executing insert/update: {e}",
-                    query=f"UPSERT INTO {table}",
-                    adapter="sql",
-                ) from e
-
-            # Return a success indicator instead of None
-            return {"success": True, "count": len(rows)}
-
-        except AdapterError:
-            raise
+            eng = sa.create_engine(engine_url, future=True)
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(f"Unexpected error in SQL adapter: {e}", adapter="sql")
+            raise ConnectionError.from_adapter(
+                cls, "Failed to create database engine", url=engine_url, cause=e
+            )
+
+        # Create metadata and get table
+        try:
+            md = sa.MetaData()
+            md.reflect(bind=eng)
+            tbl = cls._table(md, table, engine=eng)
+        except Exception as e:
+            # Check if this is a connection-related error
+            error_str = str(e).lower()
+            if any(
+                keyword in error_str
+                for keyword in [
+                    "authentication",
+                    "connection",
+                    "refused",
+                    "timeout",
+                    "password",
+                    "auth",
+                    "access denied",
+                    "login",
+                ]
+            ):
+                raise ConnectionError.from_adapter(
+                    cls,
+                    "Connection failed during metadata reflection",
+                    url=engine_url,
+                    cause=e,
+                )
+            raise ResourceError.from_adapter(
+                cls, "Error accessing table metadata", resource=table, cause=e
+            )
+
+        # Prepare data
+        items = subj if isinstance(subj, Sequence) else [subj]
+        if not items:
+            return {"success": True, "count": 0}  # Nothing to insert
+
+        rows = [adapt_dump(i, adapt_meth, adapt_kw) for i in items]
+
+        # Execute insert or update (upsert)
+        try:
+            with eng.begin() as conn:
+                # Get primary key columns
+                pk_columns = [c.name for c in tbl.primary_key.columns]
+
+                if not pk_columns:
+                    # If no primary key, just insert
+                    conn.execute(sa.insert(tbl), rows)
+                else:
+                    # For PostgreSQL, use ON CONFLICT DO UPDATE
+                    for row in rows:
+                        # Build the values to update (excluding primary key columns)
+                        update_values = {
+                            k: v for k, v in row.items() if k not in pk_columns
+                        }
+                        if not update_values:
+                            # If only primary key columns, just try to insert
+                            stmt = sa.insert(tbl).values(**row)
+                        else:
+                            # Otherwise, do an upsert
+                            stmt = postgresql.insert(tbl).values(**row)
+                            stmt = stmt.on_conflict_do_update(
+                                index_elements=pk_columns, set_=update_values
+                            )
+                        conn.execute(stmt)
+        except Exception as e:
+            raise QueryError.from_adapter(
+                cls,
+                "Error executing insert/update",
+                query=f"UPSERT INTO {table}",
+                cause=e,
+            )
+
+        # Return a success indicator instead of None
+        return {"success": True, "count": len(rows)}

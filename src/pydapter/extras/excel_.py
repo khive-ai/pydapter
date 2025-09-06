@@ -6,16 +6,14 @@ from __future__ import annotations
 
 import io
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any
 
 import pandas as pd
-from pydantic import BaseModel
 
 from ..core import Adapter
-from ..exceptions import AdapterError, ResourceError
+from ..exceptions import ParseError, ResourceError, ValidationError
+from ..utils import T
 from .pandas_ import DataFrameAdapter
-
-T = TypeVar("T", bound=BaseModel)
 
 
 class ExcelAdapter(Adapter[T]):
@@ -62,6 +60,7 @@ class ExcelAdapter(Adapter[T]):
         *,
         many: bool = True,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         sheet_name: str | int = 0,
         **kw: Any,
     ) -> T | list[T]:
@@ -81,7 +80,8 @@ class ExcelAdapter(Adapter[T]):
 
         Raises:
             ResourceError: If the Excel file cannot be read
-            AdapterError: If the data cannot be converted to models
+            ValidationError: If the data cannot be converted to models
+            ParseError: If unexpected errors occur
         """
         try:
             if isinstance(obj, bytes):
@@ -89,18 +89,28 @@ class ExcelAdapter(Adapter[T]):
             else:
                 df = pd.read_excel(obj, sheet_name=sheet_name, **kw)
             return DataFrameAdapter.from_obj(
-                subj_cls, df, many=many, adapt_meth=adapt_meth
+                subj_cls, df, many=many, adapt_meth=adapt_meth, adapt_kw=adapt_kw
             )
         except FileNotFoundError as e:
-            raise ResourceError(f"File not found: {e}", resource=str(obj)) from e
+            raise ResourceError.from_adapter(
+                cls, "File not found", resource=str(obj), cause=e
+            )
         except ValueError as e:
-            raise AdapterError(
-                f"Error adapting from xlsx (original_error='{e}')", adapter="xlsx"
-            ) from e
+            raise ValidationError.from_adapter(
+                cls,
+                "Error adapting from xlsx",
+                source=obj,
+                sheet_name=sheet_name,
+                cause=e,
+            )
         except Exception as e:
-            raise AdapterError(
-                f"Unexpected error in Excel adapter: {e}", adapter="xlsx"
-            ) from e
+            raise ParseError.from_adapter(
+                cls,
+                "Unexpected error in Excel adapter",
+                source=obj,
+                sheet_name=sheet_name,
+                cause=e,
+            )
 
     # outgoing
     @classmethod
@@ -111,6 +121,7 @@ class ExcelAdapter(Adapter[T]):
         *,
         many: bool = True,
         adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
         sheet_name: str = "Sheet1",
         **kw: Any,
     ) -> bytes:
@@ -127,8 +138,15 @@ class ExcelAdapter(Adapter[T]):
         Returns:
             Excel file content as bytes
         """
-        df = DataFrameAdapter.to_obj(subj, many=many, adapt_meth=adapt_meth)
-        buf = io.BytesIO()
-        with pd.ExcelWriter(buf, engine="xlsxwriter") as wr:
-            df.to_excel(wr, sheet_name=sheet_name, index=False)
-        return buf.getvalue()
+        try:
+            df = DataFrameAdapter.to_obj(
+                subj, many=many, adapt_meth=adapt_meth, adapt_kw=adapt_kw
+            )
+            buf = io.BytesIO()
+            with pd.ExcelWriter(buf, engine="xlsxwriter") as wr:
+                df.to_excel(wr, sheet_name=sheet_name, index=False)
+            return buf.getvalue()
+        except Exception as e:
+            raise ParseError.from_adapter(
+                cls, "Error creating Excel file", sheet_name=sheet_name, cause=e
+            )

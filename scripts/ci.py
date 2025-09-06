@@ -41,7 +41,6 @@ import sys
 import time
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 
 class Colors:
@@ -72,9 +71,9 @@ class CIStep:
     def __init__(self, name: str, description: str):
         self.name = name
         self.description = description
-        self.start_time: Optional[float] = None
-        self.end_time: Optional[float] = None
-        self.result: Optional[StepResult] = None
+        self.start_time: float | None = None
+        self.end_time: float | None = None
+        self.result: StepResult | None = None
         self.output: str = ""
 
     def start(self):
@@ -154,7 +153,7 @@ class CIRunner:
             self.env["PATH"] = f"{args.python_path}:{self.env.get('PATH', '')}"
 
     def run_command(
-        self, cmd: list[str], check: bool = True, cwd: Optional[Path] = None
+        self, cmd: list[str], check: bool = True, cwd: Path | None = None
     ) -> tuple[int, str]:
         """Run a shell command and return exit code and output."""
         if self.args.dry_run:

@@ -135,7 +135,7 @@ class TestNeo4jAdapterErrorHandling:
             side_effect=Exception("Connection error"),
         ):
             # Test to_obj with connection error
-            with pytest.raises(Exception, match="Connection error"):
+            with pytest.raises(Exception, match="Error adapting to neo4j"):
                 neo4j_sample.adapt_to(obj_key="neo4j", uri="bolt://localhost:7687")
 
     @patch("pydapter.extras.neo4j_.GraphDatabase")

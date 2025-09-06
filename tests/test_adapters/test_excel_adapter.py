@@ -168,5 +168,5 @@ class TestExcelAdapterErrorHandling:
 
         # Test from_obj with invalid data
         model_cls = excel_sample.__class__
-        with pytest.raises(AdapterError, match="Invalid data"):
+        with pytest.raises(AdapterError, match="Error adapting from xlsx"):
             model_cls.adapt_from({"path": "invalid.xlsx"}, obj_key="xlsx")

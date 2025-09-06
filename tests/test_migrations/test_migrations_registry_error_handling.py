@@ -2,7 +2,7 @@
 Tests for error handling in migration registry in pydapter.migrations.registry.
 """
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 from unittest.mock import patch
 
 import pytest
@@ -43,7 +43,7 @@ def mock_adapter():
             return None
 
         @classmethod
-        def get_current_revision(cls, **kwargs) -> Optional[str]:
+        def get_current_revision(cls, **kwargs) -> str | None:
             return "mock_revision"
 
         @classmethod
@@ -168,7 +168,7 @@ def error_raising_adapter():
             raise RuntimeError("Downgrade error")
 
         @classmethod
-        def get_current_revision(cls, **kwargs) -> Optional[str]:
+        def get_current_revision(cls, **kwargs) -> str | None:
             raise RuntimeError("Revision error")
 
         @classmethod
@@ -290,7 +290,7 @@ def migration_error_adapter():
             )
 
         @classmethod
-        def get_current_revision(cls, **kwargs) -> Optional[str]:
+        def get_current_revision(cls, **kwargs) -> str | None:
             raise MigrationError("Direct revision error", adapter="migration_error")
 
         @classmethod

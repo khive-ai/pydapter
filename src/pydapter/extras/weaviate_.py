@@ -18,9 +18,6 @@ from ..core import Adapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
-# Defer weaviate imports to avoid circular imports
-
-
 T = TypeVar("T", bound=BaseModel)
 
 
@@ -86,17 +83,9 @@ class WeaviateAdapter(Adapter[T]):
 
             return client
         except ImportError as e:
-            raise ConnectionError(
-                f"Weaviate module not available: {e}",
-                adapter="weav",
-                url=url or "http://localhost:8080",
-            ) from e
+            raise ConnectionError(f"Weaviate module not available: {e}") from e
         except Exception as e:
-            raise ConnectionError(
-                f"Failed to create Weaviate client: {e}",
-                adapter="weav",
-                url=url or "http://localhost:8080",
-            ) from e
+            raise ConnectionError(f"Failed to create Weaviate client: {e}") from e
 
     # outgoing
     @classmethod
@@ -133,7 +122,9 @@ class WeaviateAdapter(Adapter[T]):
         try:
             # Validate required parameters
             if not class_name:
-                raise AdapterValidationError("Missing required parameter 'class_name'")
+                raise AdapterValidationError.from_adapter(
+                    cls, "Missing required parameter 'class_name'"
+                )
 
             # Prepare data
             items = subj if isinstance(subj, Sequence) else [subj]
@@ -143,109 +134,91 @@ class WeaviateAdapter(Adapter[T]):
             # Create client and ensure class exists
             client = cls._client(url)
 
+            # Check if collection exists, create if not
             try:
-                # Check if collection exists, create if not
+                # Get the collection
+                collection = client.collections.get(class_name)
+            except Exception:
+                # Collection doesn't exist, create it
                 try:
-                    # Get the collection
-                    collection = client.collections.get(class_name)
-                except Exception:
-                    # Collection doesn't exist, create it
-                    try:
-                        # Create collection with proper vectorizer config
-                        # In Weaviate v4, vectorizer_config needs to be properly structured
-                        collection = client.collections.create(
-                            class_name,
-                            vectorizer_config=None,  # Don't use vectorizer, we provide vectors
-                            properties=[
-                                {
-                                    "name": "name",
-                                    "data_type": ["text"],
-                                },
-                                {
-                                    "name": "value",
-                                    "data_type": ["number"],
-                                },
-                            ],
+                    # Create collection with proper vectorizer config
+                    # In Weaviate v4, vectorizer_config needs to be properly structured
+                    collection = client.collections.create(
+                        class_name,
+                        vectorizer_config=None,  # Don't use vectorizer, we provide vectors
+                        properties=[
+                            {
+                                "name": "name",
+                                "data_type": ["text"],
+                            },
+                            {
+                                "name": "value",
+                                "data_type": ["number"],
+                            },
+                        ],
+                    )
+                except Exception as e:
+                    raise QueryError.from_adapter(
+                        cls, "Failed to get or create collection", cause=e
+                    )
+
+            # Add objects in batch
+            added_count = 0
+            # Process objects one by one
+            for it in items:
+                # Validate vector field exists
+                if not hasattr(it, vector_field):
+                    raise AdapterValidationError.from_adapter(
+                        cls,
+                        f"Vector field '{vector_field}' not found in model",
+                        data=getattr(it, adapt_meth)(),
+                    )
+
+                # Get vector data
+                vector = getattr(it, vector_field)
+                if not isinstance(vector, list):
+                    raise AdapterValidationError.from_adapter(
+                        cls,
+                        f"Vector field '{vector_field}' must be a list of floats",
+                        data=getattr(it, adapt_meth)(),
+                    )
+
+                # Exclude id and vector_field from properties
+                properties = getattr(it, adapt_meth)(exclude={vector_field, "id"})
+
+                # Generate a UUID based on the model's ID if available
+                obj_uuid = None
+                if hasattr(it, "id"):
+                    # Create a deterministic UUID from the model ID
+                    # This ensures the same model ID always maps to the same UUID
+                    namespace = uuid.UUID(
+                        "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+                    )  # UUID namespace
+                    obj_uuid = str(uuid.uuid5(namespace, f"{it.id}"))
+
+                # Add object to collection
+                try:
+                    # Create object with vector
+                    if obj_uuid:
+                        collection.data.insert(
+                            properties=properties, vector=vector, uuid=obj_uuid
                         )
-                    except Exception as e:
-                        raise QueryError(
-                            f"Failed to get or create collection: {e}",
-                            adapter="weav",
-                        ) from e
+                    else:
+                        collection.data.insert(properties=properties, vector=vector)
+                    added_count += 1
+                except Exception as e:
+                    raise QueryError.from_adapter(
+                        cls, "Failed to add object to Weaviate", cause=e
+                    )
 
-                # Add objects in batch
-                added_count = 0
-                # Process objects one by one
-                for it in items:
-                    # Validate vector field exists
-                    if not hasattr(it, vector_field):
-                        raise AdapterValidationError(
-                            f"Vector field '{vector_field}' not found in model",
-                            data=getattr(it, adapt_meth)(),
-                        )
-
-                    # Get vector data
-                    vector = getattr(it, vector_field)
-                    if not isinstance(vector, list):
-                        raise AdapterValidationError(
-                            f"Vector field '{vector_field}' must be a list of floats",
-                            data=getattr(it, adapt_meth)(),
-                        )
-
-                    # Exclude id and vector_field from properties
-                    properties = getattr(it, adapt_meth)(exclude={vector_field, "id"})
-
-                    # Generate a UUID based on the model's ID if available
-                    obj_uuid = None
-                    if hasattr(it, "id"):
-                        # Create a deterministic UUID from the model ID
-                        # This ensures the same model ID always maps to the same UUID
-                        namespace = uuid.UUID(
-                            "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-                        )  # UUID namespace
-                        obj_uuid = str(uuid.uuid5(namespace, f"{it.id}"))
-
-                    # Add object to collection
-                    try:
-                        # Create object with vector
-                        if obj_uuid:
-                            collection.data.insert(
-                                properties=properties, vector=vector, uuid=obj_uuid
-                            )
-                        else:
-                            collection.data.insert(properties=properties, vector=vector)
-                        added_count += 1
-                    except Exception as e:
-                        raise QueryError(
-                            f"Failed to add object to Weaviate: {e}",
-                            adapter="weav",
-                        ) from e
-
-                return {"added_count": added_count}
-
-            except (QueryError, AdapterValidationError):
-                # Re-raise our custom exceptions
-                raise
-            except Exception as e:
-                # Wrap other exceptions
-                raise QueryError(
-                    f"Error in Weaviate operation: {e}",
-                    adapter="weav",
-                ) from e
-
-        except (ConnectionError, QueryError, AdapterValidationError):
-            # Re-raise our custom exceptions
+            return {"added_count": added_count}
+        except (AdapterValidationError, ConnectionError, QueryError, ResourceError):
+            # Let our custom errors bubble up directly
             raise
         except Exception as e:
-            # Wrap other exceptions
-            if "Connection failed" in str(e):
-                raise ConnectionError(
-                    f"Failed to connect to Weaviate: {e}", adapter="weav", url=url
-                ) from e
-            else:
-                raise QueryError(
-                    f"Unexpected error in Weaviate adapter: {e}", adapter="weav"
-                ) from e
+            raise ConnectionError.from_adapter(
+                cls, "Failed to connect to Weaviate", cause=e
+            )
 
     # incoming
     @classmethod
@@ -285,93 +258,69 @@ class WeaviateAdapter(Adapter[T]):
             QueryError: If query execution fails
             ResourceError: If no matching objects are found
         """
+        # Validate required parameters
+        if "class_name" not in obj:
+            raise AdapterValidationError(
+                "Missing required parameter 'class_name'", data=obj
+            )
+        if "query_vector" not in obj:
+            raise AdapterValidationError(
+                "Missing required parameter 'query_vector'", data=obj
+            )
+
+        # Create client
+        client = cls._client(obj.get("url"))
+
+        # Execute query
         try:
-            # Validate required parameters
-            if "class_name" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'class_name'", data=obj
+            # Get the collection
+            collection = client.collections.get(obj["class_name"])
+
+            # Execute the query
+            query_result = (
+                collection.query.near_vector(
+                    obj["query_vector"],
+                    distance=0.7,  # Default distance threshold
+                    limit=obj.get("top_k", 5),
                 )
-            if "query_vector" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'query_vector'", data=obj
-                )
+                .with_additional("id")
+                .do()
+            )
 
-            # Create client
-            client = cls._client(obj.get("url"))
-
-            try:
-                # Execute query
-                # Execute query
-                try:
-                    # Get the collection
-                    collection = client.collections.get(obj["class_name"])
-
-                    # Execute the query
-                    query_result = (
-                        collection.query.near_vector(
-                            obj["query_vector"],
-                            distance=0.7,  # Default distance threshold
-                            limit=obj.get("top_k", 5),
-                        )
-                        .with_additional("id")
-                        .do()
-                    )
-
-                    # Extract objects from the result
-                    # Handle both mock objects in tests and real objects in production
-                    if hasattr(query_result, "objects"):
-                        # For real Weaviate client or properly mocked objects
-                        data = [
-                            getattr(item, "properties", item)
-                            for item in query_result.objects
-                        ]
-                    elif isinstance(query_result, dict) and "data" in query_result:
-                        # For old API format in tests
-                        data = query_result["data"]["Get"].get(obj["class_name"], [])
-                    else:
-                        data = []
-                except Exception as e:
-                    raise QueryError(
-                        f"Failed to execute Weaviate query: {e}",
-                        adapter="weav",
-                    ) from e
-
-                # Check if data is empty
-                if not data:
-                    if many:
-                        return []
-                    raise ResourceError(
-                        "No objects found matching the query",
-                        resource=obj["class_name"],
-                    )
-
-                # Convert to model instances
-                try:
-                    if many:
-                        return [getattr(subj_cls, adapt_meth)(r) for r in data]
-                    return getattr(subj_cls, adapt_meth)(data[0])
-                except ValidationError as e:
-                    raise AdapterValidationError(
-                        f"Validation error: {e}",
-                        data=data[0] if not many else data,
-                        errors=e.errors(),
-                    ) from e
-
-            except (QueryError, ResourceError, AdapterValidationError):
-                # Re-raise our custom exceptions
-                raise
-            except Exception as e:
-                # Wrap other exceptions
-                raise QueryError(
-                    f"Error in Weaviate query: {e}",
-                    adapter="weav",
-                ) from e
-
-        except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
-            # Re-raise our custom exceptions
-            raise
+            # Extract objects from the result
+            # Handle both mock objects in tests and real objects in production
+            if hasattr(query_result, "objects"):
+                # For real Weaviate client or properly mocked objects
+                data = [
+                    getattr(item, "properties", item) for item in query_result.objects
+                ]
+            elif isinstance(query_result, dict) and "data" in query_result:
+                # For old API format in tests
+                data = query_result["data"]["Get"].get(obj["class_name"], [])
+            else:
+                data = []
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(
-                f"Unexpected error in Weaviate adapter: {e}", adapter="weav"
-            ) from e
+            raise QueryError.from_adapter(
+                cls, "Failed to execute Weaviate query", cause=e
+            )
+
+        # Check if data is empty
+        if not data:
+            if many:
+                return []
+            raise ResourceError.from_adapter(
+                cls, "No objects found matching the query", resource=obj["class_name"]
+            )
+
+        # Convert to model instances
+        try:
+            if many:
+                return [getattr(subj_cls, adapt_meth)(r) for r in data]
+            return getattr(subj_cls, adapt_meth)(data[0])
+        except ValidationError as e:
+            raise AdapterValidationError.from_adapter(
+                cls,
+                "Validation error converting Weaviate data",
+                data=data[0] if not many else data,
+                cause=e,
+            )
