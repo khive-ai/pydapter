@@ -2,7 +2,7 @@
 Tests for migration protocol interfaces in pydapter.migrations.protocols.
 """
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import pytest
 
@@ -35,7 +35,7 @@ def test_migration_protocol_interface():
             return None
 
         @classmethod
-        def get_current_revision(cls, **kwargs) -> Optional[str]:
+        def get_current_revision(cls, **kwargs) -> str | None:
             return "revision123"
 
         @classmethod
@@ -77,7 +77,7 @@ def test_async_migration_protocol_interface():
             return None
 
         @classmethod
-        async def get_current_revision(cls, **kwargs) -> Optional[str]:
+        async def get_current_revision(cls, **kwargs) -> str | None:
             return "revision123"
 
         @classmethod
@@ -167,7 +167,7 @@ def test_migration_protocol_missing_attribute():
             return None
 
         @classmethod
-        def get_current_revision(cls, **kwargs) -> Optional[str]:
+        def get_current_revision(cls, **kwargs) -> str | None:
             return "revision123"
 
         @classmethod
@@ -205,7 +205,7 @@ def test_async_migration_protocol_missing_attribute():
             return None
 
         @classmethod
-        async def get_current_revision(cls, **kwargs) -> Optional[str]:
+        async def get_current_revision(cls, **kwargs) -> str | None:
             return "revision123"
 
         @classmethod
@@ -243,7 +243,7 @@ def test_migration_protocol_wrong_method_signatures():
             return None
 
         @classmethod
-        def get_current_revision(cls, **kwargs) -> Optional[str]:
+        def get_current_revision(cls, **kwargs) -> str | None:
             return "revision123"
 
         @classmethod
@@ -294,7 +294,7 @@ async def test_async_migration_protocol_method_calls():
             return None
 
         @classmethod
-        async def get_current_revision(cls, **kwargs) -> Optional[str]:
+        async def get_current_revision(cls, **kwargs) -> str | None:
             cls.get_revision_called = True
             return "revision123"
 
@@ -363,7 +363,7 @@ def test_migration_protocol_method_calls():
             return None
 
         @classmethod
-        def get_current_revision(cls, **kwargs) -> Optional[str]:
+        def get_current_revision(cls, **kwargs) -> str | None:
             cls.get_revision_called = True
             return "revision123"
 

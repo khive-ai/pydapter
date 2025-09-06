@@ -1,4 +1,3 @@
-import typing as t
 from datetime import date, datetime, time
 from uuid import UUID
 
@@ -22,17 +21,17 @@ from pydapter.model_adapters.sql_model import SQLModelAdapter
 
 # ---------- Sample Pydantic models for testing -------------------------------------------
 class UserSchema(BaseModel):
-    id: t.Optional[int] = None  # PK should become autoincrement
+    id: int | None = None  # PK should become autoincrement
     name: str
-    email: t.Optional[str] = None  # nullable
+    email: str | None = None  # nullable
     active: bool = True  # server default simulated
-    signup_ts: t.Optional[datetime] = None
+    signup_ts: datetime | None = None
 
 
 class CompleteTypeSchema(BaseModel):
     """Model with all supported scalar types for comprehensive testing"""
 
-    id: t.Optional[int] = None
+    id: int | None = None
     int_val: int = 42
     float_val: float = 3.14
     bool_val: bool = True
@@ -41,7 +40,7 @@ class CompleteTypeSchema(BaseModel):
     datetime_val: datetime = datetime(2025, 1, 1)
     date_val: date = date(2025, 1, 1)
     time_val: time = time(12, 0, 0)
-    uuid_val: t.Optional[UUID] = None
+    uuid_val: UUID | None = None
 
 
 # ---------- Tests for SQLModelAdapter ----------------------------------------------------
@@ -102,7 +101,7 @@ def test_pydantic_to_sql_custom_pk():
     """Test custom primary key field"""
 
     class CustomPKSchema(BaseModel):
-        custom_id: t.Optional[int] = None
+        custom_id: int | None = None
         name: str
 
     CustomSQL = SQLModelAdapter.pydantic_model_to_sql(

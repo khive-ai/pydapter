@@ -22,7 +22,7 @@ def test_register_type_mapping():
 
     # Create a model with the custom type
     class CustomBoolSchema(BaseModel):
-        id: Optional[int] = None
+        id: int | None = None
         flag: bool
 
     # Convert to SQLAlchemy model
@@ -46,7 +46,7 @@ def test_one_to_one_relationship():
     """Test one-to-one relationship handling."""
 
     class User(BaseModel):
-        id: Optional[int] = None
+        id: int | None = None
         name: str
         profile: Optional["Profile"] = Field(
             None,
@@ -56,9 +56,9 @@ def test_one_to_one_relationship():
         )
 
     class Profile(BaseModel):
-        id: Optional[int] = None
+        id: int | None = None
         bio: str
-        user: Optional[User] = Field(
+        user: User | None = Field(
             None,
             json_schema_extra={
                 "relationship": {"type": "one_to_one", "back_populates": "profile"}
@@ -91,7 +91,7 @@ def test_one_to_many_relationship():
     """Test one-to-many relationship handling."""
 
     class Author(BaseModel):
-        id: Optional[int] = None
+        id: int | None = None
         name: str
         books: list["Book"] = Field(
             default_factory=list,
@@ -101,10 +101,10 @@ def test_one_to_many_relationship():
         )
 
     class Book(BaseModel):
-        id: Optional[int] = None
+        id: int | None = None
         title: str
-        author_id: Optional[int] = None
-        author: Optional[Author] = Field(
+        author_id: int | None = None
+        author: Author | None = Field(
             None,
             json_schema_extra={
                 "relationship": {"type": "many_to_one", "back_populates": "books"}
@@ -139,7 +139,7 @@ def test_error_handling_with_pydapter_exceptions():
     """Test error handling with pydapter exceptions."""
 
     class UnsupportedSchema(BaseModel):
-        id: Optional[int] = None
+        id: int | None = None
         complex_val: complex  # Not supported
 
     with pytest.raises(TypeConversionError) as excinfo:
@@ -156,9 +156,9 @@ def test_pydantic_v2_compatibility():
     """Test Pydantic v2 compatibility."""
 
     class UserSchema(BaseModel):
-        id: Optional[int] = None
+        id: int | None = None
         name: str
-        email: Optional[str] = None
+        email: str | None = None
 
     # Convert to SQLAlchemy model
     UserSQL = SQLModelAdapter.pydantic_model_to_sql(UserSchema)

@@ -3,14 +3,11 @@ Comprehensive unit tests for CSV adapter with focus on error handling patterns.
 Tests the recent fixes to ensure consistent error handling using from_adapter pattern.
 """
 
-import csv
-import io
 import tempfile
 from pathlib import Path
 
 import pytest
 from pydantic import BaseModel
-from pydantic import ValidationError as PydanticValidationError
 
 from pydapter.adapters.csv_ import CsvAdapter
 from pydapter.exceptions import ParseError, ResourceError, ValidationError
