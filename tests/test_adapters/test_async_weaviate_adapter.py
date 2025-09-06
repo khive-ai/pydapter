@@ -9,8 +9,12 @@ from aiohttp import ClientError
 from pydantic import BaseModel
 
 from pydapter.async_core import AsyncAdaptable
-from pydapter.exceptions import ConnectionError, QueryError, ResourceError
-from pydapter.exceptions import ValidationError as AdapterValidationError
+from pydapter.exceptions import (
+    ConnectionError,
+    QueryError,
+    ResourceError,
+    ValidationError,
+)
 from pydapter.extras.async_weaviate_ import AsyncWeaviateAdapter
 
 
@@ -219,7 +223,7 @@ class TestAsyncWeaviateAdapterErrorHandling:
         test_model.__class__.register_async_adapter(AsyncWeaviateAdapter)
 
         # Test to_obj with missing class_name
-        with pytest.raises(AdapterValidationError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             await test_model.adapt_to_async(
                 obj_key="async_weav",
                 url="http://localhost:8080",
@@ -238,7 +242,7 @@ class TestAsyncWeaviateAdapterErrorHandling:
         test_model.__class__.register_async_adapter(AsyncWeaviateAdapter)
 
         # Test to_obj with missing url
-        with pytest.raises(AdapterValidationError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             await test_model.adapt_to_async(
                 obj_key="async_weav",
                 class_name="TestModel",
@@ -261,7 +265,9 @@ class TestAsyncWeaviateAdapterErrorHandling:
             AsyncWeaviateAdapter,
             "to_obj",
             side_effect=ConnectionError(
-                "Failed to connect to Weaviate: Connection failed", adapter="async_weav"
+                "Failed to connect to Weaviate",
+                details={"adapter_obj_key": "async_weav"},
+                cause=Exception("Connection failed"),
             ),
         )
 
@@ -287,7 +293,9 @@ class TestAsyncWeaviateAdapterErrorHandling:
             AsyncWeaviateAdapter,
             "from_obj",
             side_effect=QueryError(
-                "Error in Weaviate query: Bad request", adapter="async_weav"
+                "Error in Weaviate query",
+                details={"adapter_obj_key": "async_weav"},
+                cause=Exception("Bad request"),
             ),
         )
 
@@ -318,7 +326,7 @@ class TestAsyncWeaviateAdapterErrorHandling:
             AsyncWeaviateAdapter,
             "from_obj",
             side_effect=ResourceError(
-                "No objects found matching the query", resource="TestModel"
+                "No objects found matching the query", details={"resource": "TestModel"}
             ),
         )
 
@@ -345,17 +353,17 @@ class TestAsyncWeaviateAdapterErrorHandling:
         # Register adapter
         test_cls.register_async_adapter(AsyncWeaviateAdapter)
 
-        # Mock the from_obj method to raise AdapterValidationError
+        # Mock the from_obj method to raise ValidationError
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "from_obj",
-            side_effect=AdapterValidationError(
+            side_effect=ValidationError(
                 "Validation error: missing required field 'name'"
             ),
         )
 
         # Test from_obj with validation error
-        with pytest.raises(AdapterValidationError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             await test_cls.adapt_from_async(
                 {
                     "class_name": "TestModel",
@@ -383,17 +391,15 @@ class TestAsyncWeaviateAdapterErrorHandling:
         # Register adapter
         test_model.__class__.register_async_adapter(AsyncWeaviateAdapter)
 
-        # Mock the to_obj method to raise AdapterValidationError
+        # Mock the to_obj method to raise ValidationError
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "to_obj",
-            side_effect=AdapterValidationError(
-                "Vector field 'embedding' not found in model"
-            ),
+            side_effect=ValidationError("Vector field 'embedding' not found in model"),
         )
 
         # Test to_obj with missing vector field
-        with pytest.raises(AdapterValidationError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             await test_model.adapt_to_async(
                 obj_key="async_weav",
                 class_name="TestModel",

@@ -17,8 +17,8 @@ from pydapter.exceptions import (
     ParseError,
     QueryError,
     ResourceError,
+    ValidationError,
 )
-from pydapter.exceptions import ValidationError as AdapterValidationError
 
 
 class TestCustomExceptions:
@@ -29,66 +29,68 @@ class TestCustomExceptions:
         error = AdapterError("Test error")
         assert str(error) == "Test error"
         assert error.message == "Test error"
-        assert error.context == {}
+        assert error.details == {}
 
     def test_adapter_error_with_context(self):
         """Test AdapterError with context."""
-        error = AdapterError("Test error", key1="value1", key2=123)
+        error = AdapterError("Test error", details={"key1": "value1", "key2": 123})
         assert "Test error" in str(error)
-        assert "key1='value1'" in str(error)
-        assert "key2=123" in str(error)
-        assert error.context == {"key1": "value1", "key2": 123}
+        assert error.details == {"key1": "value1", "key2": 123}
 
     def test_validation_error(self):
         """Test ValidationError."""
         data = {"id": "not_an_int"}
-        error = AdapterValidationError("Validation failed", data=data)
+        error = ValidationError("Validation failed", details={"data": data})
         assert "Validation failed" in str(error)
-        assert error.data == data
+        assert error.details["data"] == data
 
     def test_parse_error(self):
         """Test ParseError."""
         source = '{"invalid": json'
-        error = ParseError("Parse error", source=source)
+        error = ParseError("Parse error", details={"source": source})
         assert "Parse error" in str(error)
-        assert error.source == source
+        assert error.details["source"] == source
 
     def test_connection_error(self):
         """Test ConnectionError."""
         url = "postgresql://localhost:5432/nonexistent"
-        error = ConnectionError("Connection failed", adapter="postgres", url=url)
+        error = ConnectionError(
+            "Connection failed", details={"adapter_obj_key": "postgres", "url": url}
+        )
         assert "Connection failed" in str(error)
-        assert error.adapter == "postgres"
-        assert error.url == url
+        assert error.details["adapter_obj_key"] == "postgres"
+        assert error.details["url"] == url
 
     def test_query_error(self):
         """Test QueryError."""
         query = "SELECT * FROM nonexistent"
-        error = QueryError("Query failed", query=query, adapter="sql")
+        error = QueryError(
+            "Query failed", details={"query": query, "adapter_obj_key": "sql"}
+        )
         assert "Query failed" in str(error)
-        assert error.query == query
-        assert error.adapter == "sql"
+        assert error.details["query"] == query
+        assert error.details["adapter_obj_key"] == "sql"
 
     def test_resource_error(self):
         """Test ResourceError."""
         resource = "users"
-        error = ResourceError("Resource not found", resource=resource)
+        error = ResourceError("Resource not found", details={"resource": resource})
         assert "Resource not found" in str(error)
-        assert error.resource == resource
+        assert error.details["resource"] == resource
 
     def test_configuration_error(self):
         """Test ConfigurationError."""
         config = {"url": "invalid://url"}
-        error = ConfigurationError("Invalid configuration", config=config)
+        error = ConfigurationError("Invalid configuration", details={"config": config})
         assert "Invalid configuration" in str(error)
-        assert error.config == config
+        assert error.details["config"] == config
 
     def test_adapter_not_found_error(self):
         """Test AdapterNotFoundError."""
         obj_key = "nonexistent"
-        error = AdapterNotFoundError("Adapter not found", obj_key=obj_key)
+        error = AdapterNotFoundError("Adapter not found", details={"obj_key": obj_key})
         assert "Adapter not found" in str(error)
-        assert error.obj_key == obj_key
+        assert error.details["obj_key"] == obj_key
 
 
 class TestInvalidAdapters:
@@ -197,10 +199,12 @@ class TestJsonAdapterErrors:
         TestModel.register_adapter(JsonAdapter)
 
         # Test missing required fields
-        with pytest.raises(AdapterValidationError) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             TestModel.adapt_from('{"id": 1}', obj_key="json")
-        assert "Validation error" in str(exc_info.value)
-        assert "name" in str(exc_info.value) or "value" in str(exc_info.value)
+        assert "Data conversion failed" in str(exc_info.value)
+        # Check that the problematic data is in the details
+        assert "data" in exc_info.value.details
+        assert exc_info.value.details["data"]["id"] == 1
 
     def test_invalid_field_types(self):
         """Test handling of invalid field types."""
@@ -213,12 +217,13 @@ class TestJsonAdapterErrors:
         TestModel.register_adapter(JsonAdapter)
 
         # Test invalid field types
-        with pytest.raises(AdapterValidationError) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             TestModel.adapt_from(
                 '{"id": "not_an_int", "name": "test", "value": 42.5}', obj_key="json"
             )
-        assert "Validation error" in str(exc_info.value)
-        assert "id" in str(exc_info.value)
+        assert "Data conversion failed" in str(exc_info.value)
+        # Check that the problematic data is in the details
+        assert "data" in exc_info.value.details
 
     def test_json_file_not_found(self):
         """Test handling of non-existent JSON file."""
@@ -231,7 +236,7 @@ class TestJsonAdapterErrors:
         TestModel.register_adapter(JsonAdapter)
 
         # Test non-existent file
-        with pytest.raises(ParseError) as exc_info:
+        with pytest.raises(ResourceError) as exc_info:
             TestModel.adapt_from(Path("nonexistent.json"), obj_key="json")
         assert "Failed to read" in str(exc_info.value)
 
@@ -246,11 +251,11 @@ class TestJsonAdapterErrors:
         TestModel.register_adapter(JsonAdapter)
 
         # Test JSON array with many=False
-        with pytest.raises(AdapterValidationError) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             TestModel.adapt_from(
                 '[{"id": 1, "name": "test", "value": 42.5}]', obj_key="json", many=False
             )
-        assert "Validation error" in str(exc_info.value)
+        assert "Data conversion failed" in str(exc_info.value)
 
 
 class TestCsvAdapterErrors:
@@ -288,10 +293,10 @@ class TestCsvAdapterErrors:
         assert "Empty CSV content" in str(exc_info.value)
 
         # Test CSV with empty headers
-        with pytest.raises(ParseError) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             # Create a CSV with empty header row
             TestModel.adapt_from(",,,\n1,test,42.5", obj_key="csv")
-        assert "CSV missing required fields" in str(exc_info.value)
+        assert "Data conversion failed" in str(exc_info.value)
 
     def test_missing_required_fields(self):
         """Test handling of CSV with missing required fields."""
@@ -304,10 +309,9 @@ class TestCsvAdapterErrors:
         TestModel.register_adapter(CsvAdapter)
 
         # Test CSV with missing required fields
-        with pytest.raises(ParseError) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             TestModel.adapt_from("id,name\n1,test", obj_key="csv")
-        assert "CSV missing required fields" in str(exc_info.value)
-        assert "value" in str(exc_info.value)
+        assert "Data conversion failed" in str(exc_info.value)
 
     def test_invalid_field_types(self):
         """Test handling of CSV with invalid field types."""
@@ -320,10 +324,12 @@ class TestCsvAdapterErrors:
         TestModel.register_adapter(CsvAdapter)
 
         # Test CSV with invalid field types
-        with pytest.raises(AdapterValidationError) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             TestModel.adapt_from("id,name,value\nnot_an_int,test,42.5", obj_key="csv")
-        assert "Validation error" in str(exc_info.value)
-        assert "id" in str(exc_info.value)
+        assert "Data conversion failed" in str(exc_info.value)
+        # Check row information is in details
+        assert "row_number" in exc_info.value.details
+        assert "row_data" in exc_info.value.details
 
     def test_csv_file_not_found(self):
         """Test handling of non-existent CSV file."""
@@ -336,7 +342,7 @@ class TestCsvAdapterErrors:
         TestModel.register_adapter(CsvAdapter)
 
         # Test non-existent file
-        with pytest.raises(ParseError) as exc_info:
+        with pytest.raises(ResourceError) as exc_info:
             TestModel.adapt_from(Path("nonexistent.csv"), obj_key="csv")
         assert "Failed to read" in str(exc_info.value)
 
@@ -432,10 +438,12 @@ class TestTomlAdapterErrors:
         TestModel.register_adapter(TomlAdapter)
 
         # Test TOML with missing required fields
-        with pytest.raises(AdapterValidationError) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             TestModel.adapt_from("id = 1\nname = 'test'", obj_key="toml")
-        assert "Validation error" in str(exc_info.value)
-        assert "value" in str(exc_info.value)
+        assert "Data conversion failed" in str(exc_info.value)
+        # Check that the problematic data is in the details
+        assert "data" in exc_info.value.details
+        assert exc_info.value.details["data"]["id"] == 1
 
     def test_invalid_field_types(self):
         """Test handling of TOML with invalid field types."""
@@ -448,12 +456,13 @@ class TestTomlAdapterErrors:
         TestModel.register_adapter(TomlAdapter)
 
         # Test TOML with invalid field types
-        with pytest.raises(AdapterValidationError) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             TestModel.adapt_from(
                 "id = 'not_an_int'\nname = 'test'\nvalue = 42.5", obj_key="toml"
             )
-        assert "Validation error" in str(exc_info.value)
-        assert "id" in str(exc_info.value)
+        assert "Data conversion failed" in str(exc_info.value)
+        # Check that the problematic data is in the details
+        assert "data" in exc_info.value.details
 
     def test_toml_file_not_found(self):
         """Test handling of non-existent TOML file."""
@@ -466,7 +475,7 @@ class TestTomlAdapterErrors:
         TestModel.register_adapter(TomlAdapter)
 
         # Test non-existent file
-        with pytest.raises(ParseError) as exc_info:
+        with pytest.raises(ResourceError) as exc_info:
             TestModel.adapt_from(Path("nonexistent.toml"), obj_key="toml")
         assert "Failed to read" in str(exc_info.value)
 
@@ -559,7 +568,7 @@ class TestAdaptableErrors:
         invalid_data = serialized.replace('"id": 1', '"id": "invalid"')
 
         # Try to deserialize the invalid data
-        with pytest.raises(AdapterValidationError):
+        with pytest.raises(ValidationError):
             TestModel.adapt_from(invalid_data, obj_key="json")
 
 

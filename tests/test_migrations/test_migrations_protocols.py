@@ -231,9 +231,7 @@ def test_migration_protocol_wrong_method_signatures():
 
         # Wrong signature: wrong return type
         @classmethod
-        def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> int:  # type: ignore
+        def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> int:  # type: ignore
             return 123
 
         @classmethod

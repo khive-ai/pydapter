@@ -6,8 +6,12 @@ import pytest
 from pydantic import BaseModel
 
 from pydapter.core import Adaptable
-from pydapter.exceptions import ConnectionError, QueryError, ResourceError
-from pydapter.exceptions import ValidationError as AdapterValidationError
+from pydapter.exceptions import (
+    ConnectionError,
+    QueryError,
+    ResourceError,
+    ValidationError,
+)
 from pydapter.extras.weaviate_ import WeaviateAdapter
 
 
@@ -251,7 +255,7 @@ class TestWeaviateAdapterErrorHandling:
         test_model.__class__.register_adapter(WeaviateAdapter)
 
         # Test to_obj with missing class_name
-        with pytest.raises(AdapterValidationError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             test_model.adapt_to(
                 obj_key="weav",
                 url="http://localhost:8080",
@@ -384,7 +388,7 @@ class TestWeaviateAdapterErrorHandling:
         mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
 
         # Test from_obj with validation error
-        with pytest.raises(AdapterValidationError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             test_cls.adapt_from(
                 {
                     "class_name": "TestModel",
@@ -415,7 +419,7 @@ class TestWeaviateAdapterErrorHandling:
         mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
 
         # Test to_obj with missing vector field
-        with pytest.raises(AdapterValidationError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             test_model.adapt_to(
                 obj_key="weav", class_name="TestModel", url="http://localhost:8080"
             )

@@ -147,9 +147,9 @@ def test_error_handling_with_pydapter_exceptions():
 
     # Verify exception details
     assert "Unsupported type" in str(excinfo.value)
-    assert excinfo.value.source_type is complex
-    assert excinfo.value.field_name == "complex_val"
-    assert excinfo.value.model_name == "UnsupportedSchema"
+    assert excinfo.value.details["source_type"] is complex
+    assert excinfo.value.details["field_name"] == "complex_val"
+    assert excinfo.value.details["model_name"] == "UnsupportedSchema"
 
 
 def test_pydantic_v2_compatibility():

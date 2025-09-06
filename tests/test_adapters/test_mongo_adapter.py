@@ -126,6 +126,8 @@ class TestMongoAdapterErrorHandling:
     @patch("pydapter.extras.mongo_.MongoClient")
     def test_mongo_connection_error(self, mock_mongo_client, mongo_sample):
         """Test handling of MongoDB connection errors."""
+        from pydapter.exceptions import PydapterError
+
         # Configure the mock to raise a connection error
         mock_mongo_client.side_effect = Exception("Connection error")
 
@@ -134,8 +136,8 @@ class TestMongoAdapterErrorHandling:
             "pydapter.extras.mongo_.MongoAdapter.to_obj",
             side_effect=Exception("Connection error"),
         ):
-            # Test to_obj with connection error
-            with pytest.raises(Exception, match="Connection error"):
+            # Test to_obj with connection error - it should be wrapped in AdapterError
+            with pytest.raises(PydapterError, match="Error adapting to mongo"):
                 mongo_sample.adapt_to(obj_key="mongo", url="mongodb://localhost:27017")
 
     @patch("pydapter.extras.mongo_.MongoClient")

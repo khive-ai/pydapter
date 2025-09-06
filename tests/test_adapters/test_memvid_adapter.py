@@ -4,7 +4,7 @@ Tests for Memvid adapter functionality.
 
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 from pydantic import BaseModel
@@ -91,7 +91,7 @@ class TestMemvidAdapterImport:
                 MemvidAdapter._import_memvid()
 
             assert "Failed to import memvid" in str(exc_info.value)
-            assert exc_info.value.adapter == "memvid"
+            assert exc_info.value.details["adapter_obj_key"] == "memvid"
 
 
 class TestMemvidAdapterToObj:
@@ -207,7 +207,7 @@ class TestMemvidAdapterToObj:
                 )
 
             assert "Failed to create MemvidEncoder" in str(exc_info.value)
-            assert exc_info.value.adapter == "memvid"
+            assert exc_info.value.details["adapter_obj_key"] == "memvid"
 
     def test_to_obj_non_string_text_field(self, temp_files):
         """Test error when text field is not a string."""
@@ -255,7 +255,7 @@ class TestMemvidAdapterToObj:
                 )
 
             assert "Error processing text chunks" in str(exc_info.value)
-            assert exc_info.value.adapter == "memvid"
+            assert exc_info.value.details["adapter_obj_key"] == "memvid"
 
     def test_to_obj_build_video_failure(self, memvid_sample, temp_files):
         """Test build video failure."""
@@ -276,25 +276,31 @@ class TestMemvidAdapterToObj:
                 )
 
             assert "Failed to build video memory" in str(exc_info.value)
-            assert exc_info.value.adapter == "memvid"
+            assert exc_info.value.details["adapter_obj_key"] == "memvid"
 
     def test_to_obj_unexpected_error(self, temp_files):
         """Test unexpected error handling."""
         video_file, index_file = temp_files
 
-        # Create mock that raises unexpected error type
+        # Create mock that raises unexpected error type when text attribute is accessed
         mock_obj = Mock()
-        mock_obj.text = "valid text"
-        mock_obj.model_dump.side_effect = TypeError("Unexpected error")
+        type(mock_obj).text = PropertyMock(side_effect=TypeError("Unexpected error"))
 
-        with patch.object(MemvidAdapter, "_import_memvid"):
+        mock_encoder = Mock()
+        mock_encoder.add_text.return_value = None
+        mock_encoder.build_video.return_value = {"stats": "mock_stats"}
+        mock_encoder_class = Mock(return_value=mock_encoder)
+
+        with patch.object(
+            MemvidAdapter, "_import_memvid", return_value=(mock_encoder_class, Mock())
+        ):
             with pytest.raises(QueryError) as exc_info:
                 MemvidAdapter.to_obj(
                     mock_obj, video_file=video_file, index_file=index_file
                 )
 
             assert "Unexpected error in Memvid adapter" in str(exc_info.value)
-            assert exc_info.value.adapter == "memvid"
+            assert exc_info.value.details["adapter_obj_key"] == "memvid"
 
 
 class TestMemvidAdapterFromObj:
@@ -395,7 +401,7 @@ class TestMemvidAdapterFromObj:
                 )
 
             assert "Failed to create MemvidRetriever" in str(exc_info.value)
-            assert exc_info.value.adapter == "memvid"
+            assert exc_info.value.details["adapter_obj_key"] == "memvid"
 
     def test_from_obj_search_execution_failure(self):
         """Test search execution failure."""
@@ -417,7 +423,7 @@ class TestMemvidAdapterFromObj:
                 )
 
             assert "Error searching video memory" in str(exc_info.value)
-            assert exc_info.value.adapter == "memvid"
+            assert exc_info.value.details["adapter_obj_key"] == "memvid"
 
     def test_from_obj_single_result_success(self):
         """Test successful single result return."""
@@ -564,7 +570,7 @@ class TestMemvidAdapterFromObj:
                 )
 
             assert "Unexpected error in Memvid adapter" in str(exc_info.value)
-            assert exc_info.value.adapter == "memvid"
+            assert exc_info.value.details["adapter_obj_key"] == "memvid"
 
     def test_from_obj_success(self):
         """Test successful video memory search."""

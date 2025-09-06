@@ -42,7 +42,7 @@ class TestMemvidAdapterBasics:
                 MemvidAdapter._import_memvid()
 
             assert "Failed to import memvid" in str(exc_info.value)
-            assert exc_info.value.adapter == "memvid"
+            assert exc_info.value.details["adapter_obj_key"] == "memvid"
 
     def test_to_obj_validation_missing_video_file(self):
         """Test validation error when video_file is missing."""
