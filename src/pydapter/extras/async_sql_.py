@@ -4,8 +4,14 @@ Generic async SQL adapter - SQLAlchemy 2.x asyncio + asyncpg driver.
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Sequence
-from typing import Any, Literal, NotRequired, Required, TypedDict
+from typing import Any, Literal, TypedDict
+
+if sys.version_info >= (3, 11):
+    from typing import NotRequired, Required
+else:
+    from typing_extensions import NotRequired, Required
 
 import sqlalchemy as sa
 import sqlalchemy.exc as sa_exc
