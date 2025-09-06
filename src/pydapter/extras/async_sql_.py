@@ -6,12 +6,12 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Sequence
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal
 
 if sys.version_info >= (3, 11):
-    from typing import NotRequired, Required
+    from typing import NotRequired, Required, TypedDict
 else:
-    from typing_extensions import NotRequired, Required
+    from typing_extensions import NotRequired, Required, TypedDict
 
 import sqlalchemy as sa
 import sqlalchemy.exc as sa_exc
