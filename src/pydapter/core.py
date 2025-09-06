@@ -57,6 +57,7 @@ class Adapter(Protocol[T]):
         *,
         many: bool = False,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw: Any,
     ) -> T | list[T]:
         """
@@ -67,6 +68,7 @@ class Adapter(Protocol[T]):
             obj: The source data in the adapter's format
             many: If True, expect/return a list of instances
             adapt_meth: Method name to use for model validation (default: "model_validate")
+            adapt_kw: Optional dict of kwargs to pass to the adapt_meth
             **kw: Additional adapter-specific arguments
 
         Returns:
@@ -82,6 +84,7 @@ class Adapter(Protocol[T]):
         *,
         many: bool = False,
         adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
         **kw: Any,
     ) -> Any:
         """
@@ -91,6 +94,7 @@ class Adapter(Protocol[T]):
             subj: Single model instance or list of instances
             many: If True, handle as list of instances
             adapt_meth: Method name to use for model dumping (default: "model_dump")
+            adapt_kw: Optional dict of kwargs to pass to the adapt_meth
             **kw: Additional adapter-specific arguments
 
         Returns:
@@ -139,7 +143,8 @@ class AdapterRegistry:
         key = getattr(adapter_cls, "obj_key", None)
         if not key:
             raise ConfigurationError(
-                "Adapter must define 'obj_key'", adapter_cls=adapter_cls.__name__
+                "Adapter must define 'obj_key'",
+                details={"adapter_cls": adapter_cls.__name__},
             )
         self._reg[key] = adapter_cls
 
@@ -160,8 +165,10 @@ class AdapterRegistry:
             return self._reg[obj_key]
         except KeyError as exc:
             raise AdapterNotFoundError(
-                f"No adapter registered for '{obj_key}'", obj_key=obj_key
-            ) from exc
+                f"No adapter registered for '{obj_key}'",
+                details={"obj_key": obj_key},
+                cause=exc,
+            )
 
     def adapt_from(
         self,
@@ -170,6 +177,7 @@ class AdapterRegistry:
         *,
         obj_key: str,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw: Any,
     ) -> T | list[T]:
         """
@@ -180,6 +188,7 @@ class AdapterRegistry:
             obj: The source data in the specified format
             obj_key: The key identifying which adapter to use
             adapt_meth: Method name to use for model validation (default: "model_validate")
+            adapt_kw: Optional dict of kwargs to pass to the adapt_meth
             **kw: Additional adapter-specific arguments
 
         Returns:
@@ -191,10 +200,12 @@ class AdapterRegistry:
         """
         try:
             result = self.get(obj_key).from_obj(
-                subj_cls, obj, adapt_meth=adapt_meth, **kw
+                subj_cls, obj, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
             )
             if result is None:
-                raise AdapterError(f"Adapter {obj_key} returned None", adapter=obj_key)
+                raise AdapterError(
+                    f"Adapter {obj_key} returned None", details={"adapter": obj_key}
+                )
             return result
 
         except Exception as exc:
@@ -202,11 +213,19 @@ class AdapterRegistry:
                 raise
 
             raise AdapterError(
-                f"Error adapting from {obj_key}", original_error=str(exc)
-            ) from exc
+                f"Error adapting from {obj_key}",
+                details={"adapter": obj_key, "error": str(exc)},
+                cause=exc,
+            )
 
     def adapt_to(
-        self, subj: Any, *, obj_key: str, adapt_meth: str = "model_dump", **kw: Any
+        self,
+        subj: Any,
+        *,
+        obj_key: str,
+        adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
+        **kw: Any,
     ) -> Any:
         """
         Convenience method to convert from Pydantic model to external format.
@@ -215,6 +234,7 @@ class AdapterRegistry:
             subj: The model instance(s) to convert
             obj_key: The key identifying which adapter to use
             adapt_meth: Method name to use for model dumping (default: "model_dump")
+            adapt_kw: Optional dict of kwargs to pass to the adapt_meth
             **kw: Additional adapter-specific arguments
 
         Returns:
@@ -225,9 +245,13 @@ class AdapterRegistry:
             AdapterError: If the adaptation process fails
         """
         try:
-            result = self.get(obj_key).to_obj(subj, adapt_meth=adapt_meth, **kw)
+            result = self.get(obj_key).to_obj(
+                subj, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
+            )
             if result is None:
-                raise AdapterError(f"Adapter {obj_key} returned None", adapter=obj_key)
+                raise AdapterError(
+                    f"Adapter {obj_key} returned None", details={"adapter": obj_key}
+                )
             return result
 
         except Exception as exc:
@@ -235,8 +259,10 @@ class AdapterRegistry:
                 raise
 
             raise AdapterError(
-                f"Error adapting to {obj_key}", original_error=str(exc)
-            ) from exc
+                f"Error adapting to {obj_key}",
+                details={"adapter": obj_key, "error": str(exc)},
+                cause=exc,
+            )
 
 
 # ----------------------------------------------------------------- Adaptable
@@ -295,7 +321,13 @@ class Adaptable:
 
     @classmethod
     def adapt_from(
-        cls, obj: Any, *, obj_key: str, adapt_meth: str = "model_validate", **kw: Any
+        cls,
+        obj: Any,
+        *,
+        obj_key: str,
+        adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
+        **kw: Any,
     ) -> Any:
         """
         Create model instance(s) from external data format.
@@ -304,17 +336,23 @@ class Adaptable:
             obj: The source data in the specified format
             obj_key: The key identifying which adapter to use
             adapt_meth: Method name to use for model validation (default: "model_validate")
+            adapt_kw: Optional dict of kwargs to pass to the adapt_meth
             **kw: Additional adapter-specific arguments
 
         Returns:
             Model instance(s) created from the source data
         """
         return cls._registry().adapt_from(
-            cls, obj, obj_key=obj_key, adapt_meth=adapt_meth, **kw
+            cls, obj, obj_key=obj_key, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
         )
 
     def adapt_to(
-        self, *, obj_key: str, adapt_meth: str = "model_dump", **kw: Any
+        self,
+        *,
+        obj_key: str,
+        adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
+        **kw: Any,
     ) -> Any:
         """
         Convert this model instance to external data format.
@@ -322,11 +360,12 @@ class Adaptable:
         Args:
             obj_key: The key identifying which adapter to use
             adapt_meth: Method name to use for model dumping (default: "model_dump")
+            adapt_kw: Optional dict of kwargs to pass to the adapt_meth
             **kw: Additional adapter-specific arguments
 
         Returns:
             Data in the specified external format
         """
         return self._registry().adapt_to(
-            self, obj_key=obj_key, adapt_meth=adapt_meth, **kw
+            self, obj_key=obj_key, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
         )

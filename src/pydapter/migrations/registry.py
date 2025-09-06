@@ -37,7 +37,7 @@ class MigrationRegistry:
         if not key:
             raise ConfigurationError(
                 "Migration adapter must define 'migration_key'",
-                adapter_cls=adapter_cls.__name__,
+                details={"adapter_cls": adapter_cls.__name__},
             )
         self._reg[key] = adapter_cls
 
@@ -59,8 +59,9 @@ class MigrationRegistry:
         except KeyError as exc:
             raise AdapterNotFoundError(
                 f"No migration adapter registered for '{migration_key}'",
-                obj_key=migration_key,
-            ) from exc
+                details={"obj_key": migration_key},
+                cause=exc,
+            )
 
     # Convenience methods for migration operations
 
@@ -248,7 +249,7 @@ class AsyncMigrationRegistry:
         if not key:
             raise ConfigurationError(
                 "Async migration adapter must define 'migration_key'",
-                adapter_cls=adapter_cls.__name__,
+                details={"adapter_cls": adapter_cls.__name__},
             )
         self._reg[key] = adapter_cls
 
@@ -270,8 +271,9 @@ class AsyncMigrationRegistry:
         except KeyError as exc:
             raise AdapterNotFoundError(
                 f"No async migration adapter registered for '{migration_key}'",
-                obj_key=migration_key,
-            ) from exc
+                details={"obj_key": migration_key},
+                cause=exc,
+            )
 
     # Convenience methods for async migration operations
 

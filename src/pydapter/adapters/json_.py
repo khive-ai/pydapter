@@ -1,57 +1,37 @@
-"""
-JSON Adapter for Pydantic Models.
-
-This module provides the JsonAdapter class for converting between Pydantic models
-and JSON data formats. It supports reading from JSON files, strings, or bytes
-and writing Pydantic models to JSON format.
-"""
+"""JSON Adapter, obj_key = 'json'"""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TypeVar
-
-from pydantic import BaseModel, ValidationError
 
 from ..core import Adapter
-from ..exceptions import ParseError
-from ..exceptions import ValidationError as AdapterValidationError
-
-T = TypeVar("T", bound=BaseModel)
+from ..exceptions import ParseError, ResourceError, ValidationError
+from ..utils import T, adapt_dump, adapt_from
 
 
 class JsonAdapter(Adapter[T]):
     """
     Adapter for converting between Pydantic models and JSON data.
 
-    This adapter handles JSON files, strings, and byte data, providing methods to:
-    - Parse JSON data into Pydantic model instances
-    - Convert Pydantic models to JSON format
-    - Handle both single objects and arrays of objects
-
-    Attributes:
-        obj_key: The key identifier for this adapter type ("json")
+    Parameters:
+        adapt_kw: Parameters passed to Pydantic model methods (model_validate/model_dump)
+        **kw: Parameters passed to JSON operations (json.loads/json.dumps)
 
     Example:
         ```python
-        from pydantic import BaseModel
-        from pydapter.adapters.json_ import JsonAdapter
+        # Parse with validation options
+        person = JsonAdapter.from_obj(
+            Person, json_data,
+            adapt_kw={"strict": True}  # To model_validate
+        )
 
-        class Person(BaseModel):
-            name: str
-            age: int
-
-        # Parse JSON data
-        json_data = '{"name": "John", "age": 30}'
-        person = JsonAdapter.from_obj(Person, json_data)
-
-        # Parse JSON array
-        json_array = '[{"name": "John", "age": 30}, {"name": "Jane", "age": 25}]'
-        people = JsonAdapter.from_obj(Person, json_array, many=True)
-
-        # Convert to JSON
-        json_output = JsonAdapter.to_obj(person)
+        # Convert with formatting
+        json_output = JsonAdapter.to_obj(
+            person,
+            adapt_kw={"exclude_unset": True},  # To model_dump
+            indent=4, sort_keys=True           # To json.dumps
+        )
         ```
     """
 
@@ -67,66 +47,66 @@ class JsonAdapter(Adapter[T]):
         *,
         many=False,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw,
     ):
+        # Handle file path
+        if isinstance(obj, Path):
+            try:
+                text = Path(obj).read_text()
+            except Exception as e:
+                raise ResourceError.from_adapter(
+                    cls, "Failed to read JSON file", source=obj, cause=e
+                )
+        else:
+            text = obj.decode("utf-8") if isinstance(obj, bytes) else obj
+        # Check for empty input
+        if not text or (isinstance(text, str) and not text.strip()):
+            raise ParseError.from_adapter(cls, "Empty JSON content", source=obj)
+
+        # Parse JSON
         try:
-            # Handle file path
-            if isinstance(obj, Path):
-                try:
-                    text = Path(obj).read_text()
-                except Exception as e:
-                    raise ParseError(f"Failed to read JSON file: {e}", source=str(obj))
-            else:
-                text = obj.decode("utf-8") if isinstance(obj, bytes) else obj
-            # Check for empty input
-            if not text or (isinstance(text, str) and not text.strip()):
-                raise ParseError(
-                    "Empty JSON content",
-                    source=str(obj)[:100] if isinstance(obj, str) else str(obj),
-                )
+            data = json.loads(text, **kw)
+        except json.JSONDecodeError as e:
+            raise ParseError.from_adapter(
+                cls,
+                f"Invalid JSON: {e}",
+                source=text,
+                position=e.pos,
+                line=e.lineno,
+                column=e.colno,
+                cause=e,
+            )
 
-            # Parse JSON
-            try:
-                data = json.loads(text)
-            except json.JSONDecodeError as e:
-                raise ParseError(
-                    f"Invalid JSON: {e}",
-                    source=str(text)[:100] if isinstance(text, str) else str(text),
-                    position=e.pos,
-                    line=e.lineno,
-                    column=e.colno,
-                )
-
-            # Validate against model
-            try:
-                if many:
-                    if not isinstance(data, list):
-                        raise AdapterValidationError(
-                            "Expected JSON array for many=True", data=data
-                        )
-                    return [getattr(subj_cls, adapt_meth)(i) for i in data]
-                return getattr(subj_cls, adapt_meth)(data)
-            except ValidationError as e:
-                raise AdapterValidationError(
-                    f"Validation error: {e}",
-                    data=data,
-                    errors=e.errors(),
-                )
-
-        except (ParseError, AdapterValidationError):
-            # Re-raise our custom exceptions
-            raise
+        # Convert to target class instances
+        try:
+            if many:
+                if not isinstance(data, list):
+                    raise ValidationError.from_adapter(
+                        cls, "Expected JSON array for many=True", data=data
+                    )
+                return [adapt_from(subj_cls, i, adapt_meth, adapt_kw) for i in data]
+            return adapt_from(subj_cls, data, adapt_meth, adapt_kw)
         except Exception as e:
-            # Wrap other exceptions
-            raise ParseError(
-                f"Unexpected error parsing JSON: {e}",
-                source=str(obj)[:100] if isinstance(obj, str) else str(obj),
+            raise ValidationError.from_adapter(
+                cls,
+                "Data conversion failed",
+                data=data,
+                adapt_method=adapt_meth,
+                cause=e,
             )
 
     # ---------------- outgoing
     @classmethod
     def to_obj(
-        cls, subj: T | list[T], /, *, many=False, adapt_meth: str = "model_dump", **kw
+        cls,
+        subj: T | list[T],
+        /,
+        *,
+        many=False,
+        adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
+        **kw,
     ) -> str:
         try:
             items = subj if isinstance(subj, list) else [subj]
@@ -142,12 +122,14 @@ class JsonAdapter(Adapter[T]):
             }
 
             payload = (
-                [getattr(i, adapt_meth)() for i in items]
+                [adapt_dump(i, adapt_meth, adapt_kw) for i in items]
                 if many
-                else getattr(items[0], adapt_meth)()
+                else adapt_dump(items[0], adapt_meth, adapt_kw)
             )
             return json.dumps(payload, **json_kwargs)
 
         except Exception as e:
             # Wrap exceptions
-            raise ParseError(f"Error generating JSON: {e}")
+            raise ParseError.from_adapter(
+                cls, "Error generating JSON", adapt_method=adapt_meth, cause=e
+            )

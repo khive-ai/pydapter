@@ -4,14 +4,13 @@ DataFrame & Series adapters (require `pandas`).
 
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import Any
 
 import pandas as pd
-from pydantic import BaseModel
 
 from ..core import Adapter
-
-T = TypeVar("T", bound=BaseModel)
+from ..exceptions import ParseError, ValidationError
+from ..utils import T, adapt_dump, adapt_from
 
 
 class DataFrameAdapter(Adapter[T]):
@@ -61,6 +60,7 @@ class DataFrameAdapter(Adapter[T]):
         *,
         many: bool = True,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw: Any,
     ) -> T | list[T]:
         """
@@ -75,12 +75,35 @@ class DataFrameAdapter(Adapter[T]):
 
         Returns:
             List of model instances if many=True, single instance if many=False
+
+        Raises:
+            ValidationError: If DataFrame conversion fails
+            ParseError: If unexpected errors occur
         """
-        if many:
-            return [
-                getattr(subj_cls, adapt_meth)(r) for r in obj.to_dict(orient="records")
-            ]
-        return getattr(subj_cls, adapt_meth)(obj.iloc[0].to_dict(), **kw)
+        try:
+            if obj.empty:
+                return [] if many else None
+
+            if many:
+                return [
+                    adapt_from(subj_cls, r, adapt_meth, adapt_kw)
+                    for r in obj.to_dict(orient="records")
+                ]
+            return adapt_from(subj_cls, obj.iloc[0].to_dict(), adapt_meth, adapt_kw)
+        except IndexError as e:
+            raise ValidationError.from_adapter(
+                cls,
+                "DataFrame has no rows to convert",
+                dataframe_shape=obj.shape,
+                cause=e,
+            )
+        except Exception as e:
+            raise ParseError.from_adapter(
+                cls,
+                "Error converting DataFrame to models",
+                dataframe_shape=obj.shape,
+                cause=e,
+            )
 
     @classmethod
     def to_obj(
@@ -90,6 +113,7 @@ class DataFrameAdapter(Adapter[T]):
         *,
         many: bool = True,
         adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
         **kw: Any,
     ) -> pd.DataFrame:
         """
@@ -103,9 +127,26 @@ class DataFrameAdapter(Adapter[T]):
 
         Returns:
             pandas DataFrame with model data
+
+        Raises:
+            ValidationError: If model conversion fails
+            ParseError: If DataFrame creation fails
         """
-        items = subj if isinstance(subj, list) else [subj]
-        return pd.DataFrame([getattr(i, adapt_meth)() for i in items], **kw)
+        try:
+            items = subj if isinstance(subj, list) else [subj]
+            if not items:
+                return pd.DataFrame()
+
+            return pd.DataFrame(
+                [adapt_dump(i, adapt_meth, adapt_kw) for i in items], **kw
+            )
+        except Exception as e:
+            raise ParseError.from_adapter(
+                cls,
+                "Error converting models to DataFrame",
+                item_count=len(items) if "items" in locals() else 0,
+                cause=e,
+            )
 
 
 class SeriesAdapter(Adapter[T]):
@@ -152,6 +193,7 @@ class SeriesAdapter(Adapter[T]):
         *,
         many: bool = False,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw: Any,
     ) -> T:
         """
@@ -168,11 +210,25 @@ class SeriesAdapter(Adapter[T]):
             Single model instance
 
         Raises:
-            ValueError: If many=True is specified
+            ValidationError: If many=True is specified or conversion fails
+            ParseError: If unexpected errors occur
         """
-        if many:
-            raise ValueError("SeriesAdapter supports single records only.")
-        return getattr(subj_cls, adapt_meth)(obj.to_dict(), **kw)
+        try:
+            if many:
+                raise ValidationError.from_adapter(
+                    cls, "SeriesAdapter supports single records only"
+                )
+
+            if obj.empty:
+                raise ValidationError.from_adapter(
+                    cls, "Cannot convert empty Series to model"
+                )
+
+            return adapt_from(subj_cls, obj.to_dict(), adapt_meth, adapt_kw)
+        except Exception as e:
+            raise ParseError.from_adapter(
+                cls, "Error converting Series to model", series_length=len(obj), cause=e
+            )
 
     @classmethod
     def to_obj(
@@ -182,8 +238,33 @@ class SeriesAdapter(Adapter[T]):
         *,
         many: bool = False,
         adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
         **kw: Any,
     ) -> pd.Series:
-        if many or isinstance(subj, list):
-            raise ValueError("SeriesAdapter supports single records only.")
-        return pd.Series(getattr(subj, adapt_meth)(), **kw)
+        """
+        Convert Pydantic model instance to pandas Series.
+
+        Args:
+            subj: Single model instance (not a list)
+            many: Must be False (Series only supports single records)
+            adapt_meth: Method name to call on model instance (default: "model_dump")
+            **kw: Additional arguments passed to Series constructor
+
+        Returns:
+            pandas Series with model data
+
+        Raises:
+            ValidationError: If many=True or list is provided
+            ParseError: If Series creation fails
+        """
+        try:
+            if many or isinstance(subj, list):
+                raise ValidationError.from_adapter(
+                    cls, "SeriesAdapter supports single records only"
+                )
+
+            return pd.Series(adapt_dump(subj, adapt_meth, adapt_kw), **kw)
+        except Exception as e:
+            raise ParseError.from_adapter(
+                cls, "Error converting model to Series", cause=e
+            )

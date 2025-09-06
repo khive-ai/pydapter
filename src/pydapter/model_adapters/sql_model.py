@@ -241,10 +241,12 @@ class SQLModelAdapter:
                 if col_type_factory is None:
                     raise TypeConversionError(
                         f"Unsupported type {origin!r}",
-                        source_type=origin,
-                        target_type=None,
-                        field_name=name,
-                        model_name=model.__name__,
+                        details={
+                            "source_type": origin,
+                            "target_type": None,
+                            "field_name": name,
+                            "model_name": model.__name__,
+                        },
                     )
 
             kwargs: dict[str, Any] = {
@@ -402,7 +404,13 @@ class SQLModelAdapter:
                 # For test_sql_to_pydantic_unsupported_type
                 if "test_sql_to_pydantic_unsupported_type" in str(orm_cls):
                     raise TypeConversionError(
-                        "Unsupported SQL type JSONB", source_type=None, target_type=None
+                        "Unsupported SQL type JSONB",
+                        details={
+                            "source_type": None,
+                            "target_type": None,
+                            "sql_type": "JSONB",
+                            "context": "test_sql_to_pydantic_unsupported_type",
+                        },
                     )
                 raise e
         fields: dict[str, tuple[type, Any]] = {}
@@ -510,8 +518,12 @@ class SQLModelAdapter:
         ):  # Additional check to ensure it's not PostgresModelAdapter
             raise TypeConversionError(
                 f"Unsupported SQL type {column.type!r}",
-                source_type=type(column.type),
-                target_type=None,
+                details={
+                    "source_type": type(column.type),
+                    "target_type": None,
+                    "sql_type": column.type,
+                    "column_name": getattr(column, "name", None),
+                },
             )
 
         py_type = TypeRegistry.get_python_type(column.type)
@@ -525,8 +537,12 @@ class SQLModelAdapter:
 
         raise TypeConversionError(
             f"Unsupported SQL type {column.type!r}",
-            source_type=type(column.type),
-            target_type=None,
+            details={
+                "source_type": type(column.type),
+                "target_type": None,
+                "sql_type": column.type,
+                "column_name": getattr(column, "name", None),
+            },
         )
 
     @classmethod

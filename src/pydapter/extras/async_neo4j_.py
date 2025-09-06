@@ -1,16 +1,4 @@
-"""
-AsyncNeo4jAdapter - Asynchronous adapter for Neo4j graph database.
-
-This adapter provides asynchronous access to Neo4j using the AsyncGraphDatabase.
-It follows the AsyncAdapter protocol and provides comprehensive error handling and
-resource management.
-
-search:pplx-a7b2c - Neo4j Python Driver async API best practices
-search:exa-f9d3e - Asynchronous Neo4j operations with proper error handling
-search:pplx-d8f4g - Proper error handling in async Neo4j operations
-search:exa-h6j9k - Testing async Neo4j adapters with mocks
-search:pplx-l2m5n - Efficient connection management in Neo4j async drivers
-"""
+"""AsyncNeo4jAdapter, obj_key = 'async_neo4j'"""
 
 from __future__ import annotations
 
@@ -20,13 +8,16 @@ from collections.abc import Sequence
 import neo4j
 import neo4j.exceptions
 from neo4j import AsyncGraphDatabase
-from pydantic import ValidationError
 
-from ..async_core import AsyncAdapter, T
-from ..exceptions import ConnectionError, QueryError, ResourceError
-from ..exceptions import ValidationError as AdapterValidationError
-
-# T is already imported from async_core
+from ..async_core import AsyncAdapter
+from ..exceptions import (
+    ConnectionError,
+    ParseError,
+    QueryError,
+    ResourceError,
+    ValidationError,
+)
+from ..utils import T, adapt_dump, adapt_from
 
 
 class AsyncNeo4jAdapter(AsyncAdapter[T]):
@@ -86,17 +77,17 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             else:
                 return cls._driver_factory(url)
         except neo4j.exceptions.ServiceUnavailable as e:
-            raise ConnectionError(
-                f"Neo4j service unavailable: {e}", adapter="async_neo4j", url=url
-            ) from e
+            raise ConnectionError.from_adapter(
+                cls, "Neo4j service unavailable", url=url, cause=e
+            )
         except neo4j.exceptions.AuthError as e:
-            raise ConnectionError(
-                f"Neo4j authentication failed: {e}", adapter="async_neo4j", url=url
-            ) from e
+            raise ConnectionError.from_adapter(
+                cls, "Neo4j authentication failed", url=url, cause=e
+            )
         except Exception as e:
-            raise ConnectionError(
-                f"Failed to create Neo4j driver: {e}", adapter="async_neo4j", url=url
-            ) from e
+            raise ConnectionError.from_adapter(
+                cls, "Failed to create Neo4j driver", url=url, cause=e
+            )
 
     @classmethod
     def _validate_cypher(cls, cypher: str) -> None:
@@ -110,10 +101,10 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         """
         # Check for unescaped backticks in label names
         if re.search(r"`[^`]*`[^`]*`", cypher):
-            raise QueryError(
+            raise QueryError.from_adapter(
+                cls,
                 "Invalid Cypher query: Possible injection in label name",
                 query=cypher,
-                adapter="async_neo4j",
             )
 
     # incoming
@@ -126,6 +117,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         *,
         many=True,
         adapt_meth: str = "model_validate",
+        adapt_kw: dict | None = None,
         **kw,
     ):
         """
@@ -149,7 +141,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             T | list[T]: Single model instance or list of model instances
 
         Raises:
-            AdapterValidationError: If required parameters are missing
+            ValidationError: If required parameters are missing
             ConnectionError: If connection to Neo4j fails
             QueryError: If query execution fails
             ResourceError: If no matching nodes are found
@@ -157,108 +149,90 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         search:exa-v1w2x3y4 - Async pattern for Neo4j query execution
         search:pplx-z5a6b7c8 - Error handling in async Neo4j operations
         """
+        # Validate required parameters
+        if "url" not in obj:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'url'", data=obj
+            )
+
+        # Create driver
+        auth = obj.get("auth")
+        driver = await cls._create_driver(obj["url"], auth=auth)
+
+        # Prepare Cypher query
+        label = obj.get("label", subj_cls.__name__)
+        where = f"WHERE {obj['where']}" if "where" in obj else ""
+        cypher = f"MATCH (n:`{label}`) {where} RETURN n"
+
+        # Validate Cypher query
+        cls._validate_cypher(cypher)
+
+        # Execute query
+        session = driver.session()
         try:
-            # Validate required parameters
-            if "url" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'url'", data=obj
+            result = await session.run(cypher)
+            rows = []
+            async for r in result:
+                try:
+                    # Extract Neo4j node properties - this can fail with Neo4j data type parsing errors
+                    # (DateTime conversion, Point/spatial types, Duration, etc.)
+                    rows.append(r["n"]._properties)
+                except (TypeError, ValueError, AttributeError) as e:
+                    # Handle Neo4j data type parsing/conversion errors
+                    raise ParseError.from_adapter(
+                        cls,
+                        "Error parsing Neo4j data types to Python objects",
+                        data=str(r["n"]),
+                        cause=e,
+                    )
+
+            # Handle empty result set
+            if not rows:
+                if many:
+                    return []
+                raise ResourceError.from_adapter(
+                    cls,
+                    "No nodes found matching the query",
+                    resource=label,
+                    where=obj.get("where", ""),
                 )
 
-            # Create driver
-            auth = obj.get("auth")
-            driver = await cls._create_driver(obj["url"], auth=auth)
+            # Convert rows to model instances
+            if many:
+                return [adapt_from(subj_cls, r, adapt_meth, adapt_kw) for r in rows]
+            return adapt_from(subj_cls, rows[0], adapt_meth, adapt_kw)
 
-            # Prepare Cypher query
-            label = obj.get("label", subj_cls.__name__)
-            where = f"WHERE {obj['where']}" if "where" in obj else ""
-            cypher = f"MATCH (n:`{label}`) {where} RETURN n"
-
-            # Validate Cypher query
-            cls._validate_cypher(cypher)
-
-            # Execute query
-            try:
-                # Use the driver directly without nested context managers
-                session = driver.session()
-                try:
-                    try:
-                        # Execute the query
-                        result = await session.run(cypher)
-                        # Process the results
-                        rows = []
-                        async for r in result:
-                            rows.append(r["n"]._properties)
-                    except neo4j.exceptions.CypherSyntaxError as e:
-                        raise QueryError(
-                            f"Neo4j Cypher syntax error: {e}",
-                            query=cypher,
-                            adapter="async_neo4j",
-                        ) from e
-                    except neo4j.exceptions.ClientError as e:
-                        if "not found" in str(e).lower():
-                            raise ResourceError(
-                                f"Neo4j resource not found: {e}",
-                                resource=label,
-                            ) from e
-                        raise QueryError(
-                            f"Neo4j client error: {e}",
-                            query=cypher,
-                            adapter="async_neo4j",
-                        ) from e
-                    except Exception as e:
-                        raise QueryError(
-                            f"Error executing Neo4j query: {e}",
-                            query=cypher,
-                            adapter="async_neo4j",
-                        ) from e
-
-                    # Handle empty result set
-                    if not rows:
-                        if many:
-                            return []
-                        raise ResourceError(
-                            "No nodes found matching the query",
-                            resource=label,
-                            where=obj.get("where", ""),
-                        )
-
-                    # Convert rows to model instances
-                    try:
-                        if many:
-                            return [getattr(subj_cls, adapt_meth)(r) for r in rows]
-                        return getattr(subj_cls, adapt_meth)(rows[0])
-                    except ValidationError as e:
-                        raise AdapterValidationError(
-                            f"Validation error: {e}",
-                            data=rows[0] if not many else rows,
-                            errors=e.errors(),
-                        ) from e
-                finally:
-                    if session:
-                        try:
-                            await session.close()
-                        except Exception:
-                            # Ignore errors during session close
-                            pass
-
-            except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
-                # Re-raise our custom exceptions
-                raise
-            except Exception as e:
-                # Wrap other exceptions
-                raise QueryError(
-                    f"Error in Neo4j query: {e}",
-                    adapter="async_neo4j",
-                ) from e
-
-        except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
-            # Re-raise our custom exceptions
+        except (
+            ResourceError,
+            QueryError,
+            ValidationError,
+            ConnectionError,
+            ParseError,
+        ):
+            # Let our custom errors bubble up directly
             raise
+        except neo4j.exceptions.CypherSyntaxError as e:
+            raise QueryError.from_adapter(
+                cls, "Neo4j Cypher syntax error", query=cypher, cause=e
+            )
+        except neo4j.exceptions.ClientError as e:
+            if "not found" in str(e).lower():
+                raise ResourceError.from_adapter(
+                    cls, "Neo4j resource not found", resource=label, cause=e
+                )
+            raise QueryError.from_adapter(
+                cls, "Neo4j client error", query=cypher, cause=e
+            )
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(
-                f"Unexpected error in async Neo4j adapter: {e}", adapter="async_neo4j"
-            ) from e
+            raise QueryError.from_adapter(
+                cls, "Unexpected error in async Neo4j adapter", cause=e
+            )
+        finally:
+            if session:
+                try:
+                    await session.close()
+                except Exception:
+                    pass
 
     # outgoing
     @classmethod
@@ -273,6 +247,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         merge_on="id",
         many: bool = True,
         adapt_meth: str = "model_dump",
+        adapt_kw: dict | None = None,
         **kw,
     ):
         """
@@ -290,106 +265,92 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             dict: Operation result with count of merged nodes
 
         Raises:
-            AdapterValidationError: If required parameters are missing
+            ValidationError: If required parameters are missing
             ConnectionError: If connection to Neo4j fails
             QueryError: If query execution fails
 
         search:pplx-d9e0f1g2 - Neo4j MERGE operation best practices
         search:exa-h3i4j5k6 - Async batch operations with Neo4j
         """
+        # Validate required parameters
+        if not url:
+            raise ValidationError.from_adapter(cls, "Missing required parameter 'url'")
+        if not merge_on:
+            raise ValidationError.from_adapter(
+                cls, "Missing required parameter 'merge_on'"
+            )
+
+        # Prepare data
+        items = subj if isinstance(subj, Sequence) else [subj]
+        if not items:
+            return None  # Nothing to insert
+
+        # Get label from first item if not provided
+        label = label or items[0].__class__.__name__
+
+        # Create driver
+        driver = await cls._create_driver(url, auth=auth)
+
+        session = driver.session()
         try:
-            # Validate required parameters
-            if not url:
-                raise AdapterValidationError("Missing required parameter 'url'")
-            if not merge_on:
-                raise AdapterValidationError("Missing required parameter 'merge_on'")
-
-            # Prepare data
-            items = subj if isinstance(subj, Sequence) else [subj]
-            if not items:
-                return None  # Nothing to insert
-
-            # Get label from first item if not provided
-            label = label or items[0].__class__.__name__
-
-            # Create driver
-            driver = await cls._create_driver(url, auth=auth)
-
-            try:
-                # Use the driver directly without nested context managers
-                session = driver.session()
+            results = []
+            for it in items:
                 try:
-                    results = []
-                    for it in items:
-                        props = getattr(it, adapt_meth)()
+                    props = adapt_dump(it, adapt_meth, adapt_kw)
+                except (TypeError, ValueError, AttributeError) as e:
+                    # Handle data parsing/conversion errors when serializing Pydantic to Neo4j
+                    raise ParseError.from_adapter(
+                        cls,
+                        "Error converting Pydantic model to Neo4j properties",
+                        data=adapt_dump(it, "model_dump", None),
+                        cause=e,
+                    )
 
-                        # Check if merge_on property exists
-                        if merge_on not in props:
-                            raise AdapterValidationError(
-                                f"Merge property '{merge_on}' not found in model",
-                                data=props,
-                            )
+                # Check if merge_on property exists
+                if merge_on not in props:
+                    raise ValidationError.from_adapter(
+                        cls,
+                        f"Merge property '{merge_on}' not found in model",
+                        data=props,
+                    )
 
-                        # Prepare and validate Cypher query
-                        cypher = (
-                            f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
-                        )
-                        cls._validate_cypher(cypher)
+                # Prepare and validate Cypher query
+                cypher = f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
+                cls._validate_cypher(cypher)
 
-                        # Execute query
-                        try:
-                            # Execute the query
-                            result = await session.run(
-                                cypher, val=props[merge_on], props=props
-                            )
-                            # Add to results
-                            results.append(result)
-                        except neo4j.exceptions.CypherSyntaxError as e:
-                            raise QueryError(
-                                f"Neo4j Cypher syntax error: {e}",
-                                query=cypher,
-                                adapter="async_neo4j",
-                            ) from e
-                        except neo4j.exceptions.ConstraintError as e:
-                            raise QueryError(
-                                f"Neo4j constraint violation: {e}",
-                                query=cypher,
-                                adapter="async_neo4j",
-                            ) from e
-                        except Exception as e:
-                            raise QueryError(
-                                f"Error executing Neo4j query: {e}",
-                                query=cypher,
-                                adapter="async_neo4j",
-                            ) from e
+                # Execute query
+                result = await session.run(cypher, val=props[merge_on], props=props)
+                results.append(result)
 
-                    return {"merged_count": len(results)}
-                finally:
-                    if session:
-                        try:
-                            await session.close()
-                        except Exception:
-                            # Ignore errors during session close
-                            pass
+            return {"merged_count": len(results)}
 
-            except (ConnectionError, QueryError, AdapterValidationError):
-                # Re-raise our custom exceptions
-                raise
-            except Exception as e:
-                # Wrap other exceptions
-                raise QueryError(
-                    f"Error in Neo4j operation: {e}",
-                    adapter="async_neo4j",
-                ) from e
-
-        except (ConnectionError, QueryError, AdapterValidationError):
-            # Re-raise our custom exceptions
+        except (
+            ResourceError,
+            QueryError,
+            ValidationError,
+            ConnectionError,
+            ParseError,
+        ):
+            # Let our custom errors bubble up directly
             raise
+        except neo4j.exceptions.CypherSyntaxError as e:
+            raise QueryError.from_adapter(
+                cls, "Neo4j Cypher syntax error", query=cypher, cause=e
+            )
+        except neo4j.exceptions.ConstraintError as e:
+            raise QueryError.from_adapter(
+                cls, "Neo4j constraint violation", query=cypher, cause=e
+            )
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(
-                f"Unexpected error in async Neo4j adapter: {e}", adapter="async_neo4j"
-            ) from e
+            raise QueryError.from_adapter(
+                cls, "Unexpected error in async Neo4j adapter", cause=e
+            )
+        finally:
+            if session:
+                try:
+                    await session.close()
+                except Exception:
+                    pass
 
     async def __aenter__(self):
         """Async context manager entry.
@@ -401,8 +362,8 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             ConnectionError: If connection to Neo4j fails
         """
         if not self.url:
-            raise ConnectionError(
-                "URL is required for Neo4j connection", adapter="async_neo4j"
+            raise ConnectionError.from_adapter(
+                self.__class__, "URL is required for Neo4j connection"
             )
 
         self._driver = await self._create_driver(self.url, auth=self.auth)
@@ -452,9 +413,9 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             QueryError: If the query execution fails
         """
         if not self._session:
-            raise QueryError(
+            raise QueryError.from_adapter(
+                self.__class__,
                 "No active session. Use AsyncNeo4jAdapter as a context manager.",
-                adapter="async_neo4j",
             )
 
         # Validate Cypher query
@@ -471,14 +432,10 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
 
             return rows
         except neo4j.exceptions.CypherSyntaxError as e:
-            raise QueryError(
-                f"Neo4j Cypher syntax error: {e}",
-                query=cypher,
-                adapter="async_neo4j",
-            ) from e
+            raise QueryError.from_adapter(
+                self.__class__, "Neo4j Cypher syntax error", query=cypher, cause=e
+            )
         except Exception as e:
-            raise QueryError(
-                f"Error executing Neo4j query: {e}",
-                query=cypher,
-                adapter="async_neo4j",
-            ) from e
+            raise QueryError.from_adapter(
+                self.__class__, "Error executing Neo4j query", query=cypher, cause=e
+            )

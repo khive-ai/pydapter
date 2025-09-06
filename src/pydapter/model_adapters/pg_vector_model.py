@@ -137,14 +137,21 @@ class PGVectorModelAdapter(SQLModelAdapter):
         if not isinstance(vector, list):
             raise TypeConversionError(
                 f"Expected list for vector, got {type(vector)}",
-                source_type=type(vector),
-                target_type=list,
+                details={
+                    "source_type": type(vector),
+                    "target_type": list,
+                    "received_value": vector,
+                },
             )
 
         if expected_dim is not None and len(vector) != expected_dim:
             raise ValidationError(
                 f"Vector has {len(vector)} dimensions, expected {expected_dim}",
-                data=vector,
+                details={
+                    "data": vector,
+                    "expected_dimensions": expected_dim,
+                    "actual_dimensions": len(vector),
+                },
             )
 
         return vector
@@ -195,7 +202,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
         else:
             raise ConfigurationError(
                 f"Unsupported index type: {index_type}",
-                config={"index_type": index_type, "params": params},
+                details={"config": {"index_type": index_type, "params": params}},
             )
 
     @classmethod
@@ -245,7 +252,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
         else:
             raise ConfigurationError(
                 f"Unsupported similarity metric: {metric}",
-                config={"metric": metric},
+                details={"config": {"metric": metric}},
             )
 
     @classmethod
