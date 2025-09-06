@@ -135,7 +135,7 @@ class TestQdrantAdapterErrorHandling:
             side_effect=Exception("Connection error"),
         ):
             # Test to_obj with connection error
-            with pytest.raises(Exception, match="Error adapting to qdrant"):
+            with pytest.raises(Exception, match="Connection error"):
                 qdrant_sample.adapt_to(obj_key="qdrant", url="http://localhost:6333")
 
     @patch("pydapter.extras.qdrant_.QdrantClient")

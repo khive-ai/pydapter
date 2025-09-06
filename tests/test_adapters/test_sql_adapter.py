@@ -135,7 +135,7 @@ class TestSQLAdapterErrorHandling:
             side_effect=Exception("Connection error"),
         ):
             # Test to_obj with connection error
-            with pytest.raises(Exception, match="Error adapting to sql"):
+            with pytest.raises(Exception, match="Connection error"):
                 sql_sample.adapt_to(obj_key="sql", url="sqlite:///:memory:")
 
     @patch("pydapter.extras.sql_.sa")

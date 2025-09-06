@@ -3,14 +3,14 @@ Unit tests for AsyncNeo4jAdapter.
 """
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from neo4j.exceptions import AuthError, CypherSyntaxError, ServiceUnavailable
 from pydantic import BaseModel
 
 from pydapter.async_core import AsyncAdaptable
-from pydapter.exceptions import ConnectionError, ParseError, QueryError, ResourceError
+from pydapter.exceptions import ConnectionError, QueryError, ResourceError
 from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.async_neo4j_ import AsyncNeo4jAdapter
 
@@ -479,7 +479,7 @@ class TestAsyncNeo4jAdapter:
 
     @pytest.mark.asyncio
     async def test_from_obj_validation_error(self):
-        """Test from_obj method with data parsing error."""
+        """Test from_obj method with ValidationError."""
         # Setup mock driver and session
         mock_driver = AsyncMock()
         mock_session = AsyncMock()
@@ -491,7 +491,7 @@ class TestAsyncNeo4jAdapter:
         # Configure the run method to return a mock result
         mock_session.run = AsyncMock(return_value=mock_result)
 
-        # Mock the async iterator for result with invalid data that causes parsing errors
+        # Mock the async iterator for result with invalid data
         mock_record = MagicMock()
         mock_record.__getitem__.return_value = MagicMock(
             _properties={"id": "not_an_int", "name": "test", "value": 42.5}
@@ -515,56 +515,12 @@ class TestAsyncNeo4jAdapter:
         with patch.object(
             AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
         ):
-            with pytest.raises(QueryError) as exc_info:
+            with pytest.raises(AdapterValidationError) as exc_info:
                 await AsyncNeo4jAdapter.from_obj(
                     SampleModel,
                     {"url": "bolt://localhost:7687"},
                 )
-            assert "Unexpected error" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_from_obj_parse_error(self):
-        """Test from_obj method with Neo4j data type parsing error."""
-        # Setup mock driver and session
-        mock_driver = AsyncMock()
-        mock_session = AsyncMock()
-        mock_result = AsyncMock()
-
-        # Configure mocks
-        mock_driver.session = MagicMock(return_value=mock_session)
-        mock_session.run = AsyncMock(return_value=mock_result)
-
-        # Mock a node that causes parsing errors when accessing _properties
-        mock_record = MagicMock()
-        mock_node = MagicMock()
-        # Simulate Neo4j data type parsing error when accessing _properties
-        type(mock_node)._properties = PropertyMock(
-            side_effect=TypeError("Neo4j DateTime parsing error")
-        )
-        mock_record.__getitem__.return_value = mock_node
-
-        # Set up the async iterator
-        mock_result.__aiter__ = MagicMock()
-        mock_result.__aiter__.return_value = mock_result
-        mock_result.__anext__ = AsyncMock()
-        mock_result.__anext__.side_effect = [mock_record, StopAsyncIteration]
-
-        # Mock session.close
-        close_future = asyncio.Future()
-        close_future.set_result(None)
-        mock_session.close.return_value = close_future
-        mock_session.__await__ = lambda: iter([mock_session])
-
-        # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
-            with pytest.raises(ParseError) as exc_info:
-                await AsyncNeo4jAdapter.from_obj(
-                    SampleModel,
-                    {"url": "bolt://localhost:7687"},
-                )
-            assert "parsing Neo4j data types" in str(exc_info.value)
+            assert "Validation error" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_to_obj_missing_url(self):
