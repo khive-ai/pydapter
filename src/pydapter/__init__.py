@@ -1,6 +1,4 @@
-"""
-pydapter - tiny adapter toolkit.
-"""
+"""pydapter - tiny adapter toolkit."""
 
 from .async_core import AsyncAdaptable, AsyncAdapter, AsyncAdapterRegistry
 from .core import Adaptable, Adapter, AdapterRegistry
@@ -14,4 +12,4 @@ __all__ = (
     "AsyncAdapterRegistry",
 )
 
-__version__ = "1.0.5"
+__version__ = "1.1.0"
