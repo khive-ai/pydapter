@@ -1,8 +1,8 @@
 # End-to-End Tutorial: Using Pydapter's Async MongoDB Adapter
 
 This comprehensive tutorial will guide you through using Pydapter's async
-MongoDB adapter for seamless data operations between Pydantic models and
-MongoDB collections.
+MongoDB adapter for seamless data operations between Pydantic models and MongoDB
+collections.
 
 ## Table of Contents
 

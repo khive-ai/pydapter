@@ -2,11 +2,12 @@
 
 ## Field System Overview
 
-Pydapter provides a comprehensive field system built on top of Pydantic v2 that includes:
+Pydapter provides a comprehensive field system built on top of Pydantic v2 that
+includes:
 
 - **Field Templates**: Reusable field definitions with flexible naming
-- **Common Templates**: Pre-configured templates for common field types
-  (IDs, timestamps, etc.)
+- **Common Templates**: Pre-configured templates for common field types (IDs,
+  timestamps, etc.)
 - **Field Families**: Logical groupings of fields for database patterns
 - **Protocol Families**: Field sets that match pydapter protocol requirements
 - **Validation Patterns**: Common regex patterns and constraint builders
@@ -14,7 +15,8 @@ Pydapter provides a comprehensive field system built on top of Pydantic v2 that 
 
 ## Field Templates
 
-Field templates are reusable field definitions that can be customized for different contexts:
+Field templates are reusable field definitions that can be customized for
+different contexts:
 
 ```python
 from pydapter.fields import FieldTemplate
@@ -265,11 +267,13 @@ CustomModel = (
 
 ## Key Design Principles
 
-1. **Templates over instances**: Field templates can be reused across multiple fields
+1. **Templates over instances**: Field templates can be reused across multiple
+   fields
 2. **Composition over inheritance**: Build complex models by combining families
 3. **Protocol alignment**: Use protocol families for models that implement
    pydapter protocols
-4. **Validation patterns**: Leverage pre-built patterns for common validation needs
+4. **Validation patterns**: Leverage pre-built patterns for common validation
+   needs
 5. **Fluent API**: Use method chaining for readable model construction
 
 The field system provides a foundation for creating consistent, validated data

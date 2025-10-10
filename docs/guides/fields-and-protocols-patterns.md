@@ -1,25 +1,27 @@
 # Fields and Protocols: Best Usage Patterns
 
-This guide demonstrates the best practices for using pydapter's field system with
-protocols to create consistent, type-safe models for database operations.
+This guide demonstrates the best practices for using pydapter's field system
+with protocols to create consistent, type-safe models for database operations.
 
 ## Core Concepts
 
 ### 1. Field Templates vs Direct Fields
 
-- **Field Templates**: Reusable definitions that can create fields with different names
+- **Field Templates**: Reusable definitions that can create fields with
+  different names
 - **Protocol Families**: Pre-defined field sets that match protocol requirements
 - **Field Families**: Logical groupings for common database patterns
 
 ### 2. Protocol Alignment
 
-Protocols define behavioral contracts. Use protocol-specific field families to ensure
-your models can leverage protocol functionality.
+Protocols define behavioral contracts. Use protocol-specific field families to
+ensure your models can leverage protocol functionality.
 
 **Important Note**: The `create_protocol_model` function provides **structural
-compliance** by adding the required fields for protocols. It does NOT add behavioral
-methods from protocol mixins. If you need methods like `update_timestamp()` from
-`TemporalMixin`, you must explicitly inherit from the mixin classes (see examples below).
+compliance** by adding the required fields for protocols. It does NOT add
+behavioral methods from protocol mixins. If you need methods like
+`update_timestamp()` from `TemporalMixin`, you must explicitly inherit from the
+mixin classes (see examples below).
 
 ## Pattern 1: Basic Entity with Protocols
 
@@ -319,7 +321,8 @@ SearchableProduct = (
 
 ### 1. Choose the Right Pattern
 
-- **Simple CRUD**: Use `create_protocol_model` with "identifiable" and "temporal"
+- **Simple CRUD**: Use `create_protocol_model` with "identifiable" and
+  "temporal"
 - **Audit Requirements**: Add audit fields with `.with_audit_fields()`
 - **Soft Delete**: Use `.with_soft_delete()` for logical deletion
 - **Event Sourcing**: Use the "event" protocol for complete event tracking

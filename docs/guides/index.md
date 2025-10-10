@@ -64,7 +64,8 @@ Enhanced with type-safe constants and factory functions:
 ### What's New
 
 - **Type-Safe Constants**: Use `IDENTIFIABLE`, `TEMPORAL` instead of strings
-- **Factory Functions**: `create_protocol_model_class()` for one-step model creation
+- **Factory Functions**: `create_protocol_model_class()` for one-step model
+  creation
 - **Mixin Helpers**: `combine_with_mixins()` to add behaviors to existing models
 
 ## 🏛️ Architecture & Implementation
@@ -73,10 +74,10 @@ Enhanced with type-safe constants and factory functions:
 
 - **[Architecture](architecture.md)** - Protocol-driven design, stateless
   adapters, dual sync/async APIs
-- **[Creating Adapters](creating-adapters.md)** - Custom adapter patterns,
-  error handling, metadata integration
-- **[Async Patterns](async-patterns.md)** - Async adapters, concurrency
-  control, resource management
+- **[Creating Adapters](creating-adapters.md)** - Custom adapter patterns, error
+  handling, metadata integration
+- **[Async Patterns](async-patterns.md)** - Async adapters, concurrency control,
+  resource management
 
 ### Testing & Examples
 

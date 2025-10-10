@@ -1,8 +1,9 @@
 # Core API Reference
 
-The `pydapter.core` module provides the foundational adapter system for converting
-between Pydantic models and various data formats. It implements a registry-based
-pattern that enables stateless, bidirectional data transformations.
+The `pydapter.core` module provides the foundational adapter system for
+converting between Pydantic models and various data formats. It implements a
+registry-based pattern that enables stateless, bidirectional data
+transformations.
 
 ## Installation
 
@@ -32,8 +33,8 @@ Core Architecture:
                      └─────────────────┘
 ```
 
-The system supports both synchronous and asynchronous operations through parallel
-implementations in [`pydapter.core`](../api/core.md) and
+The system supports both synchronous and asynchronous operations through
+parallel implementations in [`pydapter.core`](../api/core.md) and
 [`pydapter.async_core`](../api/core.md#async-core-module).
 
 ## Core Protocols
@@ -109,7 +110,8 @@ back_to_json = JSONAdapter.to_obj(user)
 
 **Module:** `pydapter.async_core`
 
-Asynchronous counterpart to the `Adapter` protocol for operations requiring async/await.
+Asynchronous counterpart to the `Adapter` protocol for operations requiring
+async/await.
 
 **Protocol Interface:**
 
@@ -509,13 +511,15 @@ user = safe_adapt_from(User, data, "json", "yaml", registry)
 ### Registry Management
 
 1. **Global Registry**: Use a single global registry for consistency
-2. **Namespace Keys**: Use namespaced keys to avoid conflicts (e.g., "db.postgres")
+2. **Namespace Keys**: Use namespaced keys to avoid conflicts (e.g.,
+   "db.postgres")
 3. **Validation**: Validate adapter implementations before registration
 4. **Testing**: Test all registered adapters thoroughly
 
 ### Error Handling
 
-1. **Specific Exceptions**: Use specific exception types for different error conditions
+1. **Specific Exceptions**: Use specific exception types for different error
+   conditions
 2. **Context Information**: Include relevant context in exception details
 3. **Logging**: Log adapter errors for debugging
 4. **Recovery Strategies**: Implement fallback mechanisms where appropriate
@@ -600,7 +604,8 @@ When upgrading from previous versions:
 4. **Async Support**: Consider migrating to async adapters for I/O operations
 5. **Type Safety**: Add proper type hints to existing adapters
 
-For detailed migration instructions, see the [Migration Guide](../migration_guide.md#core-system).
+For detailed migration instructions, see the
+[Migration Guide](../migration_guide.md#core-system).
 
 ---
 
@@ -610,21 +615,12 @@ The following sections contain auto-generated API documentation:
 
 ## Core Module
 
-::: pydapter.core
-    options:
-      show_root_heading: true
-      show_source: true
+::: pydapter.core options: show_root_heading: true show_source: true
 
 ## Async Core Module
 
-::: pydapter.async_core
-    options:
-      show_root_heading: true
-      show_source: true
+::: pydapter.async_core options: show_root_heading: true show_source: true
 
 ## Exceptions
 
-::: pydapter.exceptions
-    options:
-      show_root_heading: true
-      show_source: true
+::: pydapter.exceptions options: show_root_heading: true show_source: true

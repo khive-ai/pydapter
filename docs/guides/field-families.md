@@ -1,8 +1,8 @@
 # Field Families and Common Patterns Library
 
-Field Families provide predefined collections of field templates for rapid
-model development. This powerful feature allows you to quickly create models
-with standard fields while maintaining consistency across your application.
+Field Families provide predefined collections of field templates for rapid model
+development. This powerful feature allows you to quickly create models with
+standard fields while maintaining consistency across your application.
 
 ## 🚀 Quick Start
 
@@ -66,13 +66,13 @@ TrackedModel = create_model("TrackedModel", fields=fields)
 
 ### 📋 Available Field Families
 
-| Family | Fields | Description |
-|--------|--------|-------------|
-| **ENTITY** | `id`, `created_at`, `updated_at` | Basic entity fields |
-| **ENTITY_TZ** | `id`, `created_at`, `updated_at` | Entity with timezone-aware timestamps |
-| **SOFT_DELETE** | `deleted_at`, `is_deleted` | Soft delete support |
-| **SOFT_DELETE_TZ** | `deleted_at`, `is_deleted` | Soft delete with timezone-aware timestamp |
-| **AUDIT** | `created_by`, `updated_by`, `version` | Audit/tracking fields |
+| Family             | Fields                                | Description                               |
+| ------------------ | ------------------------------------- | ----------------------------------------- |
+| **ENTITY**         | `id`, `created_at`, `updated_at`      | Basic entity fields                       |
+| **ENTITY_TZ**      | `id`, `created_at`, `updated_at`      | Entity with timezone-aware timestamps     |
+| **SOFT_DELETE**    | `deleted_at`, `is_deleted`            | Soft delete support                       |
+| **SOFT_DELETE_TZ** | `deleted_at`, `is_deleted`            | Soft delete with timezone-aware timestamp |
+| **AUDIT**          | `created_by`, `updated_by`, `version` | Audit/tracking fields                     |
 
 ## Domain Model Builder
 
@@ -157,13 +157,13 @@ user.update_timestamp()  # Method available!
 
 ### 📋 Supported Protocols
 
-| Protocol | Constant | Fields Added | Methods Added |
-|----------|----------|--------------|---------------|
-| Identifiable | `IDENTIFIABLE` | `id` | - |
-| Temporal | `TEMPORAL` | `created_at`, `updated_at` | `update_timestamp()` |
-| Embeddable | `EMBEDDABLE` | `embedding` | `parse_embedding_response()` |
-| Invokable | `INVOKABLE` | `execution` | `invoke()` |
-| Cryptographical | `CRYPTOGRAPHICAL` | `sha256` | `hash_content()` |
+| Protocol        | Constant          | Fields Added               | Methods Added                |
+| --------------- | ----------------- | -------------------------- | ---------------------------- |
+| Identifiable    | `IDENTIFIABLE`    | `id`                       | -                            |
+| Temporal        | `TEMPORAL`        | `created_at`, `updated_at` | `update_timestamp()`         |
+| Embeddable      | `EMBEDDABLE`      | `embedding`                | `parse_embedding_response()` |
+| Invokable       | `INVOKABLE`       | `execution`                | `invoke()`                   |
+| Cryptographical | `CRYPTOGRAPHICAL` | `sha256`                   | `hash_content()`             |
 
 ### Alternative Approaches
 
@@ -316,12 +316,12 @@ entity = AuditedEntity(
 
 ### 1. **Choose the Right Approach**
 
-| Use Case | Recommended Approach |
-|----------|---------------------|
-| Simple models with basic fields | `DomainModelBuilder` |
+| Use Case                                 | Recommended Approach            |
+| ---------------------------------------- | ------------------------------- |
+| Simple models with basic fields          | `DomainModelBuilder`            |
 | Protocol-compliant models with behaviors | `create_protocol_model_class()` |
-| Structure-only models | `create_protocol_model()` |
-| Adding behaviors to existing models | `combine_with_mixins()` |
+| Structure-only models                    | `create_protocol_model()`       |
+| Adding behaviors to existing models      | `combine_with_mixins()`         |
 
 ### 2. **Use Type-Safe Constants**
 

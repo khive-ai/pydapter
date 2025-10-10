@@ -186,7 +186,8 @@ print(f"Status: {log_event.execution.status}")
 
 ### Auditable
 
-The `Auditable` protocol adds user tracking and versioning capabilities for audit trails.
+The `Auditable` protocol adds user tracking and versioning capabilities for
+audit trails.
 
 **Key features:**
 
@@ -222,8 +223,8 @@ print(f"Updated by: {doc.updated_by}") # Updated by: editor123
 
 ### SoftDeletable
 
-The `SoftDeletable` protocol provides soft deletion capabilities, allowing entities to
-be marked as deleted without permanently removing them.
+The `SoftDeletable` protocol provides soft deletion capabilities, allowing
+entities to be marked as deleted without permanently removing them.
 
 **Key features:**
 
@@ -258,7 +259,8 @@ print(f"Deleted at: {user.deleted_at}") # Deleted at: None
 
 ## Protocol Registry
 
-The protocol registry system allows for dynamic registration and discovery of protocol mixins.
+The protocol registry system allows for dynamic registration and discovery of
+protocol mixins.
 
 **Key features:**
 

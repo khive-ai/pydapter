@@ -25,14 +25,14 @@ repos:
         entry: markdownlint
         language: node
         files: \.(md|markdown)$
-        additional_dependencies: ['markdownlint-cli@0.45.0']
+        additional_dependencies: ["markdownlint-cli@0.45.0"]
       - id: markdown-link-check
         name: Markdown link check
         entry: markdown-link-check
         language: node
         files: \.(md|markdown)$
-        additional_dependencies: ['markdown-link-check@3.13.7']
-        args: ['--config', '.markdownlinkcheck.json']
+        additional_dependencies: ["markdown-link-check@3.13.7"]
+        args: ["--config", ".markdownlinkcheck.json"]
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2

@@ -27,6 +27,6 @@ MD041: # First line in file should be a top level header
   front_matter_title: "^\\s*title\\s*[:=]"
 
 # Disable rules that conflict with our documentation style
-MD026: false  # Trailing punctuation in header
-MD034: false  # Bare URL used (we use bare URLs in some contexts)
-MD036: false  # Emphasis used instead of header (we use emphasis for API elements)
+MD026: false # Trailing punctuation in header
+MD034: false # Bare URL used (we use bare URLs in some contexts)
+MD036: false # Emphasis used instead of header (we use emphasis for API elements)

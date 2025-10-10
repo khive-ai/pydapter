@@ -2,12 +2,12 @@
 // This script will run when the MongoDB container starts for the first time
 
 // Switch to the tutorial database
-db = db.getSiblingDB('tutorial_db');
+db = db.getSiblingDB("tutorial_db");
 
 // Create collections with some initial configuration
-db.createCollection('users');
-db.createCollection('products');
-db.createCollection('orders');
+db.createCollection("users");
+db.createCollection("products");
+db.createCollection("orders");
 
 // Add indexes for better performance
 db.users.createIndex({ "id": 1 }, { unique: true });
@@ -22,4 +22,4 @@ db.orders.createIndex({ "id": 1 }, { unique: true });
 db.orders.createIndex({ "user_id": 1 });
 db.orders.createIndex({ "order_date": 1 });
 
-print('Database initialization completed successfully!');
+print("Database initialization completed successfully!");

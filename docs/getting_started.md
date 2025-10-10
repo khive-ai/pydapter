@@ -76,7 +76,6 @@ class User(BaseModel):
     email: str
     active: bool = True
     tags: List[str] = []
-
 ```
 
 ## Using Adapters

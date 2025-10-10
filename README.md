@@ -13,13 +13,18 @@
 
 Modern applications don't fit in one database anymore.
 
-Your LLM extracts insights that need PostgreSQL for transactions, Qdrant for vector search, Neo4j for relationships. Each integration means different APIs, different patterns, weeks of custom code.
+Your LLM extracts insights that need PostgreSQL for transactions, Qdrant for
+vector search, Neo4j for relationships. Each integration means different APIs,
+different patterns, weeks of custom code.
 
-**We calculated it: engineers spend 40% of their time on data plumbing instead of building intelligence.**
+**We calculated it: engineers spend 40% of their time on data plumbing instead
+of building intelligence.**
 
 ## Why Pydapter Exists
 
-We believe the data layer should be invisible. When you build an application, you should think about your domain models and business logic, not about cursor management or connection pooling.
+We believe the data layer should be invisible. When you build an application,
+you should think about your domain models and business logic, not about cursor
+management or connection pooling.
 
 **Pydapter makes storage a deployment decision, not an architecture decision.**
 
@@ -48,22 +53,32 @@ Neo4jAdapter.to_obj(insight, label="Insight")           # Relationship mapping
 ```
 
 **When integration friction disappears, architecture becomes liquid.**
-
 ---
 
 ## What This Enables
 
 ### 1. **Multi-Modal AI Pipelines**
-Your LLM processes a document and extracts entities. Those entities need to be stored for compliance (PostgreSQL), searchable by meaning (vector database), and analyzed for relationships (graph database). With Pydapter, it's the same three lines of code for each destination.
+
+Your LLM processes a document and extracts entities. Those entities need to be
+stored for compliance (PostgreSQL), searchable by meaning (vector database), and
+analyzed for relationships (graph database). With Pydapter, it's the same three
+lines of code for each destination.
 
 ### 2. **Storage-Agnostic Applications**
-Deploy the same application on-premise with PostgreSQL, in AWS with DynamoDB, or at the edge with SQLite. Just change configuration, not code.
+
+Deploy the same application on-premise with PostgreSQL, in AWS with DynamoDB, or
+at the edge with SQLite. Just change configuration, not code.
 
 ### 3. **Evolutionary Architecture**
-Start with PostgreSQL. Add vector search when needed. Migrate to a graph database for complex relationships. Your application code doesn't change - only deployment configuration evolves.
+
+Start with PostgreSQL. Add vector search when needed. Migrate to a graph
+database for complex relationships. Your application code doesn't change - only
+deployment configuration evolves.
 
 ### 4. **True Vendor Independence**
-No more lock-in through proprietary APIs. Switch between cloud providers, databases, or storage systems without touching application logic.
+
+No more lock-in through proprietary APIs. Switch between cloud providers,
+databases, or storage systems without touching application logic.
 
 ---
 
@@ -79,7 +94,8 @@ data = Adapter.from_obj(YourModel, source_config, many=True)
 Adapter.to_obj(data, destination_config, many=True)
 ```
 
-Whether it's a local JSON file or a distributed database cluster, the pattern never changes.
+Whether it's a local JSON file or a distributed database cluster, the pattern
+never changes.
 
 ### Real Example: AI Content Pipeline
 
@@ -149,21 +165,23 @@ PostgresAdapter.to_obj(product,
 ## Production Ready
 
 - **Battle Tested**: >90% test coverage, used in production systems
-- **Enterprise Features**: Full async support, connection pooling, comprehensive error handling
+- **Enterprise Features**: Full async support, connection pooling, comprehensive
+  error handling
 - **Type Safe**: Complete type hints and protocol-based design
-- **Performance**: Minimal overhead - the bottleneck is your database, not Pydapter
+- **Performance**: Minimal overhead - the bottleneck is your database, not
+  Pydapter
 
 ---
 
 ## Data Source Coverage
 
-| **Category** | **Supported** | **Async** |
-|-------------|--------------|-----------|
-| **SQL Databases** | PostgreSQL, MySQL, SQLite | ✅ |
-| **NoSQL** | MongoDB, DynamoDB | ✅ |
-| **Vector Stores** | Qdrant, Weaviate, Pinecone | ✅ |
-| **Graph Databases** | Neo4j, ArangoDB | ✅ |
-| **Files** | JSON, CSV, Excel, Parquet | ✅ |
+| **Category**        | **Supported**              | **Async** |
+| ------------------- | -------------------------- | --------- |
+| **SQL Databases**   | PostgreSQL, MySQL, SQLite  | ✅        |
+| **NoSQL**           | MongoDB, DynamoDB          | ✅        |
+| **Vector Stores**   | Qdrant, Weaviate, Pinecone | ✅        |
+| **Graph Databases** | Neo4j, ArangoDB            | ✅        |
+| **Files**           | JSON, CSV, Excel, Parquet  | ✅        |
 
 ---
 
@@ -318,39 +336,52 @@ class RedisAdapter(Adapter[T]):
 
 This isn't just another release. It's a commitment.
 
-**API Stability**: The patterns you learn today will work in v2.0. We've spent two years refining the interface to be both powerful and permanent.
+**API Stability**: The patterns you learn today will work in v2.0. We've spent
+two years refining the interface to be both powerful and permanent.
 
-**Production Trust**: Battle-tested in real systems handling millions of records. When you build on Pydapter, you build on solid ground.
+**Production Trust**: Battle-tested in real systems handling millions of
+records. When you build on Pydapter, you build on solid ground.
 
-**The Standard**: We're establishing how modern applications should handle data. One interface, everywhere.
+**The Standard**: We're establishing how modern applications should handle data.
+One interface, everywhere.
 
 ---
 
 ## The Philosophy
 
-We're not building another ORM or database wrapper. We're building infrastructure for a fundamental shift in how applications relate to data.
+We're not building another ORM or database wrapper. We're building
+infrastructure for a fundamental shift in how applications relate to data.
 
 **Three principles guide everything:**
 
-1. **Storage is tactical, not strategic** - Choose databases based on current needs, not future fears
-2. **Data should flow like water** - Between systems, across boundaries, without friction
-3. **Applications outlive their databases** - Your business logic shouldn't be coupled to storage decisions
+1. **Storage is tactical, not strategic** - Choose databases based on current
+   needs, not future fears
+2. **Data should flow like water** - Between systems, across boundaries, without
+   friction
+3. **Applications outlive their databases** - Your business logic shouldn't be
+   coupled to storage decisions
 
 ---
 
 ## Documentation
 
-- **[Full Documentation](https://khive-ai.github.io/pydapter/)** - Complete API reference and guides
-- **[Architecture Overview](https://khive-ai.github.io/pydapter/guides/architecture/)** - Understanding the design
-- **[Getting Started](https://khive-ai.github.io/pydapter/getting_started/)** - From zero to production
+- **[Full Documentation](https://khive-ai.github.io/pydapter/)** - Complete API
+  reference and guides
+- **[Architecture Overview](https://khive-ai.github.io/pydapter/guides/architecture/)** -
+  Understanding the design
+- **[Getting Started](https://khive-ai.github.io/pydapter/getting_started/)** -
+  From zero to production
 
 ---
 
 ## Contributing
 
-Pydapter is built by the community, for the community. We believe in the vision of invisible data layers and need your help to make it reality.
+Pydapter is built by the community, for the community. We believe in the vision
+of invisible data layers and need your help to make it reality.
 
-See our [Contributing Guide](https://github.com/khive-ai/pydapter/blob/main/CONTRIBUTING.md) to get started.
+See our
+[Contributing Guide](https://github.com/khive-ai/pydapter/blob/main/CONTRIBUTING.md)
+to get started.
 
 ---
 
@@ -364,9 +395,11 @@ Apache-2.0 License - see [LICENSE](LICENSE) for details.
 
 ## The Future is Fluid
 
-In the post-database world, data flows where it provides value. Storage adapts to your needs. Architecture evolves without rewrites.
+In the post-database world, data flows where it provides value. Storage adapts
+to your needs. Architecture evolves without rewrites.
 
-**Join us in building infrastructure for applications that outlive their databases.**
+**Join us in building infrastructure for applications that outlive their
+databases.**
 
 ```bash
 pip install pydapter
@@ -378,6 +411,6 @@ pip install pydapter
 
 ---
 
-*What will you build when the data layer disappears?*
+_What will you build when the data layer disappears?_
 
 </div>

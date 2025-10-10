@@ -1,20 +1,26 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with
+code in this repository.
 
 ## Project Overview
 
-Pydapter is a Python library that provides a unified interface for data adapters, enabling seamless data flow between Pydantic models and various storage systems (databases, files, vector stores, etc.). The core philosophy is "storage as a deployment decision, not an architecture decision."
+Pydapter is a Python library that provides a unified interface for data
+adapters, enabling seamless data flow between Pydantic models and various
+storage systems (databases, files, vector stores, etc.). The core philosophy is
+"storage as a deployment decision, not an architecture decision."
 
 ## Architecture
 
 ### Core Components
 
-- **`src/pydapter/core.py`**: Defines the `Adapter` protocol - the fundamental interface all adapters implement
+- **`src/pydapter/core.py`**: Defines the `Adapter` protocol - the fundamental
+  interface all adapters implement
   - `from_obj()`: Convert from external format to Pydantic models
   - `to_obj()`: Convert from Pydantic models to external format
 
-- **`src/pydapter/async_core.py`**: Async version of the adapter protocol for high-performance async operations
+- **`src/pydapter/async_core.py`**: Async version of the adapter protocol for
+  high-performance async operations
 
 - **Adapter Categories**:
   - **File Adapters** (`adapters/`): JSON, CSV, TOML, Excel
@@ -22,16 +28,21 @@ Pydapter is a Python library that provides a unified interface for data adapters
   - **Vector Store Adapters** (`extras/`): Qdrant, Weaviate
   - **Specialized Adapters** (`extras/`): Memvid, Pulsar, SQL with SQLAlchemy
 
-- **Model Adapters** (`model_adapters/`): Higher-level adapters that work with SQLAlchemy models and provide ORM-like functionality
+- **Model Adapters** (`model_adapters/`): Higher-level adapters that work with
+  SQLAlchemy models and provide ORM-like functionality
 
 - **Migrations** (`migrations/`): Database migration support using Alembic
 
 ### Key Design Patterns
 
-1. **Protocol-Based Design**: All adapters implement the same protocol, ensuring consistency
-2. **Sync/Async Duality**: Most adapters have both sync and async versions (e.g., `PostgresAdapter` and `AsyncPostgresAdapter`)
-3. **Framework Agnostic**: Works with any model framework (Pydantic, dataclasses, custom classes)
-4. **Stateless Adapters**: Adapters are class-based utilities without instance state
+1. **Protocol-Based Design**: All adapters implement the same protocol, ensuring
+   consistency
+2. **Sync/Async Duality**: Most adapters have both sync and async versions
+   (e.g., `PostgresAdapter` and `AsyncPostgresAdapter`)
+3. **Framework Agnostic**: Works with any model framework (Pydantic,
+   dataclasses, custom classes)
+4. **Stateless Adapters**: Adapters are class-based utilities without instance
+   state
 
 ## Development Commands
 
@@ -118,7 +129,8 @@ uv run mkdocs gh-deploy
   - Extended tests for complex adapters
   - Property-based testing with Hypothesis
 
-- **`tests/test_adapters/test_integration_*.py`**: Integration tests requiring external services
+- **`tests/test_adapters/test_integration_*.py`**: Integration tests requiring
+  external services
   - Use testcontainers for database testing
   - Require Docker to be running
 
@@ -130,7 +142,8 @@ uv run mkdocs gh-deploy
 
 ### Test Fixtures
 
-Tests use pytest fixtures defined in `tests/conftest.py`. Common fixtures include sample Pydantic models and database connections.
+Tests use pytest fixtures defined in `tests/conftest.py`. Common fixtures
+include sample Pydantic models and database connections.
 
 ## Adding New Adapters
 

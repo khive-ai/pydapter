@@ -351,7 +351,8 @@ asyncio.run(manage_customers())
 
 ## Best Practices
 
-1. **Use TypedDict for Configuration**: Provides better IDE support and type safety
+1. **Use TypedDict for Configuration**: Provides better IDE support and type
+   safety
 
    ```python
    config: SQLReadConfig = {"dsn": dsn, "table": "users"}
@@ -386,8 +387,8 @@ asyncio.run(manage_customers())
    ```
 
    **Note**: SQLAlchemy engines manage their own connection pools internally.
-   You don't use `async with engine:` context managers with engines - that pattern
-   is for connections/sessions.
+   You don't use `async with engine:` context managers with engines - that
+   pattern is for connections/sessions.
 
 3. **Handle None Values**: The adapter automatically excludes None values from
    INSERT/UPDATE operations
@@ -452,12 +453,15 @@ await adapter.to_obj(user, dsn=url, table="users", operation="upsert", conflict_
 
 ### Common Issues
 
-1. **"Multiple engine parameters provided"**: Only use one of `dsn`, `engine_url`, or `engine`
+1. **"Multiple engine parameters provided"**: Only use one of `dsn`,
+   `engine_url`, or `engine`
 2. **"Missing required parameter"**: For select/delete operations, ensure you
    provide a connection parameter and table name. For raw_sql operations, only
    the connection parameter and sql are required
-3. **SQL parameter syntax**: Use `:param_name` for SQLAlchemy, not `%(param_name)s`
-4. **None values in primary keys**: The adapter automatically filters out None values
+3. **SQL parameter syntax**: Use `:param_name` for SQLAlchemy, not
+   `%(param_name)s`
+4. **None values in primary keys**: The adapter automatically filters out None
+   values
 
 ### Performance Tips
 
