@@ -4,12 +4,6 @@ AsyncNeo4jAdapter - Asynchronous adapter for Neo4j graph database.
 This adapter provides asynchronous access to Neo4j using the AsyncGraphDatabase.
 It follows the AsyncAdapter protocol and provides comprehensive error handling and
 resource management.
-
-search:pplx-a7b2c - Neo4j Python Driver async API best practices
-search:exa-f9d3e - Asynchronous Neo4j operations with proper error handling
-search:pplx-d8f4g - Proper error handling in async Neo4j operations
-search:exa-h6j9k - Testing async Neo4j adapters with mocks
-search:pplx-l2m5n - Efficient connection management in Neo4j async drivers
 """
 
 from __future__ import annotations
@@ -183,12 +177,33 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                 session = driver.session()
                 try:
                     try:
-                        # Execute the query
+                        # Execute the query - in Neo4j 5.x, await session.run() to get the result
                         result = await session.run(cypher)
                         # Process the results
                         rows = []
-                        async for r in result:
-                            rows.append(r["n"]._properties)
+                        async for record in result:
+                            # Extract the node properties from the 'n' field
+                            try:
+                                # Try to access the 'n' field (standard for from_obj queries)
+                                node = record["n"]
+                                if hasattr(node, "_properties"):
+                                    rows.append(dict(node._properties))
+                                else:
+                                    rows.append(dict(node))
+                            except (KeyError, TypeError):
+                                # Fallback: convert entire record to dict
+                                row_dict = {}
+                                try:
+                                    for key in record.keys():
+                                        value = record[key]
+                                        if hasattr(value, "_properties"):
+                                            row_dict[key] = dict(value._properties)
+                                        else:
+                                            row_dict[key] = value
+                                    rows.append(row_dict)
+                                except AttributeError:
+                                    # If record doesn't have keys(), treat as simple value
+                                    rows.append({"n": record})
                     except neo4j.exceptions.CypherSyntaxError as e:
                         raise QueryError(
                             f"Neo4j Cypher syntax error: {e}",
@@ -345,12 +360,14 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
 
                         # Execute query
                         try:
-                            # Execute the query
+                            # Execute the query - in Neo4j 5.x, await session.run() to get the result
                             result = await session.run(
                                 cypher, val=props[merge_on], props=props
                             )
+                            # Consume the result to ensure it's executed
+                            summary = await result.consume()
                             # Add to results
-                            results.append(result)
+                            results.append(summary)
                         except neo4j.exceptions.CypherSyntaxError as e:
                             raise QueryError(
                                 f"Neo4j Cypher syntax error: {e}",
@@ -453,7 +470,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             **params: Query parameters
 
         Returns:
-            list: List of query results
+            list: List of query results as dictionaries
 
         Raises:
             QueryError: If the query execution fails
@@ -468,13 +485,24 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         self._validate_cypher(cypher)
 
         try:
-            # Execute the query - don't await the run method itself
-            result = self._session.run(cypher, **params)
+            # Execute the query - in Neo4j 5.x, await session.run() to get the result
+            result = await self._session.run(cypher, **params)
 
-            # Process the results
+            # Process the results - handle arbitrary query result structures
             rows = []
-            async for r in result:
-                rows.append(r["n"]._properties)
+            async for record in result:
+                # Convert record to dictionary with all returned values
+                row_dict = {}
+                for key in record.keys():
+                    value = record[key]
+                    # Handle Neo4j nodes/relationships by extracting properties
+                    if hasattr(value, "_properties"):
+                        row_dict[key] = dict(value._properties)
+                    elif hasattr(value, "items"):  # Dict-like
+                        row_dict[key] = dict(value)
+                    else:
+                        row_dict[key] = value
+                rows.append(row_dict)
 
             return rows
         except neo4j.exceptions.CypherSyntaxError as e:
