@@ -1,0 +1,17 @@
+## [1.1.2] - 2025-01-10
+
+### Added
+- AsyncRedisAdapter with comprehensive Redis support (msgpack/JSON serialization, TTL, NX/XX operations)
+- Pattern-based retrieval for Redis keys
+- Production-ready test coverage with testcontainers
+
+### Fixed
+- Python 3.10 compatibility for TypedDict imports (NotRequired, Required)
+- Python 3.10 isinstance() syntax compatibility
+- AsyncNeo4jAdapter context manager and query result processing
+- Test isolation - unit tests no longer require Docker
+- 97+ linting issues auto-fixed
+
+### Changed
+- CI/CD improvements with dynamic coverage thresholds
+- Better error reporting in test pipeline
