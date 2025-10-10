@@ -3003,9 +3003,10 @@
 
 
 <h1 id="core-api-reference">Core API Reference<a class="headerlink" href="#core-api-reference" title="Permanent link">&para;</a></h1>
-<p>The <code>pydapter.core</code> module provides the foundational adapter system for converting
-between Pydantic models and various data formats. It implements a registry-based
-pattern that enables stateless, bidirectional data transformations.</p>
+<p>The <code>pydapter.core</code> module provides the foundational adapter system for
+converting between Pydantic models and various data formats. It implements a
+registry-based pattern that enables stateless, bidirectional data
+transformations.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>pydapter
 </span></code></pre></div>
@@ -3028,8 +3029,8 @@ pattern that enables stateless, bidirectional data transformations.</p>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>└─────────────────┘  │ adapt_to()      │  └─────────────────┘
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>                     └─────────────────┘
 </span></code></pre></div>
-<p>The system supports both synchronous and asynchronous operations through parallel
-implementations in <a href="./"><code>pydapter.core</code></a> and
+<p>The system supports both synchronous and asynchronous operations through
+parallel implementations in <a href="./"><code>pydapter.core</code></a> and
 <a href="./#async-core-module"><code>pydapter.async_core</code></a>.</p>
 <h2 id="core-protocols">Core Protocols<a class="headerlink" href="#core-protocols" title="Permanent link">&para;</a></h2>
 <h3 id="adapter">Adapter<a class="headerlink" href="#adapter" title="Permanent link">&para;</a></h3>
@@ -3092,7 +3093,8 @@ external formats.</p>
 </span></code></pre></div>
 <h3 id="asyncadapter">AsyncAdapter<a class="headerlink" href="#asyncadapter" title="Permanent link">&para;</a></h3>
 <p><strong>Module:</strong> <code>pydapter.async_core</code></p>
-<p>Asynchronous counterpart to the <code>Adapter</code> protocol for operations requiring async/await.</p>
+<p>Asynchronous counterpart to the <code>Adapter</code> protocol for operations requiring
+async/await.</p>
 <p><strong>Protocol Interface:</strong></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nd">@runtime_checkable</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">AsyncAdapter</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
@@ -3411,13 +3413,15 @@ external formats.</p>
 <h3 id="registry-management">Registry Management<a class="headerlink" href="#registry-management" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Global Registry</strong>: Use a single global registry for consistency</li>
-<li><strong>Namespace Keys</strong>: Use namespaced keys to avoid conflicts (e.g., "db.postgres")</li>
+<li><strong>Namespace Keys</strong>: Use namespaced keys to avoid conflicts (e.g.,
+   "db.postgres")</li>
 <li><strong>Validation</strong>: Validate adapter implementations before registration</li>
 <li><strong>Testing</strong>: Test all registered adapters thoroughly</li>
 </ol>
 <h3 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Specific Exceptions</strong>: Use specific exception types for different error conditions</li>
+<li><strong>Specific Exceptions</strong>: Use specific exception types for different error
+   conditions</li>
 <li><strong>Context Information</strong>: Include relevant context in exception details</li>
 <li><strong>Logging</strong>: Log adapter errors for debugging</li>
 <li><strong>Recovery Strategies</strong>: Implement fallback mechanisms where appropriate</li>
@@ -3494,7 +3498,8 @@ external formats.</p>
 <li><strong>Async Support</strong>: Consider migrating to async adapters for I/O operations</li>
 <li><strong>Type Safety</strong>: Add proper type hints to existing adapters</li>
 </ol>
-<p>For detailed migration instructions, see the <a href="../../migration_guide/#core-system">Migration Guide</a>.</p>
+<p>For detailed migration instructions, see the
+<a href="../../migration_guide/#core-system">Migration Guide</a>.</p>
 <hr />
 <h2 id="auto-generated-api-reference">Auto-generated API Reference<a class="headerlink" href="#auto-generated-api-reference" title="Permanent link">&para;</a></h2>
 <p>The following sections contain auto-generated API documentation:</p>

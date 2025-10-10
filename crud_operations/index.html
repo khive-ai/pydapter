@@ -2062,7 +2062,8 @@ perform table inspection. This makes them ideal for:</p>
 </span></code></pre></div>
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Use TypedDict for Configuration</strong>: Provides better IDE support and type safety</li>
+<li><strong>Use TypedDict for Configuration</strong>: Provides better IDE support and type
+   safety</li>
 </ol>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">config</span><span class="p">:</span> <span class="n">SQLReadConfig</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dsn&quot;</span><span class="p">:</span> <span class="n">dsn</span><span class="p">,</span> <span class="s2">&quot;table&quot;</span><span class="p">:</span> <span class="s2">&quot;users&quot;</span><span class="p">}</span>
 </span></code></pre></div>
@@ -2094,8 +2095,8 @@ perform table inspection. This makes them ideal for:</p>
 </span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a>    <span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
 </span></code></pre></div>
 <p><strong>Note</strong>: SQLAlchemy engines manage their own connection pools internally.
-   You don't use <code>async with engine:</code> context managers with engines - that pattern
-   is for connections/sessions.</p>
+   You don't use <code>async with engine:</code> context managers with engines - that
+   pattern is for connections/sessions.</p>
 <ol>
 <li><strong>Handle None Values</strong>: The adapter automatically excludes None values from
    INSERT/UPDATE operations</li>
@@ -2147,12 +2148,15 @@ perform table inspection. This makes them ideal for:</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>"Multiple engine parameters provided"</strong>: Only use one of <code>dsn</code>, <code>engine_url</code>, or <code>engine</code></li>
+<li><strong>"Multiple engine parameters provided"</strong>: Only use one of <code>dsn</code>,
+   <code>engine_url</code>, or <code>engine</code></li>
 <li><strong>"Missing required parameter"</strong>: For select/delete operations, ensure you
    provide a connection parameter and table name. For raw_sql operations, only
    the connection parameter and sql are required</li>
-<li><strong>SQL parameter syntax</strong>: Use <code>:param_name</code> for SQLAlchemy, not <code>%(param_name)s</code></li>
-<li><strong>None values in primary keys</strong>: The adapter automatically filters out None values</li>
+<li><strong>SQL parameter syntax</strong>: Use <code>:param_name</code> for SQLAlchemy, not
+   <code>%(param_name)s</code></li>
+<li><strong>None values in primary keys</strong>: The adapter automatically filters out None
+   values</li>
 </ol>
 <h3 id="performance-tips">Performance Tips<a class="headerlink" href="#performance-tips" title="Permanent link">&para;</a></h3>
 <ol>

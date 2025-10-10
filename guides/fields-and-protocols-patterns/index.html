@@ -1923,22 +1923,24 @@
 
 
 <h1 id="fields-and-protocols-best-usage-patterns">Fields and Protocols: Best Usage Patterns<a class="headerlink" href="#fields-and-protocols-best-usage-patterns" title="Permanent link">&para;</a></h1>
-<p>This guide demonstrates the best practices for using pydapter's field system with
-protocols to create consistent, type-safe models for database operations.</p>
+<p>This guide demonstrates the best practices for using pydapter's field system
+with protocols to create consistent, type-safe models for database operations.</p>
 <h2 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">&para;</a></h2>
 <h3 id="1-field-templates-vs-direct-fields">1. Field Templates vs Direct Fields<a class="headerlink" href="#1-field-templates-vs-direct-fields" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Field Templates</strong>: Reusable definitions that can create fields with different names</li>
+<li><strong>Field Templates</strong>: Reusable definitions that can create fields with
+  different names</li>
 <li><strong>Protocol Families</strong>: Pre-defined field sets that match protocol requirements</li>
 <li><strong>Field Families</strong>: Logical groupings for common database patterns</li>
 </ul>
 <h3 id="2-protocol-alignment">2. Protocol Alignment<a class="headerlink" href="#2-protocol-alignment" title="Permanent link">&para;</a></h3>
-<p>Protocols define behavioral contracts. Use protocol-specific field families to ensure
-your models can leverage protocol functionality.</p>
+<p>Protocols define behavioral contracts. Use protocol-specific field families to
+ensure your models can leverage protocol functionality.</p>
 <p><strong>Important Note</strong>: The <code>create_protocol_model</code> function provides <strong>structural
-compliance</strong> by adding the required fields for protocols. It does NOT add behavioral
-methods from protocol mixins. If you need methods like <code>update_timestamp()</code> from
-<code>TemporalMixin</code>, you must explicitly inherit from the mixin classes (see examples below).</p>
+compliance</strong> by adding the required fields for protocols. It does NOT add
+behavioral methods from protocol mixins. If you need methods like
+<code>update_timestamp()</code> from <code>TemporalMixin</code>, you must explicitly inherit from the
+mixin classes (see examples below).</p>
 <h2 id="pattern-1-basic-entity-with-protocols">Pattern 1: Basic Entity with Protocols<a class="headerlink" href="#pattern-1-basic-entity-with-protocols" title="Permanent link">&para;</a></h2>
 <p>For most database entities, combine Identifiable and Temporal protocols:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydapter.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_protocol_model</span><span class="p">,</span> <span class="n">FieldTemplate</span>
@@ -2200,7 +2202,8 @@ methods from protocol mixins. If you need methods like <code>update_timestamp()<
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="1-choose-the-right-pattern">1. Choose the Right Pattern<a class="headerlink" href="#1-choose-the-right-pattern" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Simple CRUD</strong>: Use <code>create_protocol_model</code> with "identifiable" and "temporal"</li>
+<li><strong>Simple CRUD</strong>: Use <code>create_protocol_model</code> with "identifiable" and
+  "temporal"</li>
 <li><strong>Audit Requirements</strong>: Add audit fields with <code>.with_audit_fields()</code></li>
 <li><strong>Soft Delete</strong>: Use <code>.with_soft_delete()</code> for logical deletion</li>
 <li><strong>Event Sourcing</strong>: Use the "event" protocol for complete event tracking</li>

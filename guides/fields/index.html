@@ -1738,18 +1738,20 @@
 
 <h1 id="working-with-pydapter-fields">Working with Pydapter Fields<a class="headerlink" href="#working-with-pydapter-fields" title="Permanent link">&para;</a></h1>
 <h2 id="field-system-overview">Field System Overview<a class="headerlink" href="#field-system-overview" title="Permanent link">&para;</a></h2>
-<p>Pydapter provides a comprehensive field system built on top of Pydantic v2 that includes:</p>
+<p>Pydapter provides a comprehensive field system built on top of Pydantic v2 that
+includes:</p>
 <ul>
 <li><strong>Field Templates</strong>: Reusable field definitions with flexible naming</li>
-<li><strong>Common Templates</strong>: Pre-configured templates for common field types
-  (IDs, timestamps, etc.)</li>
+<li><strong>Common Templates</strong>: Pre-configured templates for common field types (IDs,
+  timestamps, etc.)</li>
 <li><strong>Field Families</strong>: Logical groupings of fields for database patterns</li>
 <li><strong>Protocol Families</strong>: Field sets that match pydapter protocol requirements</li>
 <li><strong>Validation Patterns</strong>: Common regex patterns and constraint builders</li>
 <li><strong>Domain Model Builder</strong>: Fluent API for creating models</li>
 </ul>
 <h2 id="field-templates">Field Templates<a class="headerlink" href="#field-templates" title="Permanent link">&para;</a></h2>
-<p>Field templates are reusable field definitions that can be customized for different contexts:</p>
+<p>Field templates are reusable field definitions that can be customized for
+different contexts:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydapter.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldTemplate</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Define a reusable template</span>
@@ -1969,11 +1971,13 @@
 </span></code></pre></div>
 <h2 id="key-design-principles">Key Design Principles<a class="headerlink" href="#key-design-principles" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Templates over instances</strong>: Field templates can be reused across multiple fields</li>
+<li><strong>Templates over instances</strong>: Field templates can be reused across multiple
+   fields</li>
 <li><strong>Composition over inheritance</strong>: Build complex models by combining families</li>
 <li><strong>Protocol alignment</strong>: Use protocol families for models that implement
    pydapter protocols</li>
-<li><strong>Validation patterns</strong>: Leverage pre-built patterns for common validation needs</li>
+<li><strong>Validation patterns</strong>: Leverage pre-built patterns for common validation
+   needs</li>
 <li><strong>Fluent API</strong>: Use method chaining for readable model construction</li>
 </ol>
 <p>The field system provides a foundation for creating consistent, validated data

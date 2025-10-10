@@ -2111,7 +2111,8 @@ interface.</p>
 </span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Status: </span><span class="si">{</span><span class="n">log_event</span><span class="o">.</span><span class="n">execution</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="auditable">Auditable<a class="headerlink" href="#auditable" title="Permanent link">&para;</a></h3>
-<p>The <code>Auditable</code> protocol adds user tracking and versioning capabilities for audit trails.</p>
+<p>The <code>Auditable</code> protocol adds user tracking and versioning capabilities for
+audit trails.</p>
 <p><strong>Key features:</strong></p>
 <ul>
 <li>Tracks who created the entity (<code>created_by</code>)</li>
@@ -2143,8 +2144,8 @@ interface.</p>
 </span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated by: </span><span class="si">{</span><span class="n">doc</span><span class="o">.</span><span class="n">updated_by</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># Updated by: editor123</span>
 </span></code></pre></div>
 <h3 id="softdeletable">SoftDeletable<a class="headerlink" href="#softdeletable" title="Permanent link">&para;</a></h3>
-<p>The <code>SoftDeletable</code> protocol provides soft deletion capabilities, allowing entities to
-be marked as deleted without permanently removing them.</p>
+<p>The <code>SoftDeletable</code> protocol provides soft deletion capabilities, allowing
+entities to be marked as deleted without permanently removing them.</p>
 <p><strong>Key features:</strong></p>
 <ul>
 <li>Marks deletion with timestamp (<code>deleted_at</code>)</li>
@@ -2175,7 +2176,8 @@ be marked as deleted without permanently removing them.</p>
 </span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deleted at: </span><span class="si">{</span><span class="n">user</span><span class="o">.</span><span class="n">deleted_at</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># Deleted at: None</span>
 </span></code></pre></div>
 <h2 id="protocol-registry">Protocol Registry<a class="headerlink" href="#protocol-registry" title="Permanent link">&para;</a></h2>
-<p>The protocol registry system allows for dynamic registration and discovery of protocol mixins.</p>
+<p>The protocol registry system allows for dynamic registration and discovery of
+protocol mixins.</p>
 <p><strong>Key features:</strong></p>
 <ul>
 <li>Dynamic mixin registration</li>
