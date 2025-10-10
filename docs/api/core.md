@@ -615,12 +615,21 @@ The following sections contain auto-generated API documentation:
 
 ## Core Module
 
-::: pydapter.core options: show_root_heading: true show_source: true
+::: pydapter.core
+    options:
+      show_root_heading: true
+      show_source: true
 
 ## Async Core Module
 
-::: pydapter.async_core options: show_root_heading: true show_source: true
+::: pydapter.async_core
+    options:
+      show_root_heading: true
+      show_source: true
 
 ## Exceptions
 
-::: pydapter.exceptions options: show_root_heading: true show_source: true
+::: pydapter.exceptions
+    options:
+      show_root_heading: true
+      show_source: true
