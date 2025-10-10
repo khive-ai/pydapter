@@ -39,6 +39,7 @@ class TestAsyncNeo4jContextManager:
         mock_record = MagicMock()
         mock_record.keys.return_value = ["n"]
         mock_record.__getitem__ = lambda self, key: mock_node
+        mock_record.__iter__ = lambda self: iter(["n"])  # Make record iterable
         mock_result.__aiter__ = MagicMock(return_value=mock_result)
         mock_result.__anext__ = AsyncMock()
         mock_result.__anext__.side_effect = [mock_record, StopAsyncIteration]
@@ -194,6 +195,7 @@ class TestAsyncNeo4jContextManager:
         mock_record = MagicMock()
         mock_record.keys.return_value = ["n"]
         mock_record.__getitem__ = lambda self, key: mock_node
+        mock_record.__iter__ = lambda self: iter(["n"])  # Make record iterable
         mock_result.__aiter__ = MagicMock(return_value=mock_result)
         mock_result.__anext__ = AsyncMock()
         mock_result.__anext__.side_effect = [mock_record, StopAsyncIteration]
