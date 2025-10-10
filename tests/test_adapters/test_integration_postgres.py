@@ -21,9 +21,7 @@ def is_docker_available():
 
 
 # Skip tests if Docker is not available
-pytestmark = pytest.mark.skipif(
-    not is_docker_available(), reason="Docker is not available"
-)
+pytestmark = pytest.mark.skipif(not is_docker_available(), reason="Docker is not available")
 
 
 @pytest.fixture
@@ -76,9 +74,7 @@ class TestPostgresIntegration:
         assert retrieved.name == test_model.name
         assert retrieved.value == test_model.value
 
-    def test_postgres_batch_operations(
-        self, pg_url, sync_model_factory, postgres_table
-    ):
+    def test_postgres_batch_operations(self, pg_url, sync_model_factory, postgres_table):
         """Test batch operations with PostgreSQL."""
         model_cls = sync_model_factory(id=1, name="test", value=1.0).__class__
 
@@ -86,9 +82,7 @@ class TestPostgresIntegration:
         model_cls.register_adapter(PostgresAdapter)
 
         # Create multiple test instances
-        models = [
-            model_cls(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)
-        ]
+        models = [model_cls(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)]
 
         # Store batch in database
         PostgresAdapter.to_obj(models, engine_url=pg_url, table="test_table", many=True)
@@ -141,9 +135,7 @@ class TestPostgresIntegration:
         updated_model.__class__.register_adapter(PostgresAdapter)
 
         # Update in database
-        updated_model.adapt_to(
-            obj_key="postgres", engine_url=pg_url, table="test_table"
-        )
+        updated_model.adapt_to(obj_key="postgres", engine_url=pg_url, table="test_table")
 
         # Retrieve from database
         retrieved = test_model.__class__.adapt_from(

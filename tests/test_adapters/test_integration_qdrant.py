@@ -23,9 +23,7 @@ def is_docker_available():
 
 
 # Skip tests if Docker is not available
-pytestmark = pytest.mark.skipif(
-    not is_docker_available(), reason="Docker is not available"
-)
+pytestmark = pytest.mark.skipif(not is_docker_available(), reason="Docker is not available")
 
 
 @pytest.fixture
@@ -45,9 +43,7 @@ def qdrant_cleanup(qdrant_url):
 class TestQdrantIntegration:
     """Integration tests for Qdrant adapter."""
 
-    def test_qdrant_vector_storage(
-        self, qdrant_url, sync_vector_model_factory, qdrant_cleanup
-    ):
+    def test_qdrant_vector_storage(self, qdrant_url, sync_vector_model_factory, qdrant_cleanup):
         """Test Qdrant adapter with vector storage and retrieval."""
         # Create test instance with embedding vector
         test_model = sync_vector_model_factory(
@@ -82,9 +78,7 @@ class TestQdrantIntegration:
         assert retrieved.name == test_model.name
         assert retrieved.value == test_model.value
 
-    def test_qdrant_similarity_search(
-        self, qdrant_url, sync_vector_model_factory, qdrant_cleanup
-    ):
+    def test_qdrant_similarity_search(self, qdrant_url, sync_vector_model_factory, qdrant_cleanup):
         """Test Qdrant adapter with vector similarity search."""
         model_cls = sync_vector_model_factory(
             id=1, name="test", value=1.0, embedding=[0.1, 0.2, 0.3, 0.4, 0.5]
@@ -98,9 +92,7 @@ class TestQdrantIntegration:
         for i in range(1, 11):
             # Create vectors with increasing distance from the first one
             embedding = [i / 10, (i + 1) / 10, (i + 2) / 10, (i + 3) / 10, (i + 4) / 10]
-            models.append(
-                model_cls(id=i, name=f"vector_{i}", value=i * 1.5, embedding=embedding)
-            )
+            models.append(model_cls(id=i, name=f"vector_{i}", value=i * 1.5, embedding=embedding))
 
         # Store batch in database
         for model in models:
@@ -158,9 +150,7 @@ class TestQdrantIntegration:
                 vector_field="embedding",
             )
 
-    def test_qdrant_resource_not_found(
-        self, qdrant_url, sync_vector_model_factory, qdrant_cleanup
-    ):
+    def test_qdrant_resource_not_found(self, qdrant_url, sync_vector_model_factory, qdrant_cleanup):
         """Test handling of resource not found errors."""
         model_cls = sync_vector_model_factory(
             id=1, name="test", value=1.0, embedding=[0.1, 0.2, 0.3, 0.4, 0.5]
@@ -182,9 +172,7 @@ class TestQdrantIntegration:
                 many=False,
             )
 
-    def test_qdrant_vector_dimensions(
-        self, qdrant_url, sync_vector_model_factory, qdrant_cleanup
-    ):
+    def test_qdrant_vector_dimensions(self, qdrant_url, sync_vector_model_factory, qdrant_cleanup):
         """Test Qdrant adapter with different vector dimensions."""
         # Create model class with custom embedding
         model_cls = sync_vector_model_factory(id=1, name="test", value=1.0).__class__
@@ -193,9 +181,7 @@ class TestQdrantIntegration:
         model_cls.register_adapter(QdrantAdapter)
 
         # Create instances with different vector dimensions
-        model1 = model_cls(
-            id=1, name="vec_5d", value=1.0, embedding=[0.1, 0.2, 0.3, 0.4, 0.5]
-        )
+        model1 = model_cls(id=1, name="vec_5d", value=1.0, embedding=[0.1, 0.2, 0.3, 0.4, 0.5])
         model2 = model_cls(id=2, name="vec_10d", value=2.0, embedding=[0.1] * 10)
 
         # Store in separate collections (different dimensions)
@@ -244,9 +230,7 @@ class TestQdrantIntegration:
         assert retrieved2.id == model2.id
         assert len(retrieved2.embedding) == 10
 
-    def test_qdrant_random_vectors(
-        self, qdrant_url, sync_model_factory, qdrant_cleanup
-    ):
+    def test_qdrant_random_vectors(self, qdrant_url, sync_model_factory, qdrant_cleanup):
         """Test Qdrant adapter with random vectors."""
         # Create a custom model class with embedding field
         from pydantic import BaseModel
@@ -272,9 +256,7 @@ class TestQdrantIntegration:
             vec = np.random.rand(dimension)
             vec = vec / np.linalg.norm(vec)  # Normalize to unit vector
 
-            models.append(
-                VectorModel(id=i, name=f"random_vec_{i}", embedding=vec.tolist())
-            )
+            models.append(VectorModel(id=i, name=f"random_vec_{i}", embedding=vec.tolist()))
 
         # Store all vectors
         for model in models:

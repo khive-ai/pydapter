@@ -7,8 +7,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any, TypeVar
 
-import sqlalchemy as sa
 from pydantic import BaseModel, ValidationError
+import sqlalchemy as sa
 from sqlalchemy import exc as sq_exc
 from sqlalchemy.dialects import postgresql
 
@@ -92,9 +92,7 @@ class SQLAdapter(Adapter[T]):
         except sq_exc.NoSuchTableError as e:
             raise ResourceError(f"Table '{table}' not found", resource=table) from e
         except Exception as e:
-            raise ResourceError(
-                f"Error accessing table '{table}': {e}", resource=table
-            ) from e
+            raise ResourceError(f"Error accessing table '{table}': {e}", resource=table) from e
 
     # ---- incoming
     @classmethod
@@ -112,13 +110,9 @@ class SQLAdapter(Adapter[T]):
         try:
             # Validate required parameters
             if "engine_url" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'engine_url'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'engine_url'", data=obj)
             if "table" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'table'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'table'", data=obj)
 
             # Create engine and connect to database
             try:
@@ -252,9 +246,7 @@ class SQLAdapter(Adapter[T]):
                         # For PostgreSQL, use ON CONFLICT DO UPDATE
                         for row in rows:
                             # Build the values to update (excluding primary key columns)
-                            update_values = {
-                                k: v for k, v in row.items() if k not in pk_columns
-                            }
+                            update_values = {k: v for k, v in row.items() if k not in pk_columns}
                             if not update_values:
                                 # If only primary key columns, just try to insert
                                 stmt = sa.insert(tbl).values(**row)

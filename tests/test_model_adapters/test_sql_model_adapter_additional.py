@@ -59,9 +59,7 @@ class UserWithStringAnnotation(BaseModel):
     email: str
     posts: list["PostWithStringAnnotation"] = Field(
         default_factory=list,
-        json_schema_extra={
-            "relationship": {"type": "one_to_many", "back_populates": "author"}
-        },
+        json_schema_extra={"relationship": {"type": "one_to_many", "back_populates": "author"}},
     )
 
 
@@ -72,9 +70,7 @@ class PostWithStringAnnotation(BaseModel):
     author_id: int | None = None
     author: Optional["UserWithStringAnnotation"] = Field(
         None,
-        json_schema_extra={
-            "relationship": {"type": "many_to_one", "back_populates": "posts"}
-        },
+        json_schema_extra={"relationship": {"type": "many_to_one", "back_populates": "posts"}},
     )
 
 
@@ -116,9 +112,7 @@ def test_handle_relationship_with_forward_ref():
     field_info = UserWithForwardRef.model_fields["posts"]
 
     # Call handle_relationship
-    result = SQLModelAdapter.handle_relationship(
-        UserWithForwardRef, "posts", field_info
-    )
+    result = SQLModelAdapter.handle_relationship(UserWithForwardRef, "posts", field_info)
 
     # Check the result
     assert "relationship" in result
@@ -134,9 +128,7 @@ def test_handle_relationship_with_string_annotation():
     field_info = UserWithStringAnnotation.model_fields["posts"]
 
     # Call handle_relationship
-    result = SQLModelAdapter.handle_relationship(
-        UserWithStringAnnotation, "posts", field_info
-    )
+    result = SQLModelAdapter.handle_relationship(UserWithStringAnnotation, "posts", field_info)
 
     # For string annotations, we need to mock the behavior
     # This test is more about checking that the code doesn't crash
@@ -152,9 +144,7 @@ def test_handle_relationship_one_to_one():
     field_info = UserWithOneToOne.model_fields["profile"]
 
     # Call handle_relationship
-    result = SQLModelAdapter.handle_relationship(
-        UserWithOneToOne, "profile", field_info
-    )
+    result = SQLModelAdapter.handle_relationship(UserWithOneToOne, "profile", field_info)
 
     # Check the result
     assert "relationship" in result
@@ -178,9 +168,7 @@ def test_sql_model_to_pydantic_with_name_suffix():
     SimpleUserSQL = SQLModelAdapter.pydantic_model_to_sql(SimpleUser)
 
     # Convert back to Pydantic with custom suffix
-    UserModel = SQLModelAdapter.sql_model_to_pydantic(
-        SimpleUserSQL, name_suffix="Model"
-    )
+    UserModel = SQLModelAdapter.sql_model_to_pydantic(SimpleUserSQL, name_suffix="Model")
 
     # Check the name
     assert UserModel.__name__ == "SimpleUserModel"
@@ -191,9 +179,7 @@ def test_sql_model_to_pydantic_unsupported_type():
     # This test is covered by the existing code in sql_model.py
     # The test is specifically handled in lines 326-332
     # We'll just verify that the TypeConversionError class exists and has the right attributes
-    error = TypeConversionError(
-        "Unsupported SQL type JSONB", source_type=None, target_type=None
-    )
+    error = TypeConversionError("Unsupported SQL type JSONB", source_type=None, target_type=None)
     assert error.message == "Unsupported SQL type JSONB"
     assert error.source_type is None
     assert error.target_type is None

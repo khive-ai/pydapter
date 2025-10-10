@@ -4,8 +4,8 @@ Extended tests for Neo4j adapter functionality.
 
 from unittest.mock import MagicMock, call, patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.neo4j_ import Neo4jAdapter
@@ -43,14 +43,10 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
-            mock_session
-        )
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
 
         # Mock the result of the query
-        mock_result = [
-            {"n": MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})}
-        ]
+        mock_result = [{"n": MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})}]
         mock_session.run.return_value = mock_result
 
         # Test from_obj with where clause
@@ -70,14 +66,10 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
-            mock_session
-        )
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
 
         # Mock the result of the query
-        mock_result = [
-            {"n": MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})}
-        ]
+        mock_result = [{"n": MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})}]
         mock_session.run.return_value = mock_result
 
         # Test from_obj with custom label
@@ -97,14 +89,10 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
-            mock_session
-        )
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
 
         # Test to_obj with custom label
-        neo4j_sample.adapt_to(
-            obj_key="neo4j", url="bolt://localhost:7687", label="CustomLabel"
-        )
+        neo4j_sample.adapt_to(obj_key="neo4j", url="bolt://localhost:7687", label="CustomLabel")
 
         # Verify the cypher query used the custom label
         mock_session.run.assert_called_once()
@@ -117,14 +105,10 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
-            mock_session
-        )
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
 
         # Test to_obj with custom merge_on
-        neo4j_sample.adapt_to(
-            obj_key="neo4j", url="bolt://localhost:7687", merge_on="name"
-        )
+        neo4j_sample.adapt_to(obj_key="neo4j", url="bolt://localhost:7687", merge_on="name")
 
         # Verify the cypher query used the custom merge field
         mock_session.run.assert_called_once()
@@ -149,9 +133,7 @@ class TestNeo4jAdapterExtended:
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
-        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = (
-            mock_session
-        )
+        mock_graph_db.driver.return_value.session.return_value.__enter__.return_value = mock_session
 
         # Test to_obj with first model
         model1.adapt_to(obj_key="neo4j", url="bolt://localhost:7687")

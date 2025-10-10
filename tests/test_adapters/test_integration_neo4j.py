@@ -2,8 +2,8 @@
 Integration tests for Neo4j adapter using TestContainers.
 """
 
-import pytest
 from neo4j import GraphDatabase
+import pytest
 
 from pydapter.exceptions import ConnectionError, ResourceError
 from pydapter.extras.neo4j_ import Neo4jAdapter
@@ -21,9 +21,7 @@ def is_docker_available():
 
 
 # Skip tests if Docker is not available
-pytestmark = pytest.mark.skipif(
-    not is_docker_available(), reason="Docker is not available"
-)
+pytestmark = pytest.mark.skipif(not is_docker_available(), reason="Docker is not available")
 
 
 @pytest.fixture
@@ -44,9 +42,7 @@ def neo4j_cleanup(neo4j_url, neo4j_auth):
 class TestNeo4jIntegration:
     """Integration tests for Neo4j adapter."""
 
-    def test_neo4j_single_node(
-        self, neo4j_url, neo4j_auth, sync_model_factory, neo4j_cleanup
-    ):
+    def test_neo4j_single_node(self, neo4j_url, neo4j_auth, sync_model_factory, neo4j_cleanup):
         """Test Neo4j adapter with a single node."""
         # Create test instance
         test_model = sync_model_factory(id=44, name="test_neo4j", value=90.12)
@@ -79,9 +75,7 @@ class TestNeo4jIntegration:
         assert retrieved.name == test_model.name
         assert retrieved.value == test_model.value
 
-    def test_neo4j_batch_operations(
-        self, neo4j_url, neo4j_auth, sync_model_factory, neo4j_cleanup
-    ):
+    def test_neo4j_batch_operations(self, neo4j_url, neo4j_auth, sync_model_factory, neo4j_cleanup):
         """Test batch operations with Neo4j."""
         model_cls = sync_model_factory(id=1, name="test", value=1.0).__class__
 
@@ -89,9 +83,7 @@ class TestNeo4jIntegration:
         model_cls.register_adapter(Neo4jAdapter)
 
         # Create multiple test instances
-        models = [
-            model_cls(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)
-        ]
+        models = [model_cls(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)]
 
         # Store batch in database
         for model in models:
@@ -158,9 +150,7 @@ class TestNeo4jIntegration:
                 many=False,
             )
 
-    def test_neo4j_update_node(
-        self, neo4j_url, neo4j_auth, sync_model_factory, neo4j_cleanup
-    ):
+    def test_neo4j_update_node(self, neo4j_url, neo4j_auth, sync_model_factory, neo4j_cleanup):
         """Test updating an existing node in Neo4j."""
         # Create test instance
         test_model = sync_model_factory(id=99, name="original", value=100.0)
@@ -209,9 +199,7 @@ class TestNeo4jIntegration:
         assert retrieved.name == "updated"
         assert retrieved.value == 200.0
 
-    def test_neo4j_where_clause(
-        self, neo4j_url, neo4j_auth, sync_model_factory, neo4j_cleanup
-    ):
+    def test_neo4j_where_clause(self, neo4j_url, neo4j_auth, sync_model_factory, neo4j_cleanup):
         """Test filtering with Neo4j where clause."""
         model_cls = sync_model_factory(id=1, name="test", value=1.0).__class__
 
@@ -219,9 +207,7 @@ class TestNeo4jIntegration:
         model_cls.register_adapter(Neo4jAdapter)
 
         # Create multiple test instances with different values
-        models = [
-            model_cls(id=i, name=f"test_{i}", value=i * 10.0) for i in range(1, 11)
-        ]
+        models = [model_cls(id=i, name=f"test_{i}", value=i * 10.0) for i in range(1, 11)]
 
         # Store batch in database
         for model in models:

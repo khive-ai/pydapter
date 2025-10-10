@@ -4,8 +4,8 @@ Tests for Async SQL adapter functionality.
 
 from unittest.mock import patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.async_sql_ import AsyncSQLAdapter
@@ -80,9 +80,7 @@ class TestAsyncSQLAdapterFunctionality:
     async def test_async_sql_from_obj(self, mock_sa, async_sql_sample):
         """Test conversion from Async SQL record to model."""
         # We need to patch the entire Async SQL adapter's from_obj method
-        with patch(
-            "pydapter.extras.async_sql_.AsyncSQLAdapter.from_obj"
-        ) as mock_from_obj:
+        with patch("pydapter.extras.async_sql_.AsyncSQLAdapter.from_obj") as mock_from_obj:
             # Configure the mock to return a model instance
             expected_model = async_sql_sample.__class__(id=1, name="test", value=42.5)
             mock_from_obj.return_value = [expected_model]
@@ -106,9 +104,7 @@ class TestAsyncSQLAdapterFunctionality:
     async def test_async_sql_from_obj_single(self, mock_sa, async_sql_sample):
         """Test conversion from Async SQL record to model with many=False."""
         # We need to patch the entire Async SQL adapter's from_obj method
-        with patch(
-            "pydapter.extras.async_sql_.AsyncSQLAdapter.from_obj"
-        ) as mock_from_obj:
+        with patch("pydapter.extras.async_sql_.AsyncSQLAdapter.from_obj") as mock_from_obj:
             # Configure the mock to return a model instance
             expected_model = async_sql_sample.__class__(id=1, name="test", value=42.5)
             mock_from_obj.return_value = expected_model
@@ -118,9 +114,7 @@ class TestAsyncSQLAdapterFunctionality:
 
             # Test from_obj with many=False
             model_cls = async_sql_sample.__class__
-            result = await model_cls.adapt_from(
-                mock_record, obj_key="async_sql", many=False
-            )
+            result = await model_cls.adapt_from(mock_record, obj_key="async_sql", many=False)
 
             # Verify the result
             assert isinstance(result, model_cls)
@@ -137,9 +131,7 @@ class TestAsyncSQLAdapterErrorHandling:
     async def test_async_sql_connection_error(self, mock_sa, async_sql_sample):
         """Test handling of Async SQL connection errors."""
         # Configure the mock to raise a connection error
-        mock_sa.ext.asyncio.create_async_engine.side_effect = Exception(
-            "Connection error"
-        )
+        mock_sa.ext.asyncio.create_async_engine.side_effect = Exception("Connection error")
 
         # We need to patch the entire Async SQL adapter's to_obj method to pass through the error
         with patch(

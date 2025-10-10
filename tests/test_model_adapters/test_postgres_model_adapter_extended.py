@@ -1,9 +1,9 @@
-import ipaddress
 from datetime import date, datetime
+import ipaddress
 from typing import Any
 
-import pytest
 from pydantic import BaseModel, Field
+import pytest
 from sqlalchemy import String, inspect
 from sqlalchemy.dialects.postgresql import (
     ARRAY,
@@ -32,9 +32,7 @@ class NetworkConfig(BaseModel):
 
 class RangeModel(BaseModel):
     id: int | None = None
-    int_range: tuple[int, int] = Field(
-        (1, 10), json_schema_extra={"db_type": "int4range"}
-    )
+    int_range: tuple[int, int] = Field((1, 10), json_schema_extra={"db_type": "int4range"})
     date_range: tuple[date, date] = Field(
         (date(2023, 1, 1), date(2023, 12, 31)),
         json_schema_extra={"db_type": "daterange"},
@@ -47,15 +45,9 @@ class RangeModel(BaseModel):
 
 class ArrayModel(BaseModel):
     id: int | None = None
-    string_array: list[str] = Field(
-        default_factory=list, json_schema_extra={"db_type": "array"}
-    )
-    int_array: list[int] = Field(
-        default_factory=list, json_schema_extra={"db_type": "array"}
-    )
-    float_array: list[float] = Field(
-        default_factory=list
-    )  # Test default array handling
+    string_array: list[str] = Field(default_factory=list, json_schema_extra={"db_type": "array"})
+    int_array: list[int] = Field(default_factory=list, json_schema_extra={"db_type": "array"})
+    float_array: list[float] = Field(default_factory=list)  # Test default array handling
     multi_dim_array: list[list[int]] = Field(
         default_factory=list,
         json_schema_extra={"db_type": "array", "array_dimensions": 2},
@@ -73,9 +65,7 @@ class JsonbModel(BaseModel):
         default_factory=dict, json_schema_extra={"db_type": "jsonb"}
     )
     nested_model: NestedModel = Field(..., json_schema_extra={"db_type": "jsonb"})
-    optional_nested: NestedModel | None = Field(
-        None, json_schema_extra={"db_type": "jsonb"}
-    )
+    optional_nested: NestedModel | None = Field(None, json_schema_extra={"db_type": "jsonb"})
 
 
 def test_register_postgres_types():
@@ -118,9 +108,7 @@ def test_handle_jsonb_with_nested_model():
     field_info = JsonbModel.model_fields["nested_model"]
 
     # Call handle_jsonb with a nested model
-    column, converter = PostgresModelAdapter.handle_jsonb(
-        "nested_model", field_info, NestedModel
-    )
+    column, converter = PostgresModelAdapter.handle_jsonb("nested_model", field_info, NestedModel)
 
     # Check the column
     assert isinstance(column.type, JSONB)
@@ -165,9 +153,7 @@ def test_handle_array():
     assert column.nullable is False
 
     # Test with integer items and multiple dimensions
-    column = PostgresModelAdapter.handle_array(
-        int, dimensions=2, nullable=True, default=[]
-    )
+    column = PostgresModelAdapter.handle_array(int, dimensions=2, nullable=True, default=[])
     assert isinstance(column.type, ARRAY)
     assert column.type.dimensions == 2
     assert column.nullable is True
@@ -231,9 +217,7 @@ def test_pydantic_model_to_sql_with_postgres_types():
 def test_pydantic_model_to_sql_with_schema():
     """Test converting a Pydantic model with a specific schema."""
     # Convert the model with a schema
-    NetworkSQL = PostgresModelAdapter.pydantic_model_to_sql(
-        NetworkConfig, schema="network"
-    )
+    NetworkSQL = PostgresModelAdapter.pydantic_model_to_sql(NetworkConfig, schema="network")
 
     # Check that the schema was set correctly
     assert NetworkSQL.__table_args__["schema"] == "network"

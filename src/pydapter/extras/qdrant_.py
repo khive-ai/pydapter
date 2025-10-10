@@ -113,8 +113,8 @@ class QdrantAdapter(Adapter[T]):
 
     def _validate_vector_dimensions(vector, expected_dim=None):
         """Validate that the vector has the correct dimensions."""
-        if not isinstance(vector, (list, tuple)) or not all(
-            isinstance(x, (int, float)) for x in vector
+        if not isinstance(vector, list | tuple) or not all(
+            isinstance(x, int | float) for x in vector
         ):
             raise AdapterValidationError(
                 "Vector must be a list or tuple of numbers",
@@ -208,7 +208,7 @@ class QdrantAdapter(Adapter[T]):
             # Create points
             try:
                 points = []
-                for i, item in enumerate(items):
+                for _i, item in enumerate(items):
                     vector = getattr(item, vector_field)
                     cls._validate_vector_dimensions(vector, dim)
 
@@ -255,9 +255,7 @@ class QdrantAdapter(Adapter[T]):
             raise
         except Exception as e:
             # Wrap other exceptions
-            raise QueryError(
-                f"Unexpected error in Qdrant adapter: {e}", adapter="qdrant"
-            )
+            raise QueryError(f"Unexpected error in Qdrant adapter: {e}", adapter="qdrant")
 
     # incoming
     @classmethod
@@ -275,13 +273,9 @@ class QdrantAdapter(Adapter[T]):
         try:
             # Validate required parameters
             if "collection" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'collection'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'collection'", data=obj)
             if "query_vector" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'query_vector'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'query_vector'", data=obj)
 
             # Validate query vector
             cls._validate_vector_dimensions(obj["query_vector"])
@@ -336,10 +330,7 @@ class QdrantAdapter(Adapter[T]):
             # Convert documents to model instances
             try:
                 if many:
-                    return [
-                        getattr(subj_cls, adapt_meth)(d, **(adapt_kw or {}))
-                        for d in docs
-                    ]
+                    return [getattr(subj_cls, adapt_meth)(d, **(adapt_kw or {})) for d in docs]
                 return getattr(subj_cls, adapt_meth)(docs[0], **(adapt_kw or {}))
             except ValidationError as e:
                 raise AdapterValidationError(
@@ -353,6 +344,4 @@ class QdrantAdapter(Adapter[T]):
             raise
         except Exception as e:
             # Wrap other exceptions
-            raise QueryError(
-                f"Unexpected error in Qdrant adapter: {e}", adapter="qdrant"
-            )
+            raise QueryError(f"Unexpected error in Qdrant adapter: {e}", adapter="qdrant")

@@ -4,8 +4,8 @@ Tests for PostgreSQL adapter functionality.
 
 from unittest.mock import patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.postgres_ import PostgresAdapter
@@ -78,9 +78,7 @@ class TestPostgresAdapterFunctionality:
     def test_postgres_from_obj(self, mock_sa, postgres_sample):
         """Test conversion from PostgreSQL record to model."""
         # We need to patch the entire PostgreSQL adapter's from_obj method
-        with patch(
-            "pydapter.extras.postgres_.PostgresAdapter.from_obj"
-        ) as mock_from_obj:
+        with patch("pydapter.extras.postgres_.PostgresAdapter.from_obj") as mock_from_obj:
             # Configure the mock to return a model instance
             expected_model = postgres_sample.__class__(id=1, name="test", value=42.5)
             mock_from_obj.return_value = [expected_model]
@@ -103,9 +101,7 @@ class TestPostgresAdapterFunctionality:
     def test_postgres_from_obj_single(self, mock_sa, postgres_sample):
         """Test conversion from PostgreSQL record to model with many=False."""
         # We need to patch the entire PostgreSQL adapter's from_obj method
-        with patch(
-            "pydapter.extras.postgres_.PostgresAdapter.from_obj"
-        ) as mock_from_obj:
+        with patch("pydapter.extras.postgres_.PostgresAdapter.from_obj") as mock_from_obj:
             # Configure the mock to return a model instance
             expected_model = postgres_sample.__class__(id=1, name="test", value=42.5)
             mock_from_obj.return_value = expected_model

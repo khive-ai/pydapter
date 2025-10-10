@@ -7,10 +7,10 @@ with comprehensive error handling and validation.
 
 from __future__ import annotations
 
-import urllib.parse
-import uuid
 from collections.abc import Sequence
 from typing import Any, TypeVar
+import urllib.parse
+import uuid
 
 from pydantic import BaseModel, ValidationError
 
@@ -285,13 +285,9 @@ class WeaviateAdapter(Adapter[T]):
         try:
             # Validate required parameters
             if "class_name" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'class_name'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'class_name'", data=obj)
             if "query_vector" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'query_vector'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'query_vector'", data=obj)
 
             # Create client
             client = cls._client(obj.get("url"))
@@ -318,10 +314,7 @@ class WeaviateAdapter(Adapter[T]):
                     # Handle both mock objects in tests and real objects in production
                     if hasattr(query_result, "objects"):
                         # For real Weaviate client or properly mocked objects
-                        data = [
-                            getattr(item, "properties", item)
-                            for item in query_result.objects
-                        ]
+                        data = [getattr(item, "properties", item) for item in query_result.objects]
                     elif isinstance(query_result, dict) and "data" in query_result:
                         # For old API format in tests
                         data = query_result["data"]["Get"].get(obj["class_name"], [])
@@ -369,6 +362,4 @@ class WeaviateAdapter(Adapter[T]):
             raise
         except Exception as e:
             # Wrap other exceptions
-            raise QueryError(
-                f"Unexpected error in Weaviate adapter: {e}", adapter="weav"
-            ) from e
+            raise QueryError(f"Unexpected error in Weaviate adapter: {e}", adapter="weav") from e

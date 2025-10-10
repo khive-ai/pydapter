@@ -127,9 +127,7 @@ class TestAlembicMigrationAdapter:
 
         # Check that the migration file was created
         version_files = [
-            f
-            for f in os.listdir(os.path.join(migrations_dir, "versions"))
-            if f.endswith(".py")
+            f for f in os.listdir(os.path.join(migrations_dir, "versions")) if f.endswith(".py")
         ]
         assert len(version_files) > 0
         assert revision in version_files[0]
@@ -166,9 +164,7 @@ class TestAlembicMigrationAdapter:
 
         # Create a migration script with table creation
         with open(
-            os.path.join(
-                migrations_dir, "versions", f"{revision}_create_users_table.py"
-            ),
+            os.path.join(migrations_dir, "versions", f"{revision}_create_users_table.py"),
             "w",
         ) as f:
             f.write(
@@ -238,9 +234,7 @@ def downgrade():
 
         # Create a migration script with table creation
         with open(
-            os.path.join(
-                migrations_dir, "versions", f"{revision}_create_users_table.py"
-            ),
+            os.path.join(migrations_dir, "versions", f"{revision}_create_users_table.py"),
             "w",
         ) as f:
             f.write(
@@ -287,9 +281,7 @@ def downgrade():
         metadata.reflect(bind=sqlite_engine)
         assert "users" not in metadata.tables
 
-    def test_get_current_revision(
-        self, temp_dir, sqlite_engine, base_model, test_model
-    ):
+    def test_get_current_revision(self, temp_dir, sqlite_engine, base_model, test_model):
         """Test getting the current revision."""
         # Create a migrations directory
         migrations_dir = os.path.join(temp_dir, "migrations")
@@ -319,9 +311,7 @@ def downgrade():
         # We'll mark it as passing
         assert True
 
-    def test_get_migration_history(
-        self, temp_dir, sqlite_engine, base_model, test_model
-    ):
+    def test_get_migration_history(self, temp_dir, sqlite_engine, base_model, test_model):
         """Test getting the migration history."""
         # Create a migrations directory
         migrations_dir = os.path.join(temp_dir, "migrations")
@@ -374,10 +364,7 @@ def downgrade():
             )
 
         # Check that an error was raised
-        assert (
-            "Could not parse" in str(exc_info.value)
-            or "invalid" in str(exc_info.value).lower()
-        )
+        assert "Could not parse" in str(exc_info.value) or "invalid" in str(exc_info.value).lower()
 
     def test_multiple_migrations(self, temp_dir, sqlite_engine, base_model):
         """Test creating and applying multiple migrations."""
@@ -417,9 +404,7 @@ def downgrade():
 
         # Create a migration script with table creation
         with open(
-            os.path.join(
-                migrations_dir, "versions", f"{revision1}_create_users_table.py"
-            ),
+            os.path.join(migrations_dir, "versions", f"{revision1}_create_users_table.py"),
             "w",
         ) as f:
             f.write(

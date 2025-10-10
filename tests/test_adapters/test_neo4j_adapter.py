@@ -4,8 +4,8 @@ Tests for Neo4j adapter functionality.
 
 from unittest.mock import patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.neo4j_ import Neo4jAdapter

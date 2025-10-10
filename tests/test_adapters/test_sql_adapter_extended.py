@@ -4,8 +4,8 @@ Extended tests for SQL adapter functionality.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.sql_ import SQLAdapter
@@ -169,9 +169,7 @@ class TestSQLAdapterExtended:
         mock_sa.insert.return_value = mock_insert
 
         # Directly test the adapter's to_obj method with multiple items
-        SQLAdapter.to_obj(
-            [model1, model2], engine_url="sqlite:///:memory:", table="test_table"
-        )
+        SQLAdapter.to_obj([model1, model2], engine_url="sqlite:///:memory:", table="test_table")
 
         # Verify sa.insert was called with the table
         mock_sa.insert.assert_called_once_with(mock_table)

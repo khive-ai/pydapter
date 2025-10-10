@@ -1,5 +1,5 @@
-import pytest
 from pydantic import BaseModel, Field
+import pytest
 
 # Try to import pgvector, skip tests if not available
 try:
@@ -95,9 +95,7 @@ def test_create_index_invalid_type():
 
     # Test with invalid index type
     with pytest.raises(ConfigurationError) as excinfo:
-        PGVectorModelAdapter.create_index(
-            EmbSQL, "embedding", index_type="invalid_type"
-        )
+        PGVectorModelAdapter.create_index(EmbSQL, "embedding", index_type="invalid_type")
 
     assert "Unsupported index type: invalid_type" in str(excinfo.value)
 
@@ -146,9 +144,7 @@ def test_batch_insert_custom_batch_size(mocker):
     mock_session = mocker.Mock()
 
     # Create test data - 10 items
-    items = [
-        {"text": f"Item {i}", "embedding": [float(i)] * 1536} for i in range(1, 11)
-    ]
+    items = [{"text": f"Item {i}", "embedding": [float(i)] * 1536} for i in range(1, 11)]
 
     # Call batch_insert with batch_size=3
     PGVectorModelAdapter.batch_insert(mock_session, EmbSQL, items, batch_size=3)

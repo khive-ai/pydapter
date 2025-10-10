@@ -4,8 +4,8 @@ Tests for async adapter error handling in pydapter.
 
 import asyncio
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import (
@@ -33,15 +33,11 @@ class TestAsyncAdapterRegistry:
             name: str
             value: float
 
-        with pytest.raises(
-            AdapterNotFoundError, match="No async adapter for 'nonexistent'"
-        ):
+        with pytest.raises(AdapterNotFoundError, match="No async adapter for 'nonexistent'"):
             await TestModel.adapt_from_async({}, obj_key="nonexistent")
 
         model = TestModel(id=1, name="test", value=42.5)
-        with pytest.raises(
-            AdapterNotFoundError, match="No async adapter for 'nonexistent'"
-        ):
+        with pytest.raises(AdapterNotFoundError, match="No async adapter for 'nonexistent'"):
             await model.adapt_to_async(obj_key="nonexistent")
 
 
@@ -62,9 +58,8 @@ class TestAsyncSQLAdapterErrors:
         # Test missing engine_url/dsn/engine
         with pytest.raises(AdapterValidationError) as exc_info:
             await TestModel.adapt_from_async({"table": "test"}, obj_key="async_sql")
-        assert (
-            "Missing required parameter: one of 'engine', 'dsn', or 'engine_url'"
-            in str(exc_info.value)
+        assert "Missing required parameter: one of 'engine', 'dsn', or 'engine_url'" in str(
+            exc_info.value
         )
 
         # Test missing table
@@ -90,9 +85,7 @@ class TestAsyncSQLAdapterErrors:
         def mock_create_async_engine(*args, **kwargs):
             raise sa.exc.SQLAlchemyError("Invalid connection string")
 
-        monkeypatch.setattr(
-            sa.ext.asyncio, "create_async_engine", mock_create_async_engine
-        )
+        monkeypatch.setattr(sa.ext.asyncio, "create_async_engine", mock_create_async_engine)
 
         # Test with invalid connection string
         with pytest.raises(ConnectionError) as exc_info:
@@ -119,9 +112,7 @@ class TestAsyncSQLAdapterErrors:
 
         async def mock_from_obj(cls, subj_cls, obj, **kw):
             if obj.get("table") == "nonexistent":
-                raise ResourceError(
-                    "Table 'nonexistent' not found", resource="nonexistent"
-                )
+                raise ResourceError("Table 'nonexistent' not found", resource="nonexistent")
             return await original_from_obj(cls, subj_cls, obj, **kw)
 
         monkeypatch.setattr(AsyncSQLAdapter, "from_obj", classmethod(mock_from_obj))
@@ -235,9 +226,7 @@ class TestAsyncPostgresAdapterErrors:
         def mock_create_async_engine(*args, **kwargs):
             raise sa.exc.SQLAlchemyError("authentication failed")
 
-        monkeypatch.setattr(
-            sa.ext.asyncio, "create_async_engine", mock_create_async_engine
-        )
+        monkeypatch.setattr(sa.ext.asyncio, "create_async_engine", mock_create_async_engine)
 
         # Test with authentication error
         with pytest.raises(ConnectionError) as exc_info:
@@ -267,9 +256,7 @@ class TestAsyncPostgresAdapterErrors:
         def mock_create_async_engine(*args, **kwargs):
             raise sa.exc.SQLAlchemyError("connection refused")
 
-        monkeypatch.setattr(
-            sa.ext.asyncio, "create_async_engine", mock_create_async_engine
-        )
+        monkeypatch.setattr(sa.ext.asyncio, "create_async_engine", mock_create_async_engine)
 
         # Test with connection refused error
         with pytest.raises(ConnectionError) as exc_info:
@@ -304,9 +291,7 @@ class TestAsyncPostgresAdapterErrors:
         def mock_create_async_engine(*args, **kwargs):
             raise sa.exc.SQLAlchemyError("database does not exist")
 
-        monkeypatch.setattr(
-            sa.ext.asyncio, "create_async_engine", mock_create_async_engine
-        )
+        monkeypatch.setattr(sa.ext.asyncio, "create_async_engine", mock_create_async_engine)
 
         # Test with database does not exist error
         with pytest.raises(ConnectionError) as exc_info:
@@ -548,9 +533,7 @@ class TestAsyncQdrantAdapterErrors:
 
         # Test missing query_vector
         with pytest.raises(AdapterValidationError) as exc_info:
-            await TestModel.adapt_from_async(
-                {"collection": "test"}, obj_key="async_qdrant"
-            )
+            await TestModel.adapt_from_async({"collection": "test"}, obj_key="async_qdrant")
         assert "Missing required parameter 'query_vector'" in str(exc_info.value)
 
     @pytest.mark.asyncio

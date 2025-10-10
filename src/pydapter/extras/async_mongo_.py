@@ -7,11 +7,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TypeVar
 
-import pymongo
-import pymongo.errors
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ValidationError
+import pymongo
 from pymongo import MongoClient
+import pymongo.errors
 
 from ..async_core import AsyncAdapter
 from ..exceptions import ConnectionError, QueryError, ResourceError
@@ -105,9 +105,7 @@ class AsyncMongoAdapter(AsyncAdapter[T]):
                 raise ConnectionError(
                     f"MongoDB authentication failed: {e}", adapter="async_mongo"
                 ) from e
-            raise QueryError(
-                f"MongoDB operation failure: {e}", adapter="async_mongo"
-            ) from e
+            raise QueryError(f"MongoDB operation failure: {e}", adapter="async_mongo") from e
         except Exception as e:
             raise ConnectionError(
                 f"Failed to connect to MongoDB: {e}", adapter="async_mongo"
@@ -129,17 +127,11 @@ class AsyncMongoAdapter(AsyncAdapter[T]):
         try:
             # Validate required parameters
             if "url" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'url'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'url'", data=obj)
             if "db" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'db'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'db'", data=obj)
             if "collection" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'collection'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'collection'", data=obj)
 
             # Create client and validate connection
             client = cls._client(obj["url"])
@@ -190,10 +182,7 @@ class AsyncMongoAdapter(AsyncAdapter[T]):
             # Convert documents to model instances
             try:
                 if many:
-                    return [
-                        getattr(subj_cls, adapt_meth)(d, **(adapt_kw or {}))
-                        for d in docs
-                    ]
+                    return [getattr(subj_cls, adapt_meth)(d, **(adapt_kw or {})) for d in docs]
                 return getattr(subj_cls, adapt_meth)(docs[0], **(adapt_kw or {}))
             except ValidationError as e:
                 raise AdapterValidationError(

@@ -7,10 +7,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TypeVar
 
-import pymongo
-import pymongo.errors
 from pydantic import BaseModel, ValidationError
+import pymongo
 from pymongo import MongoClient
+import pymongo.errors
 
 from ..core import Adapter
 from ..exceptions import AdapterError, ConnectionError, QueryError, ResourceError
@@ -102,19 +102,13 @@ class MongoAdapter(Adapter[T]):
             # This will raise an exception if the connection fails
             client.admin.command("ping")
         except pymongo.errors.ServerSelectionTimeoutError as e:
-            raise ConnectionError(
-                f"MongoDB server selection timeout: {e}", adapter="mongo"
-            ) from e
+            raise ConnectionError(f"MongoDB server selection timeout: {e}", adapter="mongo") from e
         except pymongo.errors.OperationFailure as e:
             if "auth failed" in str(e).lower():
-                raise ConnectionError(
-                    f"MongoDB authentication failed: {e}", adapter="mongo"
-                ) from e
+                raise ConnectionError(f"MongoDB authentication failed: {e}", adapter="mongo") from e
             raise QueryError(f"MongoDB operation failure: {e}", adapter="mongo") from e
         except Exception as e:
-            raise ConnectionError(
-                f"Failed to connect to MongoDB: {e}", adapter="mongo"
-            ) from e
+            raise ConnectionError(f"Failed to connect to MongoDB: {e}", adapter="mongo") from e
 
     # incoming
     @classmethod
@@ -132,17 +126,11 @@ class MongoAdapter(Adapter[T]):
         try:
             # Validate required parameters
             if "url" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'url'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'url'", data=obj)
             if "db" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'db'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'db'", data=obj)
             if "collection" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'collection'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'collection'", data=obj)
 
             # Create client and validate connection
             client = cls._client(obj["url"])
@@ -193,10 +181,7 @@ class MongoAdapter(Adapter[T]):
             # Convert documents to model instances
             try:
                 if many:
-                    return [
-                        getattr(subj_cls, adapt_meth)(d, **(adapt_kw or {}))
-                        for d in docs
-                    ]
+                    return [getattr(subj_cls, adapt_meth)(d, **(adapt_kw or {})) for d in docs]
                 return getattr(subj_cls, adapt_meth)(docs[0], **(adapt_kw or {}))
             except ValidationError as e:
                 raise AdapterValidationError(
@@ -209,9 +194,7 @@ class MongoAdapter(Adapter[T]):
             raise
 
         except Exception as e:
-            raise QueryError(
-                f"Unexpected error in MongoDB adapter: {e}", adapter="mongo"
-            )
+            raise QueryError(f"Unexpected error in MongoDB adapter: {e}", adapter="mongo")
 
     # outgoing
     @classmethod
@@ -279,6 +262,4 @@ class MongoAdapter(Adapter[T]):
 
         except Exception as e:
             # Wrap other exceptions
-            raise QueryError(
-                f"Unexpected error in MongoDB adapter: {e}", adapter="mongo"
-            )
+            raise QueryError(f"Unexpected error in MongoDB adapter: {e}", adapter="mongo")

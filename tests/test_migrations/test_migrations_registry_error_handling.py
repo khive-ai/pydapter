@@ -29,9 +29,7 @@ def mock_adapter():
             return None
 
         @classmethod
-        def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             return "mock_revision"
 
         @classmethod
@@ -73,16 +71,12 @@ def test_init_migrations(populated_registry):
 
 def test_create_migration(populated_registry):
     """Test the create_migration convenience method."""
-    with patch.object(
-        populated_registry.get("mock"), "create_migration"
-    ) as mock_create:
+    with patch.object(populated_registry.get("mock"), "create_migration") as mock_create:
         # Configure the mock to return a specific value
         mock_create.return_value = "new_revision"
 
         # Call the method
-        result = populated_registry.create_migration(
-            "mock", "Test migration", autogenerate=True
-        )
+        result = populated_registry.create_migration("mock", "Test migration", autogenerate=True)
 
         # Verify the result and that the mock was called with the correct arguments
         assert result == "new_revision"
@@ -111,9 +105,7 @@ def test_downgrade(populated_registry):
 
 def test_get_current_revision(populated_registry):
     """Test the get_current_revision convenience method."""
-    with patch.object(
-        populated_registry.get("mock"), "get_current_revision"
-    ) as mock_get:
+    with patch.object(populated_registry.get("mock"), "get_current_revision") as mock_get:
         # Configure the mock to return a specific value
         mock_get.return_value = "current_revision"
 
@@ -127,9 +119,7 @@ def test_get_current_revision(populated_registry):
 
 def test_get_migration_history(populated_registry):
     """Test the get_migration_history convenience method."""
-    with patch.object(
-        populated_registry.get("mock"), "get_migration_history"
-    ) as mock_get:
+    with patch.object(populated_registry.get("mock"), "get_migration_history") as mock_get:
         # Configure the mock to return a specific value
         history = [{"revision": "rev1", "message": "First migration"}]
         mock_get.return_value = history
@@ -154,9 +144,7 @@ def error_raising_adapter():
             raise RuntimeError("Init error")
 
         @classmethod
-        def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             raise RuntimeError("Creation error")
 
         @classmethod
@@ -200,9 +188,7 @@ def test_init_migrations_error(error_registry):
 def test_create_migration_error(error_registry):
     """Test error handling in create_migration convenience method."""
     with pytest.raises(MigrationCreationError) as exc_info:
-        error_registry.create_migration(
-            "error", "Test error migration", autogenerate=True
-        )
+        error_registry.create_migration("error", "Test error migration", autogenerate=True)
 
     assert "Failed to create migration for 'error'" in str(exc_info.value)
     assert exc_info.value.adapter == "error"
@@ -267,9 +253,7 @@ def migration_error_adapter():
             )
 
         @classmethod
-        def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             raise MigrationCreationError(
                 "Direct creation error",
                 message_text=message,

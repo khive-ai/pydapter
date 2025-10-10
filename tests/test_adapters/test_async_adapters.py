@@ -25,9 +25,7 @@ def skip_if_pg(adapter_key):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("adapter_key", list(ASYNC_KEYS))
-async def test_async_roundtrip(
-    async_sample, adapter_key, pg_url, mongo_url, qdrant_url
-):
+async def test_async_roundtrip(async_sample, adapter_key, pg_url, mongo_url, qdrant_url):
     skip_if_pg(adapter_key)
     """Test roundtrip serialization/deserialization for async adapters."""
     adapter_cls = ASYNC_KEYS[adapter_key]

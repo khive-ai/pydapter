@@ -76,9 +76,7 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
     ):
         try:
             # Validate only one engine parameter is provided
-            engine_params = sum(
-                ["engine" in obj, "dsn" in obj, "dsn" in kw, "engine_url" in obj]
-            )
+            engine_params = sum(["engine" in obj, "dsn" in obj, "dsn" in kw, "engine_url" in obj])
 
             if engine_params > 1:
                 raise AdapterValidationError(

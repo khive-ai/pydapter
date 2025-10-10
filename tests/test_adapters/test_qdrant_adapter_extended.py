@@ -4,8 +4,8 @@ Extended tests for Qdrant adapter functionality.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.qdrant_ import QdrantAdapter
@@ -59,9 +59,7 @@ class TestQdrantAdapterExtended:
             mock_qdrant_client.assert_called_once_with(":memory:")
 
     @patch("pydapter.extras.qdrant_.QdrantClient")
-    def test_qdrant_to_obj_with_custom_vector_field(
-        self, mock_qdrant_client, qdrant_model_factory
-    ):
+    def test_qdrant_to_obj_with_custom_vector_field(self, mock_qdrant_client, qdrant_model_factory):
         """Test conversion from model to Qdrant point with custom vector field."""
         # Create a model with a custom vector field
         model = qdrant_model_factory(
@@ -104,9 +102,7 @@ class TestQdrantAdapterExtended:
         assert payload["value"] == 42.5
 
     @patch("pydapter.extras.qdrant_.QdrantClient")
-    def test_qdrant_to_obj_with_custom_id_field(
-        self, mock_qdrant_client, qdrant_model_factory
-    ):
+    def test_qdrant_to_obj_with_custom_id_field(self, mock_qdrant_client, qdrant_model_factory):
         """Test conversion from model to Qdrant point with custom ID field."""
         # Create a model with a custom field that will be used as ID
         model = qdrant_model_factory(
@@ -133,9 +129,7 @@ class TestQdrantAdapterExtended:
         assert points_arg[0].id == "custom_id_value"  # ID should be the name value
 
     @patch("pydapter.extras.qdrant_.QdrantClient")
-    def test_qdrant_to_obj_multiple_items(
-        self, mock_qdrant_client, qdrant_model_factory
-    ):
+    def test_qdrant_to_obj_multiple_items(self, mock_qdrant_client, qdrant_model_factory):
         """Test conversion from multiple models to Qdrant points."""
         # Create multiple models
         model1 = qdrant_model_factory(id=1, name="test1", value=42.5)
@@ -159,9 +153,7 @@ class TestQdrantAdapterExtended:
         assert points_arg[1].id == 2
 
     @patch("pydapter.extras.qdrant_.QdrantClient")
-    def test_qdrant_from_obj_with_custom_parameters(
-        self, mock_qdrant_client, qdrant_sample
-    ):
+    def test_qdrant_from_obj_with_custom_parameters(self, mock_qdrant_client, qdrant_sample):
         """Test conversion from Qdrant search results to model with custom parameters."""
         # Setup mock client and search results
         mock_client = MagicMock()

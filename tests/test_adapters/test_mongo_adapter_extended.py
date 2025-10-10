@@ -4,8 +4,8 @@ Extended tests for MongoDB adapter functionality.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.mongo_ import MongoAdapter
@@ -43,9 +43,7 @@ class TestMongoAdapterExtended:
         mock_client = MagicMock()
 
         # Patch the _client method to return our mock
-        with patch.object(
-            MongoAdapter, "_client", return_value=mock_client
-        ) as mock_client_method:
+        with patch.object(MongoAdapter, "_client", return_value=mock_client) as mock_client_method:
             # Call the method directly to test it
             client = mock_client_method("mongodb://localhost:27017")
 
@@ -236,9 +234,7 @@ class TestMongoAdapterExtended:
             )
 
             # Verify the client was created with the custom URL
-            mock_client_method.assert_called_once_with(
-                "mongodb://user:pass@localhost:27017/admin"
-            )
+            mock_client_method.assert_called_once_with("mongodb://user:pass@localhost:27017/admin")
 
             # Verify the correct database and collection were accessed
             mock_client.__getitem__.assert_called_once_with("custom_db")

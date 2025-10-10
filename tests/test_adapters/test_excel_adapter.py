@@ -4,8 +4,8 @@ Tests for Excel adapter functionality.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.exceptions import AdapterError
@@ -112,9 +112,7 @@ class TestExcelAdapterFunctionality:
 
             # Test from_obj with many=False
             model_cls = excel_sample.__class__
-            result = model_cls.adapt_from(
-                {"path": "test.xlsx"}, obj_key="xlsx", many=False
-            )
+            result = model_cls.adapt_from({"path": "test.xlsx"}, obj_key="xlsx", many=False)
 
             # Verify the result
             assert isinstance(result, model_cls)

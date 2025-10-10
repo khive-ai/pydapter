@@ -4,13 +4,13 @@ Neo4j adapter (requires `neo4j`).
 
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
+import re
 from typing import TypeVar
 
 import neo4j
-import neo4j.exceptions
 from neo4j import GraphDatabase
+import neo4j.exceptions
 from pydantic import BaseModel, ValidationError
 
 from ..core import Adapter
@@ -125,9 +125,7 @@ class Neo4jAdapter(Adapter[T]):
         try:
             # Validate required parameters
             if "url" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'url'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'url'", data=obj)
 
             # Create driver
             auth = obj.get("auth")
@@ -185,10 +183,7 @@ class Neo4jAdapter(Adapter[T]):
             # Convert rows to model instances
             try:
                 if many:
-                    return [
-                        getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {}))
-                        for r in rows
-                    ]
+                    return [getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {})) for r in rows]
                 return getattr(subj_cls, adapt_meth)(rows[0], **(adapt_kw or {}))
             except ValidationError as e:
                 raise AdapterValidationError(
@@ -252,9 +247,7 @@ class Neo4jAdapter(Adapter[T]):
                             )
 
                         # Prepare and validate Cypher query
-                        cypher = (
-                            f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
-                        )
+                        cypher = f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
                         cls._validate_cypher(cypher)
 
                         # Execute query

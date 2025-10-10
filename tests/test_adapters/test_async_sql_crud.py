@@ -2,16 +2,16 @@
 Tests for async SQL adapter CRUD operations.
 """
 
+from datetime import datetime
 import os
 
 # Import the adapters
 import sys
-from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from pydantic import BaseModel
 import pytest
 import pytest_asyncio
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import create_async_engine
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/src")
@@ -83,9 +83,7 @@ class TestAsyncSQLAdapterCRUD:
         """Test INSERT operation."""
         test_data = TestModel(name="John Doe", email="john@example.com", age=30)
 
-        result = await AsyncSQLAdapter.to_obj(
-            test_data, engine=test_engine, table="test_table"
-        )
+        result = await AsyncSQLAdapter.to_obj(test_data, engine=test_engine, table="test_table")
 
         assert result == {"inserted_count": 1}
 
@@ -202,9 +200,7 @@ class TestAsyncSQLAdapterCRUD:
         assert result["updated_count"] == 0
 
         # Update via upsert
-        updated_user = TestModel(
-            name="Alice Updated", email="alice@example.com", age=26
-        )
+        updated_user = TestModel(name="Alice Updated", email="alice@example.com", age=26)
         result = await AsyncSQLAdapter.to_obj(
             updated_user,
             engine=test_engine,
@@ -294,9 +290,7 @@ class TestAsyncSQLAdapterCRUD:
             created_at=None,  # Should be excluded
         )
 
-        result = await AsyncSQLAdapter.to_obj(
-            user, engine=test_engine, table="test_table"
-        )
+        result = await AsyncSQLAdapter.to_obj(user, engine=test_engine, table="test_table")
         assert result == {"inserted_count": 1}
 
         # Verify the insert worked (would fail if None was included for id)
@@ -352,9 +346,7 @@ class TestAsyncPostgresAdapter:
     async def test_dsn_conversion(self):
         """Test PostgreSQL DSN format conversion."""
         # Mock the parent class from_obj
-        with patch.object(
-            AsyncSQLAdapter, "from_obj", new_callable=AsyncMock
-        ) as mock_from_obj:
+        with patch.object(AsyncSQLAdapter, "from_obj", new_callable=AsyncMock) as mock_from_obj:
             mock_from_obj.return_value = []
 
             # Test with PostgreSQL format (should be converted)
@@ -372,9 +364,7 @@ class TestAsyncPostgresAdapter:
     @pytest.mark.asyncio
     async def test_backward_compatibility_engine_url(self):
         """Test backward compatibility with engine_url parameter."""
-        with patch.object(
-            AsyncSQLAdapter, "from_obj", new_callable=AsyncMock
-        ) as mock_from_obj:
+        with patch.object(AsyncSQLAdapter, "from_obj", new_callable=AsyncMock) as mock_from_obj:
             mock_from_obj.return_value = []
 
             # Test with legacy engine_url parameter

@@ -1,7 +1,7 @@
 from typing import Any
 
-import pytest
 from pydantic import BaseModel, Field
+import pytest
 
 # Try to import pgvector, skip tests if not available
 try:

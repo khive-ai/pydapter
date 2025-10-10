@@ -8,11 +8,11 @@ resource management.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 import json
+from typing import Any, TypeVar
 import urllib.parse
 import uuid
-from collections.abc import Sequence
-from typing import Any, TypeVar
 
 import aiohttp
 from pydantic import BaseModel, ValidationError
@@ -243,9 +243,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
 
                         # Add object
                         try:
-                            async with session.post(
-                                f"{url}/v1/objects", json=payload
-                            ) as resp:
+                            async with session.post(f"{url}/v1/objects", json=payload) as resp:
                                 if resp.status not in (200, 201):
                                     error_text = await resp.text()
                                     raise QueryError(
@@ -323,13 +321,9 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
         try:
             # Validate required parameters
             if "class_name" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'class_name'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'class_name'", data=obj)
             if "query_vector" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'query_vector'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'query_vector'", data=obj)
 
             # Prepare GraphQL query
             url = obj.get("url", "http://localhost:8080")
@@ -365,9 +359,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
             try:
                 async with aiohttp.ClientSession() as session:
                     try:
-                        async with session.post(
-                            f"{url}/v1/graphql", json=query
-                        ) as resp:
+                        async with session.post(f"{url}/v1/graphql", json=query) as resp:
                             if resp.status != 200:
                                 error_text = await resp.text()
                                 raise QueryError(
@@ -384,11 +376,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
 
                 # Extract data
                 # Handle both JSON response formats
-                if (
-                    "data" in data
-                    and "Get" in data["data"]
-                    and class_name in data["data"]["Get"]
-                ):
+                if "data" in data and "Get" in data["data"] and class_name in data["data"]["Get"]:
                     # Standard GraphQL response format
                     weaviate_objects = data["data"]["Get"][class_name]
 
@@ -407,9 +395,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                             # We need to check if this is a UUID we created with our namespace
                             try:
                                 # Check if this is a UUID we created
-                                namespace = uuid.UUID(
-                                    "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-                                )
+                                namespace = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
                                 # Try to extract the original ID by checking the name used to create the UUID
                                 # This is a bit of a hack, but it works for our use case
                                 # We can't directly extract the name from a UUID, but we can check if it matches
@@ -453,9 +439,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
 
                 elif "errors" in data:
                     # GraphQL error response
-                    error_msg = data.get("errors", [{}])[0].get(
-                        "message", "Unknown GraphQL error"
-                    )
+                    error_msg = data.get("errors", [{}])[0].get("message", "Unknown GraphQL error")
 
                     # Check if the error is about a non-existent class
                     if "Cannot query field" in error_msg and class_name in error_msg:
@@ -490,10 +474,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                 # Convert to model instances
                 try:
                     if many:
-                        return [
-                            getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {}))
-                            for r in recs
-                        ]
+                        return [getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {})) for r in recs]
                     return getattr(subj_cls, adapt_meth)(recs[0], **(adapt_kw or {}))
                 except ValidationError as e:
                     raise AdapterValidationError(

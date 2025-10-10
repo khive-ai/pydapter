@@ -23,9 +23,8 @@ def test_check_dependency_not_installed():
         check_dependency("non_existent_package_12345", "test")
 
     # Check that the error message contains the expected text
-    assert (
-        "The 'test' feature requires the 'non_existent_package_12345' package"
-        in str(excinfo.value)
+    assert "The 'test' feature requires the 'non_existent_package_12345' package" in str(
+        excinfo.value
     )
     assert "pip install pydapter[test]" in str(excinfo.value)
 
@@ -56,7 +55,7 @@ def test_lazy_import_migrations():
         assert True
     except ImportError:
         # This should not fail as migrations core has no additional dependencies
-        assert False, "Migration import failed unexpectedly"
+        raise AssertionError("Migration import failed unexpectedly")
 
 
 def test_lazy_import_migrations_sql():

@@ -21,9 +21,7 @@ def is_weaviate_available():
     """
     try:
         # Use importlib.util to check if the module is available without importing it
-        if importlib.util.find_spec("weaviate") is None:
-            return False
-        return True
+        return importlib.util.find_spec("weaviate") is not None
     except (ImportError, AttributeError):
         return False
 
@@ -53,9 +51,7 @@ pytestmark = [
 ]
 
 # Skip integration tests that require a running Weaviate server
-skip_weaviate_integration = pytest.mark.skip(
-    reason="Requires a running Weaviate server"
-)
+skip_weaviate_integration = pytest.mark.skip(reason="Requires a running Weaviate server")
 
 
 @pytest.fixture
@@ -220,9 +216,7 @@ class TestWeaviateIntegration:
         VectorModel.register_adapter(WeaviateAdapter)
 
         # Create multiple test instances
-        models = [
-            VectorModel(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)
-        ]
+        models = [VectorModel(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)]
 
         # Store batch in database
         for model in models:
@@ -385,9 +379,7 @@ class TestAsyncWeaviateIntegration:
         model_cls.register_async_adapter(AsyncWeaviateAdapter)
 
         # Create multiple test instances
-        models = [
-            model_cls(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)
-        ]
+        models = [model_cls(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)]
 
         # Store batch in database
         for model in models:

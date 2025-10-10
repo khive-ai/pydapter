@@ -11,8 +11,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TypeVar
 
-import toml
 from pydantic import BaseModel, ValidationError
+import toml
 
 from ..core import Adapter
 from ..exceptions import ParseError

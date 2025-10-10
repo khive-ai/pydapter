@@ -1,5 +1,5 @@
-import pytest
 from pydantic import BaseModel, Field
+import pytest
 from sqlalchemy import inspect
 
 # Try to import pgvector, skip tests if not available
@@ -106,9 +106,7 @@ def test_create_index():
     assert ivf_index.kwargs["postgresql_with"] == {"lists": 100}
 
     # Test exact index
-    exact_index = PGVectorModelAdapter.create_index(
-        EmbSQL, "embedding", index_type="exact"
-    )
+    exact_index = PGVectorModelAdapter.create_index(EmbSQL, "embedding", index_type="exact")
 
     assert exact_index.name == "idx_embedding"
     assert exact_index.columns[0].name == "embedding"
@@ -165,9 +163,7 @@ def test_batch_insert(mocker):
     mock_session = mocker.Mock()
 
     # Create test data
-    items = [
-        {"text": f"Item {i}", "embedding": [float(i)] * 1536} for i in range(1, 2501)
-    ]
+    items = [{"text": f"Item {i}", "embedding": [float(i)] * 1536} for i in range(1, 2501)]
 
     # Call batch_insert
     PGVectorModelAdapter.batch_insert(mock_session, EmbSQL, items, batch_size=1000)

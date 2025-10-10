@@ -190,20 +190,16 @@ class AdapterRegistry:
             AdapterError: If the adaptation process fails
         """
         try:
-            result = self.get(obj_key).from_obj(
-                subj_cls, obj, adapt_meth=adapt_meth, **kw
-            )
+            result = self.get(obj_key).from_obj(subj_cls, obj, adapt_meth=adapt_meth, **kw)
             if result is None:
                 raise AdapterError(f"Adapter {obj_key} returned None", adapter=obj_key)
             return result
 
         except Exception as exc:
-            if isinstance(exc, AdapterError) or isinstance(exc, PYDAPTER_PYTHON_ERRORS):
+            if isinstance(exc, AdapterError | PYDAPTER_PYTHON_ERRORS):
                 raise
 
-            raise AdapterError(
-                f"Error adapting from {obj_key}", original_error=str(exc)
-            ) from exc
+            raise AdapterError(f"Error adapting from {obj_key}", original_error=str(exc)) from exc
 
     def adapt_to(
         self, subj: Any, *, obj_key: str, adapt_meth: str = "model_dump", **kw: Any
@@ -231,12 +227,10 @@ class AdapterRegistry:
             return result
 
         except Exception as exc:
-            if isinstance(exc, AdapterError) or isinstance(exc, PYDAPTER_PYTHON_ERRORS):
+            if isinstance(exc, AdapterError | PYDAPTER_PYTHON_ERRORS):
                 raise
 
-            raise AdapterError(
-                f"Error adapting to {obj_key}", original_error=str(exc)
-            ) from exc
+            raise AdapterError(f"Error adapting to {obj_key}", original_error=str(exc)) from exc
 
 
 # ----------------------------------------------------------------- Adaptable
@@ -309,13 +303,9 @@ class Adaptable:
         Returns:
             Model instance(s) created from the source data
         """
-        return cls._registry().adapt_from(
-            cls, obj, obj_key=obj_key, adapt_meth=adapt_meth, **kw
-        )
+        return cls._registry().adapt_from(cls, obj, obj_key=obj_key, adapt_meth=adapt_meth, **kw)
 
-    def adapt_to(
-        self, *, obj_key: str, adapt_meth: str = "model_dump", **kw: Any
-    ) -> Any:
+    def adapt_to(self, *, obj_key: str, adapt_meth: str = "model_dump", **kw: Any) -> Any:
         """
         Convert this model instance to external data format.
 
@@ -327,6 +317,4 @@ class Adaptable:
         Returns:
             Data in the specified external format
         """
-        return self._registry().adapt_to(
-            self, obj_key=obj_key, adapt_meth=adapt_meth, **kw
-        )
+        return self._registry().adapt_to(self, obj_key=obj_key, adapt_meth=adapt_meth, **kw)

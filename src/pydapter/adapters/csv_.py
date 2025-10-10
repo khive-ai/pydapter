@@ -115,10 +115,7 @@ class CsvAdapter(Adapter[T]):
                     escapechar = str(csv_kwargs.pop("escapechar"))
                 if "quoting" in csv_kwargs:
                     quoting_value = csv_kwargs.pop("quoting")
-                    if isinstance(quoting_value, int):
-                        quoting = quoting_value
-                    else:
-                        quoting = csv.QUOTE_MINIMAL
+                    quoting = quoting_value if isinstance(quoting_value, int) else csv.QUOTE_MINIMAL
 
                 reader = csv.DictReader(
                     io.StringIO(text),
@@ -157,9 +154,7 @@ class CsvAdapter(Adapter[T]):
                 result = []
                 for i, row in enumerate(rows):
                     try:
-                        result.append(
-                            getattr(subj_cls, adapt_meth)(row, **(adapt_kw or {}))
-                        )
+                        result.append(getattr(subj_cls, adapt_meth)(row, **(adapt_kw or {})))
                     except ValidationError as e:
                         raise AdapterValidationError(
                             f"Validation error in row {i + 1}: {e}",
@@ -237,10 +232,7 @@ class CsvAdapter(Adapter[T]):
                 escapechar = str(csv_kwargs.pop("escapechar"))
             if "quoting" in csv_kwargs:
                 quoting_value = csv_kwargs.pop("quoting")
-                if isinstance(quoting_value, int):
-                    quoting = quoting_value
-                else:
-                    quoting = csv.QUOTE_MINIMAL
+                quoting = quoting_value if isinstance(quoting_value, int) else csv.QUOTE_MINIMAL
 
             writer = csv.DictWriter(
                 buf,
@@ -251,9 +243,7 @@ class CsvAdapter(Adapter[T]):
                 quoting=quoting,
             )
             writer.writeheader()
-            writer.writerows(
-                [getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items]
-            )
+            writer.writerows([getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items])
             return buf.getvalue()
 
         except Exception as e:

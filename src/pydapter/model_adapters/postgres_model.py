@@ -1,10 +1,9 @@
 # postgres_model.py
 from __future__ import annotations
 
-import ipaddress
-from collections.abc import Callable
 from datetime import datetime
-from typing import Any, get_args, get_origin
+import ipaddress
+from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 from pydantic import BaseModel
 from sqlalchemy import Column, String
@@ -20,12 +19,15 @@ from sqlalchemy.dialects.postgresql import (
 
 # Note: BOX, LINE, POINT are not directly available in SQLAlchemy
 # We'll use String as a fallback for geometric types
-from sqlalchemy.orm import DeclarativeBase
-
 from pydapter.exceptions import TypeConversionError
 
 from .sql_model import SQLModelAdapter, create_base
 from .type_registry import TypeRegistry
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from sqlalchemy.orm import DeclarativeBase
 
 
 class PostgresModelAdapter(SQLModelAdapter):
@@ -125,9 +127,7 @@ class PostgresModelAdapter(SQLModelAdapter):
         Returns:
             A tuple of (Column, converter_function)
         """
-        is_nullable = (
-            cls.is_optional(field_info.annotation) or not field_info.is_required()
-        )
+        is_nullable = cls.is_optional(field_info.annotation) or not field_info.is_required()
 
         if nested_model is not None and issubclass(nested_model, BaseModel):
             # For nested models, add validation to ensure proper serialization
@@ -151,9 +151,7 @@ class PostgresModelAdapter(SQLModelAdapter):
                 Column(
                     JSONB,
                     nullable=is_nullable,
-                    default=(
-                        field_info.default if field_info.default is not None else None
-                    ),
+                    default=(field_info.default if field_info.default is not None else None),
                 ),
                 validate_and_serialize,
             )
@@ -235,13 +233,8 @@ class PostgresModelAdapter(SQLModelAdapter):
                 if relationship_info:
                     if "relationship" in relationship_info:
                         relationships[name] = relationship_info["relationship"]
-                    if (
-                        "foreign_key" in relationship_info
-                        and relationship_info["foreign_key"]
-                    ):
-                        fk_name = relationship_info.get(
-                            "foreign_key_name", f"{name}_id"
-                        )
+                    if "foreign_key" in relationship_info and relationship_info["foreign_key"]:
+                        fk_name = relationship_info.get("foreign_key_name", f"{name}_id")
                         foreign_keys[fk_name] = relationship_info["foreign_key"]
                     continue
 
@@ -292,9 +285,7 @@ class PostgresModelAdapter(SQLModelAdapter):
                         # Handle Optional[Model]
                         args = get_args(anno)
                         non_none_args = [arg for arg in args if arg is not type(None)]
-                        if len(non_none_args) == 1 and issubclass(
-                            non_none_args[0], BaseModel
-                        ):
+                        if len(non_none_args) == 1 and issubclass(non_none_args[0], BaseModel):
                             nested_model = non_none_args[0]
 
                     column, converter = cls.handle_jsonb(name, info, nested_model)
@@ -313,9 +304,7 @@ class PostgresModelAdapter(SQLModelAdapter):
                     is_nullable = cls.is_optional(anno) or not info.is_required()
                     default = info.default if info.default is not None else None
 
-                    ns[name] = cls.handle_array(
-                        item_type, dimensions, is_nullable, default
-                    )
+                    ns[name] = cls.handle_array(item_type, dimensions, is_nullable, default)
                     continue
 
             # Handle list[X] as ARRAY by default
@@ -325,14 +314,10 @@ class PostgresModelAdapter(SQLModelAdapter):
                 default = info.default if info.default is not None else None
 
                 # Skip if this is a vector field (handled by PGVectorModelAdapter)
-                if item_type is float or (
+                if (item_type is float or (
                     isinstance(item_type, type) and issubclass(item_type, float)
-                ):
-                    if (
-                        hasattr(cls, "_python_type_for")
-                        and cls.__name__ == "PGVectorModelAdapter"
-                    ):
-                        continue
+                )) and hasattr(cls, "_python_type_for") and cls.__name__ == "PGVectorModelAdapter":
+                    continue
 
                 ns[name] = cls.handle_array(item_type, 1, is_nullable, default)
                 continue
@@ -373,10 +358,7 @@ class PostgresModelAdapter(SQLModelAdapter):
                     # Test if this is a timezone-aware datetime factory
                     try:
                         test_val = default()
-                        if (
-                            isinstance(test_val, datetime)
-                            and test_val.tzinfo is not None
-                        ):
+                        if isinstance(test_val, datetime) and test_val.tzinfo is not None:
                             # This is a timezone-aware datetime factory
                             # Use TIMESTAMPTZ for PostgreSQL
                             from sqlalchemy import DateTime

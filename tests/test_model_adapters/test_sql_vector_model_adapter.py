@@ -1,5 +1,5 @@
-import pytest
 from pydantic import BaseModel, Field
+import pytest
 from sqlalchemy import inspect
 
 # Try to import pgvector, skip tests if not available

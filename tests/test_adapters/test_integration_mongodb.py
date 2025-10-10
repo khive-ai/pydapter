@@ -2,8 +2,8 @@
 Integration tests for MongoDB adapter using TestContainers.
 """
 
-import pytest
 from pymongo import MongoClient
+import pytest
 
 from pydapter.exceptions import ConnectionError, ResourceError
 from pydapter.extras.mongo_ import MongoAdapter
@@ -21,9 +21,7 @@ def is_docker_available():
 
 
 # Skip tests if Docker is not available
-pytestmark = pytest.mark.skipif(
-    not is_docker_available(), reason="Docker is not available"
-)
+pytestmark = pytest.mark.skipif(not is_docker_available(), reason="Docker is not available")
 
 
 @pytest.fixture
@@ -42,9 +40,7 @@ def mongo_cleanup(mongo_url):
 class TestMongoIntegration:
     """Integration tests for MongoDB adapter."""
 
-    def test_mongodb_single_document(
-        self, mongo_url, sync_model_factory, mongo_cleanup
-    ):
+    def test_mongodb_single_document(self, mongo_url, sync_model_factory, mongo_cleanup):
         """Test MongoDB adapter with a single document."""
         # Create test instance
         test_model = sync_model_factory(id=43, name="test_mongo", value=56.78)
@@ -74,9 +70,7 @@ class TestMongoIntegration:
         assert retrieved.name == test_model.name
         assert retrieved.value == test_model.value
 
-    def test_mongodb_batch_operations(
-        self, mongo_url, sync_model_factory, mongo_cleanup
-    ):
+    def test_mongodb_batch_operations(self, mongo_url, sync_model_factory, mongo_cleanup):
         """Test batch operations with MongoDB."""
         model_cls = sync_model_factory(id=1, name="test", value=1.0).__class__
 
@@ -84,9 +78,7 @@ class TestMongoIntegration:
         model_cls.register_adapter(MongoAdapter)
 
         # Create multiple test instances
-        models = [
-            model_cls(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)
-        ]
+        models = [model_cls(id=i, name=f"batch_{i}", value=i * 1.5) for i in range(1, 11)]
 
         # Store batch in database
         MongoAdapter.to_obj(
@@ -126,9 +118,7 @@ class TestMongoIntegration:
                 collection="test_collection",
             )
 
-    def test_mongodb_resource_not_found(
-        self, mongo_url, sync_model_factory, mongo_cleanup
-    ):
+    def test_mongodb_resource_not_found(self, mongo_url, sync_model_factory, mongo_cleanup):
         """Test handling of resource not found errors."""
         model_cls = sync_model_factory(id=1, name="test", value=1.0).__class__
 
@@ -156,14 +146,10 @@ class TestMongoIntegration:
         model_cls.register_adapter(MongoAdapter)
 
         # Create multiple test instances with different values
-        models = [
-            model_cls(id=i, name=f"test_{i}", value=i * 10.0) for i in range(1, 11)
-        ]
+        models = [model_cls(id=i, name=f"test_{i}", value=i * 10.0) for i in range(1, 11)]
 
         # Store batch in database
-        MongoAdapter.to_obj(
-            models, url=mongo_url, db="testdb", collection="filter_test", many=True
-        )
+        MongoAdapter.to_obj(models, url=mongo_url, db="testdb", collection="filter_test", many=True)
 
         # Retrieve with filter (value > 50)
         retrieved = model_cls.adapt_from(

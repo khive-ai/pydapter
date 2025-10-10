@@ -1,5 +1,5 @@
-import ipaddress
 from datetime import date, datetime
+import ipaddress
 
 from pydantic import BaseModel, Field
 from sqlalchemy import String, inspect
@@ -30,12 +30,8 @@ class UserWithNestedSchema(BaseModel):
 
 class ArraySchema(BaseModel):
     id: int | None = None
-    int_array: list[int] = Field(
-        ..., json_schema_extra={"db_type": "array", "array_dimensions": 1}
-    )
-    str_array: list[str] = Field(
-        ..., json_schema_extra={"db_type": "array", "array_dimensions": 1}
-    )
+    int_array: list[int] = Field(..., json_schema_extra={"db_type": "array", "array_dimensions": 1})
+    str_array: list[str] = Field(..., json_schema_extra={"db_type": "array", "array_dimensions": 1})
     nested_array: list[list[float]] = Field(
         ..., json_schema_extra={"db_type": "array", "array_dimensions": 2}
     )
@@ -44,12 +40,8 @@ class ArraySchema(BaseModel):
 class RangeSchema(BaseModel):
     id: int | None = None
     int_range: tuple[int, int] = Field(..., json_schema_extra={"db_type": "int4range"})
-    date_range: tuple[date, date] = Field(
-        ..., json_schema_extra={"db_type": "daterange"}
-    )
-    ts_range: tuple[datetime, datetime] = Field(
-        ..., json_schema_extra={"db_type": "tsrange"}
-    )
+    date_range: tuple[date, date] = Field(..., json_schema_extra={"db_type": "daterange"})
+    ts_range: tuple[datetime, datetime] = Field(..., json_schema_extra={"db_type": "tsrange"})
 
 
 class NetworkSchema(BaseModel):
@@ -62,12 +54,8 @@ class NetworkSchema(BaseModel):
 class GeometricSchema(BaseModel):
     id: int | None = None
     point: tuple[float, float] = Field(..., json_schema_extra={"db_type": "point"})
-    line: tuple[float, float, float, float] = Field(
-        ..., json_schema_extra={"db_type": "line"}
-    )
-    box: tuple[float, float, float, float] = Field(
-        ..., json_schema_extra={"db_type": "box"}
-    )
+    line: tuple[float, float, float, float] = Field(..., json_schema_extra={"db_type": "line"})
+    box: tuple[float, float, float, float] = Field(..., json_schema_extra={"db_type": "box"})
 
 
 def test_jsonb_with_nested_models():
@@ -218,9 +206,7 @@ def test_handle_jsonb():
     assert result["zip_code"] == "12345"
 
     # Test with a dictionary
-    dict_result = converter(
-        {"street": "456 Oak St", "city": "Othertown", "zip_code": "67890"}
-    )
+    dict_result = converter({"street": "456 Oak St", "city": "Othertown", "zip_code": "67890"})
 
     assert isinstance(dict_result, dict)
     assert dict_result["street"] == "456 Oak St"

@@ -4,8 +4,8 @@ Tests for Async PostgreSQL adapter functionality.
 
 from unittest.mock import patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
@@ -61,9 +61,7 @@ class TestAsyncPostgresAdapterFunctionality:
     async def test_async_postgres_to_obj(self, mock_sa, async_postgres_sample):
         """Test conversion from model to Async PostgreSQL record."""
         # We need to patch the entire Async PostgreSQL adapter's to_obj method
-        with patch(
-            "pydapter.extras.async_postgres_.AsyncPostgresAdapter.to_obj"
-        ) as mock_to_obj:
+        with patch("pydapter.extras.async_postgres_.AsyncPostgresAdapter.to_obj") as mock_to_obj:
             # Configure the mock to return a Async PostgreSQL record
             expected_record = {"id": 1, "name": "test", "value": 42.5}
             mock_to_obj.return_value = expected_record
@@ -86,9 +84,7 @@ class TestAsyncPostgresAdapterFunctionality:
             "pydapter.extras.async_postgres_.AsyncPostgresAdapter.from_obj"
         ) as mock_from_obj:
             # Configure the mock to return a model instance
-            expected_model = async_postgres_sample.__class__(
-                id=1, name="test", value=42.5
-            )
+            expected_model = async_postgres_sample.__class__(id=1, name="test", value=42.5)
             mock_from_obj.return_value = [expected_model]
 
             # Create a mock Async PostgreSQL record
@@ -114,9 +110,7 @@ class TestAsyncPostgresAdapterFunctionality:
             "pydapter.extras.async_postgres_.AsyncPostgresAdapter.from_obj"
         ) as mock_from_obj:
             # Configure the mock to return a model instance
-            expected_model = async_postgres_sample.__class__(
-                id=1, name="test", value=42.5
-            )
+            expected_model = async_postgres_sample.__class__(id=1, name="test", value=42.5)
             mock_from_obj.return_value = expected_model
 
             # Create a mock Async PostgreSQL record
@@ -124,9 +118,7 @@ class TestAsyncPostgresAdapterFunctionality:
 
             # Test from_obj with many=False
             model_cls = async_postgres_sample.__class__
-            result = await model_cls.adapt_from(
-                mock_record, obj_key="async_pg", many=False
-            )
+            result = await model_cls.adapt_from(mock_record, obj_key="async_pg", many=False)
 
             # Verify the result
             assert isinstance(result, model_cls)
@@ -140,14 +132,10 @@ class TestAsyncPostgresAdapterErrorHandling:
 
     @pytest.mark.asyncio
     @patch("pydapter.extras.async_sql_.sa")
-    async def test_async_postgres_connection_error(
-        self, mock_sa, async_postgres_sample
-    ):
+    async def test_async_postgres_connection_error(self, mock_sa, async_postgres_sample):
         """Test handling of Async PostgreSQL connection errors."""
         # Configure the mock to raise a connection error
-        mock_sa.ext.asyncio.create_async_engine.side_effect = Exception(
-            "Connection error"
-        )
+        mock_sa.ext.asyncio.create_async_engine.side_effect = Exception("Connection error")
 
         # We need to patch the entire Async PostgreSQL adapter's to_obj method to pass through the error
         with patch(

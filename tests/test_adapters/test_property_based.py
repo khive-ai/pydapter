@@ -48,9 +48,7 @@ class TestPropertyBasedAdapters:
         name=st.text(
             min_size=1,
             max_size=50,
-            alphabet=st.characters(
-                blacklist_categories=("Cc", "Cs")
-            ),  # Exclude control chars
+            alphabet=st.characters(blacklist_categories=("Cc", "Cs")),  # Exclude control chars
         ).filter(lambda x: "," not in x and "\n" not in x),
         value=st.floats(allow_nan=False, allow_infinity=False),
     )
@@ -117,9 +115,7 @@ class TestEdgeCases:
     @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
     @given(
         id=st.integers(min_value=-1000000, max_value=1000000),
-        value=st.floats(
-            min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False
-        ),
+        value=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False),
     )
     def test_adapter_extreme_values(self, id, value):
         """Test handling of extreme values in adapters."""

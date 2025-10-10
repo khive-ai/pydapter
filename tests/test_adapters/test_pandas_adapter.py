@@ -4,8 +4,8 @@ Tests for Pandas adapter functionality.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.pandas_ import DataFrameAdapter
@@ -78,9 +78,7 @@ class TestPandasAdapterFunctionality:
     def test_pandas_from_obj(self, mock_pd, pandas_sample):
         """Test conversion from DataFrame to model."""
         # We need to patch the entire Pandas adapter's from_obj method
-        with patch(
-            "pydapter.extras.pandas_.DataFrameAdapter.from_obj"
-        ) as mock_from_obj:
+        with patch("pydapter.extras.pandas_.DataFrameAdapter.from_obj") as mock_from_obj:
             # Configure the mock to return a model instance
             expected_model = pandas_sample.__class__(id=1, name="test", value=42.5)
             mock_from_obj.return_value = [expected_model]
@@ -103,9 +101,7 @@ class TestPandasAdapterFunctionality:
     def test_pandas_from_obj_single(self, mock_pd, pandas_sample):
         """Test conversion from DataFrame to model with many=False."""
         # We need to patch the entire Pandas adapter's from_obj method
-        with patch(
-            "pydapter.extras.pandas_.DataFrameAdapter.from_obj"
-        ) as mock_from_obj:
+        with patch("pydapter.extras.pandas_.DataFrameAdapter.from_obj") as mock_from_obj:
             # Configure the mock to return a model instance
             expected_model = pandas_sample.__class__(id=1, name="test", value=42.5)
             mock_from_obj.return_value = expected_model

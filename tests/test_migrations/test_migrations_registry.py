@@ -32,9 +32,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision123"
 
             @classmethod
@@ -72,9 +70,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision123"
 
             @classmethod
@@ -101,9 +97,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision456"
 
             @classmethod
@@ -141,9 +135,7 @@ class TestMigrationRegistry:
         with pytest.raises(AdapterNotFoundError) as exc_info:
             registry.get("nonexistent")
 
-        assert "No migration adapter registered for 'nonexistent'" in str(
-            exc_info.value
-        )
+        assert "No migration adapter registered for 'nonexistent'" in str(exc_info.value)
 
     def test_get_all_adapters(self):
         """Test getting all registered adapters."""
@@ -158,9 +150,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision123"
 
             @classmethod
@@ -187,9 +177,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision456"
 
             @classmethod
@@ -231,9 +219,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision123"
 
             @classmethod
@@ -272,9 +258,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision123"
 
             @classmethod
@@ -316,9 +300,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision123"
 
             @classmethod
@@ -357,9 +339,7 @@ class TestMigrationRegistry:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision123"
 
             @classmethod

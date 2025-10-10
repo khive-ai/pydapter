@@ -82,9 +82,7 @@ class DataFrameAdapter(Adapter[T]):
                 getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {}))
                 for r in obj.to_dict(orient="records")
             ]
-        return getattr(subj_cls, adapt_meth)(
-            obj.iloc[0].to_dict(**kw), **(adapt_kw or {})
-        )
+        return getattr(subj_cls, adapt_meth)(obj.iloc[0].to_dict(**kw), **(adapt_kw or {}))
 
     @classmethod
     def to_obj(
@@ -110,9 +108,7 @@ class DataFrameAdapter(Adapter[T]):
             pandas DataFrame with model data
         """
         items = subj if isinstance(subj, list) else [subj]
-        return pd.DataFrame(
-            [getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items], **kw
-        )
+        return pd.DataFrame([getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items], **kw)
 
 
 class SeriesAdapter(Adapter[T]):

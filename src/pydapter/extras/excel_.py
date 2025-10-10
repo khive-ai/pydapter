@@ -5,8 +5,7 @@ Excel adapter (requires pandas + xlsxwriter engine).
 from __future__ import annotations
 
 import io
-from pathlib import Path
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pandas as pd
 from pydantic import BaseModel
@@ -14,6 +13,9 @@ from pydantic import BaseModel
 from ..core import Adapter
 from ..exceptions import AdapterError, ResourceError
 from .pandas_ import DataFrameAdapter
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -99,9 +101,7 @@ class ExcelAdapter(Adapter[T]):
                 f"Error adapting from xlsx (original_error='{e}')", adapter="xlsx"
             ) from e
         except Exception as e:
-            raise AdapterError(
-                f"Unexpected error in Excel adapter: {e}", adapter="xlsx"
-            ) from e
+            raise AdapterError(f"Unexpected error in Excel adapter: {e}", adapter="xlsx") from e
 
     # outgoing
     @classmethod

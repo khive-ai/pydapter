@@ -102,13 +102,8 @@ class JsonAdapter(Adapter[T]):
             try:
                 if many:
                     if not isinstance(data, list):
-                        raise AdapterValidationError(
-                            "Expected JSON array for many=True", data=data
-                        )
-                    return [
-                        getattr(subj_cls, adapt_meth)(i, **(adapt_kw or {}))
-                        for i in data
-                    ]
+                        raise AdapterValidationError("Expected JSON array for many=True", data=data)
+                    return [getattr(subj_cls, adapt_meth)(i, **(adapt_kw or {})) for i in data]
                 return getattr(subj_cls, adapt_meth)(data, **(adapt_kw or {}))
             except ValidationError as e:
                 raise AdapterValidationError(

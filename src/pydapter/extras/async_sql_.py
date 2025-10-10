@@ -4,20 +4,13 @@ Generic async SQL adapter - SQLAlchemy 2.x asyncio + asyncpg driver.
 
 from __future__ import annotations
 
-import sys
-
-if sys.version_info < (3, 11):
-    from typing_extensions import NotRequired, Required, TypedDict
-else:
-    from typing import NotRequired, Required, TypedDict
-
 from collections.abc import Sequence
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal, NotRequired, Required, TypedDict, TypeVar
 
-import sqlalchemy as sa
-import sqlalchemy.exc as sa_exc
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
+import sqlalchemy as sa
+import sqlalchemy.exc as sa_exc
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.sql import text
 
@@ -195,9 +188,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
             # The actual schema validation happens at query execution
             return sa.Table(name, meta)
         except Exception as e:
-            raise ResourceError(
-                f"Error accessing table '{name}': {e}", resource=name
-            ) from e
+            raise ResourceError(f"Error accessing table '{name}': {e}", resource=name) from e
 
     # incoming
     @classmethod
@@ -258,9 +249,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
             if operation == "select":
                 # Standard SELECT operation (existing behavior)
                 if "table" not in obj:
-                    raise ValidationError(
-                        "Missing required parameter 'table'", data=obj
-                    )
+                    raise ValidationError("Missing required parameter 'table'", data=obj)
 
                 try:
                     async with eng.begin() as conn:
@@ -310,10 +299,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                 # Convert rows to model instances (rows are already dicts from run_sync)
                 try:
                     if many:
-                        return [
-                            getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {}))
-                            for r in rows
-                        ]
+                        return [getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {})) for r in rows]
                     return getattr(subj_cls, adapt_meth)(rows[0], **(adapt_kw or {}))
                 except PydanticValidationError as e:
                     raise ValidationError(
@@ -384,21 +370,13 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                             try:
                                 # Convert Row objects to dicts
                                 records = [
-                                    (
-                                        dict(r._mapping)
-                                        if hasattr(r, "_mapping")
-                                        else dict(r)
-                                    )
+                                    (dict(r._mapping) if hasattr(r, "_mapping") else dict(r))
                                     for r in rows
                                 ]
-                                if (
-                                    subj_cls is not dict
-                                ):  # Only convert if not using generic dict
+                                if subj_cls is not dict:  # Only convert if not using generic dict
                                     if many:
                                         return [
-                                            getattr(subj_cls, adapt_meth)(
-                                                r, **(adapt_kw or {})
-                                            )
+                                            getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {}))
                                             for r in records
                                         ]
                                     return getattr(subj_cls, adapt_meth)(
@@ -409,20 +387,14 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                             except (PydanticValidationError, TypeError):
                                 # If conversion fails, return raw dicts
                                 records = [
-                                    (
-                                        dict(r._mapping)
-                                        if hasattr(r, "_mapping")
-                                        else dict(r)
-                                    )
+                                    (dict(r._mapping) if hasattr(r, "_mapping") else dict(r))
                                     for r in rows
                                 ]
                                 return records if many else records[0]
                         else:
                             # For DDL, procedures, or when fetch_results=False
                             return {
-                                "affected_rows": (
-                                    result.rowcount if result.rowcount != -1 else 0
-                                )
+                                "affected_rows": (result.rowcount if result.rowcount != -1 else 0)
                             }
 
                 except sa_exc.SQLAlchemyError as e:
@@ -521,8 +493,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                             tbl = sa.Table(table, meta, autoload_with=sync_conn)
                             # Filter out None values from rows to let DB handle defaults
                             clean_rows = [
-                                {k: v for k, v in row.items() if v is not None}
-                                for row in rows
+                                {k: v for k, v in row.items() if v is not None} for row in rows
                             ]
                             sync_conn.execute(sa.insert(tbl), clean_rows)
                             return len(clean_rows)
@@ -543,9 +514,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                     raise ValidationError("UPDATE operation requires 'where' parameter")
 
                 where_conditions = kw["where"]
-                update_data = [
-                    getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items
-                ]
+                update_data = [getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items]
 
                 try:
                     async with eng.begin() as conn:
@@ -558,9 +527,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
                             for data in update_data:
                                 # Filter out None values and don't update primary keys
                                 clean_data = {
-                                    k: v
-                                    for k, v in data.items()
-                                    if v is not None and k != "id"
+                                    k: v for k, v in data.items() if v is not None and k != "id"
                                 }
                                 if not clean_data:
                                     continue
@@ -589,9 +556,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
             elif operation == "upsert":
                 # UPSERT operation (basic implementation, PostgreSQL adapter has better version)
                 if "conflict_columns" not in kw:
-                    raise ValidationError(
-                        "UPSERT operation requires 'conflict_columns' parameter"
-                    )
+                    raise ValidationError("UPSERT operation requires 'conflict_columns' parameter")
 
                 # For basic SQL adapter, implement as INSERT with error handling
                 # PostgreSQL adapter will override with proper ON CONFLICT
@@ -610,9 +575,7 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
 
                             for row in rows:
                                 # Clean the row data - remove None values
-                                clean_row = {
-                                    k: v for k, v in row.items() if v is not None
-                                }
+                                clean_row = {k: v for k, v in row.items() if v is not None}
 
                                 # Check if record exists
                                 select_stmt = sa.select(tbl)
@@ -626,16 +589,13 @@ class AsyncSQLAdapter(AsyncAdapter[T]):
 
                                 if existing:
                                     # Update existing record - don't update primary keys
-                                    update_data = {
-                                        k: v for k, v in clean_row.items() if k != "id"
-                                    }
+                                    update_data = {k: v for k, v in clean_row.items() if k != "id"}
                                     if update_data:
                                         update_stmt = sa.update(tbl)
                                         for col in conflict_columns:
                                             if col in clean_row:
                                                 update_stmt = update_stmt.where(
-                                                    getattr(tbl.c, col)
-                                                    == clean_row[col]
+                                                    getattr(tbl.c, col) == clean_row[col]
                                                 )
                                         update_stmt = update_stmt.values(**update_data)
                                         sync_conn.execute(update_stmt)

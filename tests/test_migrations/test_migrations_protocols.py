@@ -21,9 +21,7 @@ def test_migration_protocol_interface():
             return None
 
         @classmethod
-        def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             return "revision123"
 
         @classmethod
@@ -63,9 +61,7 @@ def test_async_migration_protocol_interface():
             return None
 
         @classmethod
-        async def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        async def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             return "revision123"
 
         @classmethod
@@ -105,9 +101,7 @@ def test_migration_protocol_missing_methods():
             return None
 
         @classmethod
-        def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             return "revision123"
 
         # Missing upgrade, downgrade, get_current_revision, get_migration_history
@@ -129,9 +123,7 @@ def test_async_migration_protocol_missing_methods():
             return None
 
         @classmethod
-        async def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        async def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             return "revision123"
 
         # Missing upgrade, downgrade, get_current_revision, get_migration_history
@@ -153,9 +145,7 @@ def test_migration_protocol_missing_attribute():
             return None
 
         @classmethod
-        def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             return "revision123"
 
         @classmethod
@@ -191,9 +181,7 @@ def test_async_migration_protocol_missing_attribute():
             return None
 
         @classmethod
-        async def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        async def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             return "revision123"
 
         @classmethod
@@ -277,9 +265,7 @@ async def test_async_migration_protocol_method_calls():
             return None
 
         @classmethod
-        async def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        async def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             cls.create_called = True
             return "revision123"
 
@@ -346,9 +332,7 @@ def test_migration_protocol_method_calls():
             return None
 
         @classmethod
-        def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             cls.create_called = True
             return "revision123"
 

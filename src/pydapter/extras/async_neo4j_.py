@@ -8,12 +8,12 @@ resource management.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
+import re
 
 import neo4j
-import neo4j.exceptions
 from neo4j import AsyncGraphDatabase
+import neo4j.exceptions
 from pydantic import ValidationError
 
 from ..async_core import AsyncAdapter, T
@@ -155,9 +155,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         try:
             # Validate required parameters
             if "url" not in obj:
-                raise AdapterValidationError(
-                    "Missing required parameter 'url'", data=obj
-                )
+                raise AdapterValidationError("Missing required parameter 'url'", data=obj)
 
             # Create driver
             auth = obj.get("auth")
@@ -194,7 +192,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                                 # Fallback: convert entire record to dict
                                 row_dict = {}
                                 try:
-                                    for key in record.keys():
+                                    for key in record:
                                         value = record[key]
                                         if hasattr(value, "_properties"):
                                             row_dict[key] = dict(value._properties)
@@ -242,12 +240,9 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                     try:
                         if many:
                             return [
-                                getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {}))
-                                for r in rows
+                                getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {})) for r in rows
                             ]
-                        return getattr(subj_cls, adapt_meth)(
-                            rows[0], **(adapt_kw or {})
-                        )
+                        return getattr(subj_cls, adapt_meth)(rows[0], **(adapt_kw or {}))
                     except ValidationError as e:
                         raise AdapterValidationError(
                             f"Validation error: {e}",
@@ -353,17 +348,13 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                             )
 
                         # Prepare and validate Cypher query
-                        cypher = (
-                            f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
-                        )
+                        cypher = f"MERGE (n:`{label}` {{{merge_on}: $val}}) SET n += $props"
                         cls._validate_cypher(cypher)
 
                         # Execute query
                         try:
                             # Execute the query - session.run() returns Result immediately (not awaitable)
-                            result = session.run(
-                                cypher, val=props[merge_on], props=props
-                            )
+                            result = session.run(cypher, val=props[merge_on], props=props)
                             # Consume the result to ensure it's executed
                             summary = await result.consume()
                             # Add to results
@@ -425,9 +416,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             ConnectionError: If connection to Neo4j fails
         """
         if not self.url:
-            raise ConnectionError(
-                "URL is required for Neo4j connection", adapter="async_neo4j"
-            )
+            raise ConnectionError("URL is required for Neo4j connection", adapter="async_neo4j")
 
         self._driver = await self._create_driver(self.url, auth=self.auth)
         try:
@@ -493,7 +482,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
             async for record in result:
                 # Convert record to dictionary with all returned values
                 row_dict = {}
-                for key in record.keys():
+                for key in record:
                     value = record[key]
                     # Handle Neo4j nodes/relationships by extracting properties
                     if hasattr(value, "_properties"):

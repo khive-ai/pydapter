@@ -159,9 +159,7 @@ class TestImplementedSyncAdapter:
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 return "revision123"
 
             @classmethod

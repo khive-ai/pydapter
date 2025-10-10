@@ -98,9 +98,7 @@ class ResourceError(AdapterError):
 class ConfigurationError(AdapterError):
     """Exception raised when adapter configuration is invalid."""
 
-    def __init__(
-        self, message: str, config: dict[str, Any] | None = None, **context: Any
-    ):
+    def __init__(self, message: str, config: dict[str, Any] | None = None, **context: Any):
         super().__init__(message, **context)
         self.config = config
 

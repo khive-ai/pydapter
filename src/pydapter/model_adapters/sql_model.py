@@ -1,10 +1,19 @@
 # sql_model_adapter.py
 from __future__ import annotations
 
-import types
-from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Annotated, Any, Optional, TypeVar, Union, cast, get_args, get_origin
+import types
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+    get_args,
+    get_origin,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, Field, create_model
@@ -28,6 +37,9 @@ from pydapter.exceptions import TypeConversionError
 
 from .type_registry import TypeRegistry
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 T = TypeVar("T", bound=BaseModel)
 
 
@@ -36,9 +48,7 @@ def create_base():
     """Create a new base class with a fresh metadata instance."""
 
     class _Base(DeclarativeBase):  # shared metadata so Alembic sees everything
-        metadata = MetaData(
-            schema="public"
-        )  # Using 'schema' here is correct for SQLAlchemy
+        metadata = MetaData(schema="public")  # Using 'schema' here is correct for SQLAlchemy
 
     return _Base
 
@@ -159,9 +169,7 @@ class SQLModelAdapter:
                     if "relationship" in relationship_info:
                         relationships[name] = relationship_info["relationship"]
                     if "foreign_key" in relationship_info:
-                        fk_name = relationship_info.get(
-                            "foreign_key_name", f"{name}_id"
-                        )
+                        fk_name = relationship_info.get("foreign_key_name", f"{name}_id")
                         foreign_keys[fk_name] = relationship_info["foreign_key"]
                     continue
 
@@ -179,28 +187,19 @@ class SQLModelAdapter:
             if (
                 origin in (list, tuple)
                 and args
-                and (
-                    args[0] is float
-                    or (isinstance(args[0], type) and issubclass(args[0], float))
-                )
+                and (args[0] is float or (isinstance(args[0], type) and issubclass(args[0], float)))
                 and hasattr(cls, "_python_type_for")
                 and cls.__name__ in ("SQLVectorModelAdapter", "PGVectorModelAdapter")
             ):
                 from pgvector.sqlalchemy import Vector
 
-                dim = (
-                    info.json_schema_extra.get("vector_dim")
-                    if info.json_schema_extra
-                    else None
-                )
+                dim = info.json_schema_extra.get("vector_dim") if info.json_schema_extra else None
                 col_type = Vector(dim) if dim else Vector()
 
                 kwargs: dict[str, Any] = {
                     "nullable": is_nullable or not info.is_required(),
                 }
-                default = (
-                    info.default if info.default is not None else info.default_factory
-                )
+                default = info.default if info.default is not None else info.default_factory
                 if default is not None:
                     kwargs["default"] = default
 
@@ -248,10 +247,7 @@ class SQLModelAdapter:
                     # Test if this is a datetime factory
                     try:
                         test_val = default()
-                        if (
-                            isinstance(test_val, datetime)
-                            and test_val.tzinfo is not None
-                        ):
+                        if isinstance(test_val, datetime) and test_val.tzinfo is not None:
                             # This is a timezone-aware datetime factory
                             # Use DateTime with timezone=True
                             from sqlalchemy import DateTime as DateTimeWithTZ
@@ -297,10 +293,7 @@ class SQLModelAdapter:
         Returns:
             A dictionary with relationship information
         """
-        if (
-            not field_info.json_schema_extra
-            or "relationship" not in field_info.json_schema_extra
-        ):
+        if not field_info.json_schema_extra or "relationship" not in field_info.json_schema_extra:
             return {}
 
         relation_info = field_info.json_schema_extra.get("relationship", {})
@@ -486,7 +479,7 @@ class SQLModelAdapter:
         # For backward compatibility
         pyd_cls.model_config["orm_mode"] = True
 
-        return cast(type[T], pyd_cls)
+        return cast("type[T]", pyd_cls)
 
     # -------------------------------------------------------------------------
     @classmethod

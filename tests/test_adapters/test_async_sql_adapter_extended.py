@@ -4,8 +4,8 @@ Extended tests for Async SQL adapter functionality.
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.async_sql_ import AsyncSQLAdapter
@@ -57,9 +57,7 @@ class TestAsyncSQLAdapterExtended:
         mock_table = MagicMock()
 
         # Mock the sa.Table function
-        with patch(
-            "pydapter.extras.async_sql_.sa.Table", return_value=mock_table
-        ) as mock_sa_table:
+        with patch("pydapter.extras.async_sql_.sa.Table", return_value=mock_table) as mock_sa_table:
             # Call the _table helper
             result = AsyncSQLAdapter._table(mock_metadata, "test_table")
 
@@ -74,9 +72,7 @@ class TestAsyncSQLAdapterExtended:
     async def test_async_sql_from_obj_with_selectors(self):
         """Test conversion from Async SQL record to model with selectors."""
         # Setup mocks
-        with patch(
-            "pydapter.extras.async_sql_.create_async_engine"
-        ) as mock_create_engine:
+        with patch("pydapter.extras.async_sql_.create_async_engine") as mock_create_engine:
             # Create a mock connection that supports run_sync
             mock_conn = AsyncMock()
 
@@ -123,9 +119,7 @@ class TestAsyncSQLAdapterExtended:
     async def test_async_sql_from_obj_single(self):
         """Test conversion from Async SQL record to model with many=False."""
         # Setup mocks
-        with patch(
-            "pydapter.extras.async_sql_.create_async_engine"
-        ) as mock_create_engine:
+        with patch("pydapter.extras.async_sql_.create_async_engine") as mock_create_engine:
             # Create a mock connection that supports run_sync
             mock_conn = AsyncMock()
 
@@ -182,9 +176,7 @@ class TestAsyncSQLAdapterExtended:
         models = [model1, model2]
 
         # Setup mocks
-        with patch(
-            "pydapter.extras.async_sql_.create_async_engine"
-        ) as mock_create_engine:
+        with patch("pydapter.extras.async_sql_.create_async_engine") as mock_create_engine:
             # Create a mock connection that supports run_sync
             mock_conn = AsyncMock()
 
@@ -218,9 +210,7 @@ class TestAsyncSQLAdapterExtended:
     async def test_async_sql_to_obj_with_single_item(self, async_sql_sample):
         """Test conversion from a single model to Async SQL record."""
         # Setup mocks
-        with patch(
-            "pydapter.extras.async_sql_.create_async_engine"
-        ) as mock_create_engine:
+        with patch("pydapter.extras.async_sql_.create_async_engine") as mock_create_engine:
             # Create a mock connection that supports run_sync
             mock_conn = AsyncMock()
 

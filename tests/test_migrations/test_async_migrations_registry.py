@@ -58,9 +58,7 @@ class TestAsyncMigrationRegistry:
 
             @classmethod
             async def get_migration_history(cls, **kwargs) -> list[dict[str, Any]]:
-                return [
-                    {"revision": "async_revision123", "message": "test async migration"}
-                ]
+                return [{"revision": "async_revision123", "message": "test async migration"}]
 
         # Register the adapter
         registry.register(TestAsyncAdapter)
@@ -100,9 +98,7 @@ class TestAsyncMigrationRegistry:
 
             @classmethod
             async def get_migration_history(cls, **kwargs) -> list[dict[str, Any]]:
-                return [
-                    {"revision": "async_revision123", "message": "test async migration"}
-                ]
+                return [{"revision": "async_revision123", "message": "test async migration"}]
 
         class TestAsyncAdapter2:
             migration_key: ClassVar[str] = "test_async"
@@ -131,9 +127,7 @@ class TestAsyncMigrationRegistry:
 
             @classmethod
             async def get_migration_history(cls, **kwargs) -> list[dict[str, Any]]:
-                return [
-                    {"revision": "async_revision456", "message": "test async migration"}
-                ]
+                return [{"revision": "async_revision456", "message": "test async migration"}]
 
         # Register the first adapter
         registry.register(TestAsyncAdapter1)
@@ -189,17 +183,13 @@ class TestAsyncMigrationRegistry:
 
             @classmethod
             async def get_migration_history(cls, **kwargs) -> list[dict[str, Any]]:
-                return [
-                    {"revision": "async_revision123", "message": "test async migration"}
-                ]
+                return [{"revision": "async_revision123", "message": "test async migration"}]
 
         # Try to register the invalid adapter
         with pytest.raises(ConfigurationError) as exc_info:
             registry.register(InvalidAsyncAdapter)
 
-        assert "Async migration adapter must define 'migration_key'" in str(
-            exc_info.value
-        )
+        assert "Async migration adapter must define 'migration_key'" in str(exc_info.value)
 
 
 @pytest.fixture
@@ -214,9 +204,7 @@ def mock_async_adapter():
             return None
 
         @classmethod
-        async def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        async def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             return "mock_async_revision"
 
         @classmethod
@@ -233,9 +221,7 @@ def mock_async_adapter():
 
         @classmethod
         async def get_migration_history(cls, **kwargs) -> list[dict[str, Any]]:
-            return [
-                {"revision": "mock_async_revision", "message": "mock async migration"}
-            ]
+            return [{"revision": "mock_async_revision", "message": "mock async migration"}]
 
     return MockAsyncAdapter
 
@@ -251,16 +237,12 @@ def populated_async_registry(mock_async_adapter):
 @pytest.mark.asyncio
 async def test_async_init_migrations(populated_async_registry):
     """Test the init_migrations convenience method."""
-    with patch.object(
-        populated_async_registry.get("mock_async"), "init_migrations"
-    ) as mock_init:
+    with patch.object(populated_async_registry.get("mock_async"), "init_migrations") as mock_init:
         # Configure the mock to return a coroutine
         mock_init.return_value = AsyncMock()
 
         # Call the method
-        await populated_async_registry.init_migrations(
-            "mock_async", "./async_migrations"
-        )
+        await populated_async_registry.init_migrations("mock_async", "./async_migrations")
 
         # Verify the mock was called with the correct arguments
         mock_init.assert_called_once_with("./async_migrations")
@@ -288,9 +270,7 @@ async def test_async_create_migration(populated_async_registry):
 @pytest.mark.asyncio
 async def test_async_upgrade(populated_async_registry):
     """Test the upgrade convenience method."""
-    with patch.object(
-        populated_async_registry.get("mock_async"), "upgrade"
-    ) as mock_upgrade:
+    with patch.object(populated_async_registry.get("mock_async"), "upgrade") as mock_upgrade:
         # Configure the mock to return a coroutine
         mock_upgrade.return_value = AsyncMock()
 
@@ -304,9 +284,7 @@ async def test_async_upgrade(populated_async_registry):
 @pytest.mark.asyncio
 async def test_async_downgrade(populated_async_registry):
     """Test the downgrade convenience method."""
-    with patch.object(
-        populated_async_registry.get("mock_async"), "downgrade"
-    ) as mock_downgrade:
+    with patch.object(populated_async_registry.get("mock_async"), "downgrade") as mock_downgrade:
         # Configure the mock to return a coroutine
         mock_downgrade.return_value = AsyncMock()
 
@@ -364,9 +342,7 @@ def error_raising_async_adapter():
             raise RuntimeError("Async init error")
 
         @classmethod
-        async def create_migration(
-            cls, message: str, autogenerate: bool = True, **kwargs
-        ) -> str:
+        async def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
             raise RuntimeError("Async creation error")
 
         @classmethod
@@ -402,9 +378,7 @@ async def test_async_init_migrations_error(error_async_registry):
     with pytest.raises(MigrationInitError) as exc_info:
         await error_async_registry.init_migrations("error_async", "./async_migrations")
 
-    assert "Failed to initialize async migrations for 'error_async'" in str(
-        exc_info.value
-    )
+    assert "Failed to initialize async migrations for 'error_async'" in str(exc_info.value)
     assert exc_info.value.adapter == "error_async"
     assert exc_info.value.directory == "./async_migrations"
     assert "Async init error" in str(exc_info.value.original_error)
@@ -443,9 +417,7 @@ async def test_async_downgrade_error(error_async_registry):
     with pytest.raises(MigrationDowngradeError) as exc_info:
         await error_async_registry.downgrade("error_async", "target_revision")
 
-    assert "Failed to downgrade async migrations for 'error_async'" in str(
-        exc_info.value
-    )
+    assert "Failed to downgrade async migrations for 'error_async'" in str(exc_info.value)
     assert exc_info.value.adapter == "error_async"
     assert exc_info.value.revision == "target_revision"
     assert "Async downgrade error" in str(exc_info.value.original_error)
@@ -457,9 +429,7 @@ async def test_async_get_current_revision_error(error_async_registry):
     with pytest.raises(MigrationError) as exc_info:
         await error_async_registry.get_current_revision("error_async")
 
-    assert "Failed to get current async revision for 'error_async'" in str(
-        exc_info.value
-    )
+    assert "Failed to get current async revision for 'error_async'" in str(exc_info.value)
     assert exc_info.value.adapter == "error_async"
     assert "Async revision error" in str(exc_info.value.original_error)
 
@@ -470,8 +440,6 @@ async def test_async_get_migration_history_error(error_async_registry):
     with pytest.raises(MigrationError) as exc_info:
         await error_async_registry.get_migration_history("error_async")
 
-    assert "Failed to get async migration history for 'error_async'" in str(
-        exc_info.value
-    )
+    assert "Failed to get async migration history for 'error_async'" in str(exc_info.value)
     assert exc_info.value.adapter == "error_async"
     assert "Async history error" in str(exc_info.value.original_error)

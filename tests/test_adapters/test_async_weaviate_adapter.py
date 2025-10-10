@@ -4,9 +4,9 @@ Unit tests for AsyncWeaviateAdapter.
 
 import importlib.util
 
-import pytest
 from aiohttp import ClientError
 from pydantic import BaseModel
+import pytest
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import ConnectionError, QueryError, ResourceError
@@ -24,9 +24,7 @@ def is_weaviate_available():
     """
     try:
         # Use importlib.util to check if the module is available without importing it
-        if importlib.util.find_spec("weaviate") is None:
-            return False
-        return True
+        return importlib.util.find_spec("weaviate") is not None
     except (ImportError, AttributeError):
         return False
 
@@ -88,9 +86,7 @@ class TestAsyncWeaviateAdapterFunctionality:
         test_model.__class__.register_async_adapter(AsyncWeaviateAdapter)
 
         # Mock the to_obj method to return a successful result
-        mocker.patch.object(
-            AsyncWeaviateAdapter, "to_obj", return_value={"added_count": 1}
-        )
+        mocker.patch.object(AsyncWeaviateAdapter, "to_obj", return_value={"added_count": 1})
 
         # Test to_obj
         result = await test_model.adapt_to_async(
@@ -121,9 +117,7 @@ class TestAsyncWeaviateAdapterFunctionality:
         expected_result = TestModel(id=1, name="test", value=42.5)
 
         # Mock the from_obj method to return the expected result
-        mocker.patch.object(
-            AsyncWeaviateAdapter, "from_obj", return_value=expected_result
-        )
+        mocker.patch.object(AsyncWeaviateAdapter, "from_obj", return_value=expected_result)
 
         # Test from_obj
         result = await test_cls.adapt_from_async(
@@ -169,9 +163,7 @@ class TestAsyncWeaviateAdapterFunctionality:
         ]
 
         # Mock the from_obj method to return the expected results
-        mocker.patch.object(
-            AsyncWeaviateAdapter, "from_obj", return_value=expected_results
-        )
+        mocker.patch.object(AsyncWeaviateAdapter, "from_obj", return_value=expected_results)
 
         # Test from_obj with many=True
         results = await test_cls.adapt_from_async(
@@ -286,9 +278,7 @@ class TestAsyncWeaviateAdapterErrorHandling:
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "from_obj",
-            side_effect=QueryError(
-                "Error in Weaviate query: Bad request", adapter="async_weav"
-            ),
+            side_effect=QueryError("Error in Weaviate query: Bad request", adapter="async_weav"),
         )
 
         # Test from_obj with query error
@@ -317,9 +307,7 @@ class TestAsyncWeaviateAdapterErrorHandling:
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "from_obj",
-            side_effect=ResourceError(
-                "No objects found matching the query", resource="TestModel"
-            ),
+            side_effect=ResourceError("No objects found matching the query", resource="TestModel"),
         )
 
         # Test from_obj with empty result and many=False
@@ -349,9 +337,7 @@ class TestAsyncWeaviateAdapterErrorHandling:
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "from_obj",
-            side_effect=AdapterValidationError(
-                "Validation error: missing required field 'name'"
-            ),
+            side_effect=AdapterValidationError("Validation error: missing required field 'name'"),
         )
 
         # Test from_obj with validation error
@@ -387,9 +373,7 @@ class TestAsyncWeaviateAdapterErrorHandling:
         mocker.patch.object(
             AsyncWeaviateAdapter,
             "to_obj",
-            side_effect=AdapterValidationError(
-                "Vector field 'embedding' not found in model"
-            ),
+            side_effect=AdapterValidationError("Vector field 'embedding' not found in model"),
         )
 
         # Test to_obj with missing vector field
@@ -679,9 +663,7 @@ class TestAsyncWeaviateAdapterImplementation:
         # Create a proper async context manager mock
         mock_response = mocker.AsyncMock()
         mock_response.status = 200
-        mock_response.json = mocker.AsyncMock(
-            return_value={"data": {"Get": {"TestModel": []}}}
-        )
+        mock_response.json = mocker.AsyncMock(return_value={"data": {"Get": {"TestModel": []}}})
 
         # Patch the aiohttp.ClientSession.post directly
         mock_post = mocker.patch("aiohttp.ClientSession.post")

@@ -1,7 +1,7 @@
 from typing import Any
 
-import pytest
 from pydantic import BaseModel, Field
+import pytest
 
 # Try to import pgvector, skip tests if not available
 try:
@@ -93,9 +93,7 @@ def test_create_index_with_default_params():
     EmbSQL = PGVectorModelAdapter.pydantic_model_to_sql(EmbeddingSchema)
 
     # Test HNSW index with default params
-    hnsw_index = PGVectorModelAdapter.create_index(
-        EmbSQL, "embedding", index_type="hnsw"
-    )
+    hnsw_index = PGVectorModelAdapter.create_index(EmbSQL, "embedding", index_type="hnsw")
 
     assert hnsw_index.name == "idx_embedding_hnsw"
     assert hnsw_index.columns[0].name == "embedding"
@@ -103,9 +101,7 @@ def test_create_index_with_default_params():
     assert hnsw_index.kwargs["postgresql_with"] == {}
 
     # Test IVFFlat index with default params
-    ivf_index = PGVectorModelAdapter.create_index(
-        EmbSQL, "embedding", index_type="ivfflat"
-    )
+    ivf_index = PGVectorModelAdapter.create_index(EmbSQL, "embedding", index_type="ivfflat")
 
     assert ivf_index.name == "idx_embedding_ivfflat"
     assert ivf_index.columns[0].name == "embedding"

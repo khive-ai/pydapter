@@ -4,8 +4,10 @@ Type registry for mapping between Python and SQL types.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 T = TypeVar("T")
 
@@ -61,9 +63,7 @@ class TypeRegistry:
         # Try to find a compatible type
         for registered_type, sql_type in cls._PY_TO_SQL.items():
             try:
-                if isinstance(python_type, type) and issubclass(
-                    python_type, registered_type
-                ):
+                if isinstance(python_type, type) and issubclass(python_type, registered_type):
                     return sql_type
             except TypeError:
                 # Skip parameterized generics that can't be used with issubclass
@@ -114,9 +114,7 @@ class TypeRegistry:
 
         # Try to find a compatible converter
         for registered_type, conv in cls._PY_TO_SQL_CONVERTERS.items():
-            if isinstance(python_type, type) and issubclass(
-                python_type, registered_type
-            ):
+            if isinstance(python_type, type) and issubclass(python_type, registered_type):
                 return conv(value)
 
         # No converter found, return as is

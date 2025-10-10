@@ -4,8 +4,8 @@ Extended tests for Async PostgreSQL adapter functionality.
 
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.extras.async_postgres_ import AsyncPostgresAdapter
@@ -124,9 +124,7 @@ class TestAsyncPostgresAdapterExtended:
             assert call_args["dsn"] == AsyncPostgresAdapter.DEFAULT
 
     @pytest.mark.asyncio
-    async def test_async_postgres_to_obj_with_dsn_conversion(
-        self, async_postgres_sample
-    ):
+    async def test_async_postgres_to_obj_with_dsn_conversion(self, async_postgres_sample):
         """Test conversion from model to Async PostgreSQL record with DSN conversion."""
         # Setup mocks for the parent class method
         with patch(
@@ -145,9 +143,7 @@ class TestAsyncPostgresAdapterExtended:
             assert call_kwargs["table"] == "test_table"
 
     @pytest.mark.asyncio
-    async def test_async_postgres_to_obj_with_already_converted_dsn(
-        self, async_postgres_sample
-    ):
+    async def test_async_postgres_to_obj_with_already_converted_dsn(self, async_postgres_sample):
         """Test conversion from model to Async PostgreSQL record with already converted DSN."""
         # Setup mocks for the parent class method
         with patch(
@@ -208,8 +204,6 @@ class TestAsyncPostgresAdapterExtended:
 
             # Verify the parent method was called with the correct arguments
             call_args = mock_to_obj.call_args
-            assert (
-                call_args[0][0] == models
-            )  # First positional arg should be the models list
+            assert call_args[0][0] == models  # First positional arg should be the models list
             assert call_args[1]["dsn"] == "postgresql+asyncpg://user:pass@localhost/db"
             assert call_args[1]["table"] == "test_table"

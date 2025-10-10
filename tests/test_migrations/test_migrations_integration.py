@@ -100,9 +100,7 @@ class TestMigrationsIntegration:
 
         # Create a migration script with table creation
         with open(
-            os.path.join(
-                migrations_dir, "versions", f"{revision1}_create_users_table.py"
-            ),
+            os.path.join(migrations_dir, "versions", f"{revision1}_create_users_table.py"),
             "w",
         ) as f:
             f.write(
@@ -141,9 +139,7 @@ def downgrade():
         # Check that the table was created
         with sqlite_engine.connect() as conn:
             result = conn.execute(
-                sa.text(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
-                )
+                sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
             )
             assert result.scalar() == "users"
 
@@ -157,9 +153,7 @@ def downgrade():
 
         # Create a migration script with column addition
         with open(
-            os.path.join(
-                migrations_dir, "versions", f"{revision2}_add_email_column.py"
-            ),
+            os.path.join(migrations_dir, "versions", f"{revision2}_add_email_column.py"),
             "w",
         ) as f:
             f.write(
@@ -226,9 +220,7 @@ def downgrade():
         # Check that the table was dropped
         with sqlite_engine.connect() as conn:
             result = conn.execute(
-                sa.text(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
-                )
+                sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
             )
             assert result.scalar() is None
 
@@ -332,16 +324,12 @@ def downgrade():
         # Check that the tables were created
         with sqlite_engine.connect() as conn:
             result = conn.execute(
-                sa.text(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
-                )
+                sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
             )
             assert result.scalar() == "users"
 
             result = conn.execute(
-                sa.text(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='products'"
-                )
+                sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='products'")
             )
             assert result.scalar() == "products"
 
@@ -436,9 +424,7 @@ def downgrade():
                 return None
 
             @classmethod
-            def create_migration(
-                cls, message: str, autogenerate: bool = True, **kwargs
-            ) -> str:
+            def create_migration(cls, message: str, autogenerate: bool = True, **kwargs) -> str:
                 revision = f"rev_{len(cls._migrations) + 1}"
                 cls._migrations.append((revision, message))
                 return revision
@@ -446,11 +432,9 @@ def downgrade():
             @classmethod
             def upgrade(cls, revision: str = "head", **kwargs) -> None:
                 if revision == "head":
-                    cls._current_revision = (
-                        cls._migrations[-1][0] if cls._migrations else None
-                    )
+                    cls._current_revision = cls._migrations[-1][0] if cls._migrations else None
                 else:
-                    for i, (rev, _) in enumerate(cls._migrations):
+                    for _i, (rev, _) in enumerate(cls._migrations):
                         if rev == revision:
                             cls._current_revision = rev
                             break
@@ -461,7 +445,7 @@ def downgrade():
                 if revision == "base":
                     cls._current_revision = None
                 else:
-                    for i, (rev, _) in enumerate(cls._migrations):
+                    for _i, (rev, _) in enumerate(cls._migrations):
                         if rev == revision:
                             cls._current_revision = rev
                             break
@@ -473,9 +457,7 @@ def downgrade():
 
             @classmethod
             def get_migration_history(cls, **kwargs) -> list[dict]:
-                return [
-                    {"revision": rev, "message": msg} for rev, msg in cls._migrations
-                ]
+                return [{"revision": rev, "message": msg} for rev, msg in cls._migrations]
 
         # Register the custom adapter
         registry = MigrationRegistry()

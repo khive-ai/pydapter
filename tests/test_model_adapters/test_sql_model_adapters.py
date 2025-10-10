@@ -1,8 +1,8 @@
 from datetime import date, datetime, time
 from uuid import UUID
 
-import pytest
 from pydantic import BaseModel
+import pytest
 from sqlalchemy import (
     Boolean,
     Date,
@@ -104,9 +104,7 @@ def test_pydantic_to_sql_custom_pk():
         custom_id: int | None = None
         name: str
 
-    CustomSQL = SQLModelAdapter.pydantic_model_to_sql(
-        CustomPKSchema, pk_field="custom_id"
-    )
+    CustomSQL = SQLModelAdapter.pydantic_model_to_sql(CustomPKSchema, pk_field="custom_id")
     mapper = inspect(CustomSQL)
     pk_col = mapper.columns["custom_id"]
 
@@ -131,9 +129,7 @@ def test_round_trip_scalar():
     RoundTrip = SQLModelAdapter.sql_model_to_pydantic(UserSQL)
 
     # orm_mode / from_attributes (v2) should be on
-    assert RoundTrip.model_config.get("orm_mode") or RoundTrip.model_config.get(
-        "from_attributes"
-    )
+    assert RoundTrip.model_config.get("orm_mode") or RoundTrip.model_config.get("from_attributes")
 
     # field definitions preserved
     fields = RoundTrip.model_fields
@@ -215,8 +211,6 @@ def test_sql_to_pydantic_unsupported_type():
     # Patch the inspect function temporarily
     import unittest.mock
 
-    with unittest.mock.patch(
-        "sqlalchemy.inspect", return_value=mock_inspect(UnsupportedSQL)
-    ):
+    with unittest.mock.patch("sqlalchemy.inspect", return_value=mock_inspect(UnsupportedSQL)):
         with pytest.raises(TypeConversionError, match="Unsupported SQL type"):
             SQLModelAdapter.sql_model_to_pydantic(UnsupportedSQL)

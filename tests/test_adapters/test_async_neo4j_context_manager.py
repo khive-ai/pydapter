@@ -4,8 +4,8 @@ Tests for the context manager behavior of AsyncNeo4jAdapter.
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from neo4j.exceptions import CypherSyntaxError
+import pytest
 
 from pydapter.exceptions import QueryError
 from pydapter.extras.async_neo4j_ import AsyncNeo4jAdapter
@@ -44,9 +44,7 @@ class TestAsyncNeo4jContextManager:
         mock_result.__anext__.side_effect = [mock_record, StopAsyncIteration]
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             # Use the adapter as a context manager
             async with AsyncNeo4jAdapter(url="bolt://localhost:7687") as adapter:
                 # Execute a query
@@ -84,9 +82,7 @@ class TestAsyncNeo4jContextManager:
         mock_session.run = MagicMock(side_effect=CypherSyntaxError("Syntax error"))
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             # Use the adapter as a context manager
             async with AsyncNeo4jAdapter(url="bolt://localhost:7687") as adapter:
                 # Execute a query and expect an exception
@@ -108,19 +104,13 @@ class TestAsyncNeo4jContextManager:
         # Configure mock driver to raise an exception when creating a session
         mock_driver.__aenter__.return_value = mock_driver
         mock_driver.__aexit__.return_value = None
-        mock_driver.session = MagicMock(
-            side_effect=Exception("Session creation failed")
-        )
+        mock_driver.session = MagicMock(side_effect=Exception("Session creation failed"))
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             # Use the adapter as a context manager
             with pytest.raises(Exception) as exc_info:
-                async with AsyncNeo4jAdapter(
-                    url="bolt://localhost:7687"
-                ) as adapter:  # noqa: F841
+                async with AsyncNeo4jAdapter(url="bolt://localhost:7687") as adapter:  # noqa: F841
                     # This should not be executed
                     pass
 
@@ -138,9 +128,7 @@ class TestAsyncNeo4jContextManager:
         ):
             # Use the adapter as a context manager
             with pytest.raises(Exception) as exc_info:
-                async with AsyncNeo4jAdapter(
-                    url="bolt://localhost:7687"
-                ) as adapter:  # noqa: F841
+                async with AsyncNeo4jAdapter(url="bolt://localhost:7687") as adapter:  # noqa: F841
                     # This should not be executed
                     pass
 
@@ -171,9 +159,7 @@ class TestAsyncNeo4jContextManager:
         mock_session.close = MagicMock(side_effect=Exception("Session close failed"))
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             # Use the adapter as a context manager
             async with AsyncNeo4jAdapter(url="bolt://localhost:7687") as adapter:
                 # Execute a simple query
@@ -213,9 +199,7 @@ class TestAsyncNeo4jContextManager:
         mock_result.__anext__.side_effect = [mock_record, StopAsyncIteration]
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             # Use the adapter as a context manager
             async with AsyncNeo4jAdapter(url="bolt://localhost:7687") as adapter:
                 # Execute multiple queries

@@ -4,8 +4,8 @@ Tests for database adapter error handling in pydapter.
 
 from unittest.mock import Mock
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.exceptions import ConnectionError, QueryError, ResourceError
@@ -59,9 +59,7 @@ class TestSQLAdapterErrors:
 
         # Test with invalid connection string
         with pytest.raises(ConnectionError) as exc_info:
-            TestModel.adapt_from(
-                {"engine_url": "invalid://url", "table": "test"}, obj_key="sql"
-            )
+            TestModel.adapt_from({"engine_url": "invalid://url", "table": "test"}, obj_key="sql")
         assert "Failed to create database engine" in str(exc_info.value)
         assert "Invalid connection string" in str(exc_info.value)
 
@@ -80,18 +78,14 @@ class TestSQLAdapterErrors:
 
         def mock_from_obj(cls, subj_cls, obj, **kw):
             if obj.get("table") == "nonexistent":
-                raise ResourceError(
-                    "Table 'nonexistent' not found", resource="nonexistent"
-                )
+                raise ResourceError("Table 'nonexistent' not found", resource="nonexistent")
             return original_from_obj(cls, subj_cls, obj, **kw)
 
         monkeypatch.setattr(SQLAdapter, "from_obj", classmethod(mock_from_obj))
 
         # Test with non-existent table
         with pytest.raises(ResourceError) as exc_info:
-            TestModel.adapt_from(
-                {"engine_url": "sqlite://", "table": "nonexistent"}, obj_key="sql"
-            )
+            TestModel.adapt_from({"engine_url": "sqlite://", "table": "nonexistent"}, obj_key="sql")
         assert "Table 'nonexistent' not found" in str(exc_info.value)
 
         # No need to restore anything since we're mocking the adapter method directly
@@ -122,9 +116,7 @@ class TestSQLAdapterErrors:
 
         # Test with query error
         with pytest.raises(QueryError) as exc_info:
-            TestModel.adapt_from(
-                {"engine_url": "sqlite://", "table": "test"}, obj_key="sql"
-            )
+            TestModel.adapt_from({"engine_url": "sqlite://", "table": "test"}, obj_key="sql")
         assert "Query failed" in str(exc_info.value)
         assert "Query failed" in str(exc_info.value)
 
@@ -272,9 +264,7 @@ class TestMongoAdapterErrors:
 
         # Test missing collection
         with pytest.raises(AdapterValidationError) as exc_info:
-            TestModel.adapt_from(
-                {"url": "mongodb://localhost", "db": "test"}, obj_key="mongo"
-            )
+            TestModel.adapt_from({"url": "mongodb://localhost", "db": "test"}, obj_key="mongo")
         assert "Missing required parameter 'collection'" in str(exc_info.value)
 
     def test_invalid_connection_string(self, monkeypatch):
@@ -323,14 +313,10 @@ class TestMongoAdapterErrors:
 
         # Create a mock client
         mock_client = Mock()
-        mock_client.admin.command.side_effect = pymongo.errors.OperationFailure(
-            "auth failed"
-        )
+        mock_client.admin.command.side_effect = pymongo.errors.OperationFailure("auth failed")
 
         # Mock _client to return our mock client
-        monkeypatch.setattr(
-            MongoAdapter, "_client", lambda *args, **kwargs: mock_client
-        )
+        monkeypatch.setattr(MongoAdapter, "_client", lambda *args, **kwargs: mock_client)
 
         # Test with authentication failure
         with pytest.raises(ConnectionError) as exc_info:
@@ -362,16 +348,12 @@ class TestMongoAdapterErrors:
         mock_collection = Mock()
         mock_client.__getitem__ = Mock(return_value=mock_db)
         mock_db.__getitem__ = Mock(return_value=mock_collection)
-        mock_collection.find.side_effect = pymongo.errors.OperationFailure(
-            "Invalid query"
-        )
+        mock_collection.find.side_effect = pymongo.errors.OperationFailure("Invalid query")
 
         # Mock _client to return our mock client
         monkeypatch.setattr(MongoAdapter, "_client", lambda *args: mock_client)
         # Mock _validate_connection to do nothing
-        monkeypatch.setattr(
-            MongoAdapter, "_validate_connection", lambda *args, **kwargs: None
-        )
+        monkeypatch.setattr(MongoAdapter, "_validate_connection", lambda *args, **kwargs: None)
 
         # Test with invalid query
         with pytest.raises(QueryError) as exc_info:
@@ -408,9 +390,7 @@ class TestMongoAdapterErrors:
         # Mock _client to return our mock client
         monkeypatch.setattr(MongoAdapter, "_client", lambda *args: mock_client)
         # Mock _validate_connection to do nothing
-        monkeypatch.setattr(
-            MongoAdapter, "_validate_connection", lambda *args, **kwargs: None
-        )
+        monkeypatch.setattr(MongoAdapter, "_validate_connection", lambda *args, **kwargs: None)
 
         # Test with empty result set and many=False
         with pytest.raises(ResourceError) as exc_info:
@@ -520,14 +500,10 @@ class TestNeo4jAdapterErrors:
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_driver.session.return_value = mock_context
-        mock_session.run.side_effect = neo4j.exceptions.CypherSyntaxError(
-            "Syntax error in Cypher"
-        )
+        mock_session.run.side_effect = neo4j.exceptions.CypherSyntaxError("Syntax error in Cypher")
 
         # Mock GraphDatabase.driver to return our mock driver
-        monkeypatch.setattr(
-            neo4j.GraphDatabase, "driver", lambda *args, **kwargs: mock_driver
-        )
+        monkeypatch.setattr(neo4j.GraphDatabase, "driver", lambda *args, **kwargs: mock_driver)
 
         # Test with Cypher syntax error
         with pytest.raises(QueryError) as exc_info:
@@ -556,21 +532,15 @@ class TestNeo4jAdapterErrors:
         mock_session.run.return_value = []
 
         # Mock GraphDatabase.driver to return our mock driver
-        monkeypatch.setattr(
-            neo4j.GraphDatabase, "driver", lambda *args, **kwargs: mock_driver
-        )
+        monkeypatch.setattr(neo4j.GraphDatabase, "driver", lambda *args, **kwargs: mock_driver)
 
         # Test with empty result set and many=False
         with pytest.raises(ResourceError) as exc_info:
-            TestModel.adapt_from(
-                {"url": "neo4j://localhost"}, obj_key="neo4j", many=False
-            )
+            TestModel.adapt_from({"url": "neo4j://localhost"}, obj_key="neo4j", many=False)
         assert "No nodes found matching the query" in str(exc_info.value)
 
         # Test with empty result set and many=True
-        result = TestModel.adapt_from(
-            {"url": "neo4j://localhost"}, obj_key="neo4j", many=True
-        )
+        result = TestModel.adapt_from({"url": "neo4j://localhost"}, obj_key="neo4j", many=True)
         assert isinstance(result, list)
         assert len(result) == 0
 
@@ -591,9 +561,7 @@ class TestQdrantAdapterErrors:
 
         # Test missing collection
         with pytest.raises(AdapterValidationError) as exc_info:
-            TestModel.adapt_from(
-                {"query_vector": [0.1, 0.2, 0.3, 0.4, 0.5]}, obj_key="qdrant"
-            )
+            TestModel.adapt_from({"query_vector": [0.1, 0.2, 0.3, 0.4, 0.5]}, obj_key="qdrant")
         assert "Missing required parameter 'collection'" in str(exc_info.value)
 
         # Test missing query_vector
@@ -678,9 +646,7 @@ class TestQdrantAdapterErrors:
         )
 
         # Mock _client to return our mock client
-        monkeypatch.setattr(
-            QdrantAdapter, "_client", lambda *args, **kwargs: mock_client
-        )
+        monkeypatch.setattr(QdrantAdapter, "_client", lambda *args, **kwargs: mock_client)
 
         # Test with collection not found error
         with pytest.raises(QueryError) as exc_info:
@@ -709,9 +675,7 @@ class TestQdrantAdapterErrors:
         mock_client.search.return_value = []
 
         # Mock _client to return our mock client
-        monkeypatch.setattr(
-            QdrantAdapter, "_client", lambda *args, **kwargs: mock_client
-        )
+        monkeypatch.setattr(QdrantAdapter, "_client", lambda *args, **kwargs: mock_client)
 
         # Test with empty result set and many=False
         with pytest.raises(ResourceError) as exc_info:

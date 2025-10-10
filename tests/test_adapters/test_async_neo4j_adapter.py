@@ -5,9 +5,9 @@ Unit tests for AsyncNeo4jAdapter.
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from neo4j.exceptions import AuthError, CypherSyntaxError, ServiceUnavailable
 from pydantic import BaseModel
+import pytest
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import ConnectionError, QueryError, ResourceError
@@ -235,9 +235,7 @@ class TestAsyncNeo4jAdapter:
         mock_session.__await__ = lambda: iter([mock_session])
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             result = await AsyncNeo4jAdapter.from_obj(
                 SampleModel,
                 {"url": "bolt://localhost:7687", "where": "n.id = 1"},
@@ -292,18 +290,14 @@ class TestAsyncNeo4jAdapter:
         mock_session.__await__ = lambda: iter([mock_session])
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             result = await AsyncNeo4jAdapter.from_obj(
                 SampleModel,
                 {"url": "bolt://localhost:7687", "label": "CustomLabel"},
             )
 
             # Verify the query was constructed correctly
-            mock_session.run.assert_called_once_with(
-                "MATCH (n:`CustomLabel`)  RETURN n"
-            )
+            mock_session.run.assert_called_once_with("MATCH (n:`CustomLabel`)  RETURN n")
 
             # Verify the result
             assert isinstance(result, list)
@@ -349,9 +343,7 @@ class TestAsyncNeo4jAdapter:
         mock_session.__await__ = lambda: iter([mock_session])
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             result = await AsyncNeo4jAdapter.from_obj(
                 SampleModel,
                 {"url": "bolt://localhost:7687"},
@@ -397,9 +389,7 @@ class TestAsyncNeo4jAdapter:
         mock_session.__await__ = lambda: iter([mock_session])
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             result = await AsyncNeo4jAdapter.from_obj(
                 SampleModel,
                 {"url": "bolt://localhost:7687"},
@@ -439,9 +429,7 @@ class TestAsyncNeo4jAdapter:
         mock_session.__await__ = lambda: iter([mock_session])
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             with pytest.raises(ResourceError) as exc_info:
                 await AsyncNeo4jAdapter.from_obj(
                     SampleModel,
@@ -473,9 +461,7 @@ class TestAsyncNeo4jAdapter:
         mock_session.__await__ = lambda: iter([mock_session])
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             with pytest.raises(QueryError) as exc_info:
                 await AsyncNeo4jAdapter.from_obj(
                     SampleModel,
@@ -519,9 +505,7 @@ class TestAsyncNeo4jAdapter:
         mock_session.__await__ = lambda: iter([mock_session])
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             with pytest.raises(AdapterValidationError) as exc_info:
                 await AsyncNeo4jAdapter.from_obj(
                     SampleModel,
@@ -533,9 +517,7 @@ class TestAsyncNeo4jAdapter:
     async def test_to_obj_missing_url(self):
         """Test to_obj method with missing URL."""
         with pytest.raises(AdapterValidationError) as exc_info:
-            await AsyncNeo4jAdapter.to_obj(
-                SampleModel(id=1, name="test", value=42.5), url=None
-            )
+            await AsyncNeo4jAdapter.to_obj(SampleModel(id=1, name="test", value=42.5), url=None)
         assert "Missing required parameter 'url'" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -580,9 +562,7 @@ class TestAsyncNeo4jAdapter:
         mock_session.__await__ = lambda: iter([mock_session])
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             result = await AsyncNeo4jAdapter.to_obj(
                 SampleModel(id=1, name="test", value=42.5),
                 url="bolt://localhost:7687",
@@ -623,9 +603,7 @@ class TestAsyncNeo4jAdapter:
         mock_session.__await__ = lambda: iter([mock_session])
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             result = await AsyncNeo4jAdapter.to_obj(
                 SampleModel(id=1, name="test", value=42.5),
                 url="bolt://localhost:7687",
@@ -649,9 +627,7 @@ class TestAsyncNeo4jAdapter:
         mock_driver = AsyncMock()
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             with pytest.raises(AdapterValidationError) as exc_info:
                 await AsyncNeo4jAdapter.to_obj(
                     SampleModel(id=1, name="test", value=42.5),
@@ -689,9 +665,7 @@ class TestAsyncNeo4jAdapter:
         ]
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             result = await AsyncNeo4jAdapter.to_obj(
                 models,
                 url="bolt://localhost:7687",
@@ -720,9 +694,7 @@ class TestAsyncNeo4jAdapter:
         mock_session.run = MagicMock(side_effect=CypherSyntaxError("Syntax error"))
 
         # Patch the _create_driver method
-        with patch.object(
-            AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver
-        ):
+        with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
             with pytest.raises(QueryError) as exc_info:
                 await AsyncNeo4jAdapter.to_obj(
                     SampleModel(id=1, name="test", value=42.5),

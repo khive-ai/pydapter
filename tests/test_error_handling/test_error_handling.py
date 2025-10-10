@@ -4,8 +4,8 @@ Tests for error handling in pydapter.
 
 from pathlib import Path
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
 from pydapter.core import Adaptable, Adapter, AdapterRegistry
@@ -449,9 +449,7 @@ class TestTomlAdapterErrors:
 
         # Test TOML with invalid field types
         with pytest.raises(AdapterValidationError) as exc_info:
-            TestModel.adapt_from(
-                "id = 'not_an_int'\nname = 'test'\nvalue = 42.5", obj_key="toml"
-            )
+            TestModel.adapt_from("id = 'not_an_int'\nname = 'test'\nvalue = 42.5", obj_key="toml")
         assert "Validation error" in str(exc_info.value)
         assert "id" in str(exc_info.value)
 
@@ -478,9 +476,7 @@ class TestRegistryErrors:
         """Test retrieval of unregistered adapter."""
         registry = AdapterRegistry()
 
-        with pytest.raises(
-            AdapterNotFoundError, match="No adapter registered for 'nonexistent'"
-        ):
+        with pytest.raises(AdapterNotFoundError, match="No adapter registered for 'nonexistent'"):
             registry.get("nonexistent")
 
     def test_duplicate_registration(self):
@@ -529,14 +525,10 @@ class TestAdaptableErrors:
 
         model = TestModel(id=1, name="test", value=42.5)
 
-        with pytest.raises(
-            AdapterNotFoundError, match="No adapter registered for 'nonexistent'"
-        ):
+        with pytest.raises(AdapterNotFoundError, match="No adapter registered for 'nonexistent'"):
             model.adapt_to(obj_key="nonexistent")
 
-        with pytest.raises(
-            AdapterNotFoundError, match="No adapter registered for 'nonexistent'"
-        ):
+        with pytest.raises(AdapterNotFoundError, match="No adapter registered for 'nonexistent'"):
             TestModel.adapt_from({}, obj_key="nonexistent")
 
     def test_invalid_model_data(self):
@@ -577,9 +569,7 @@ class TestEdgeCases:
         TestModel.register_adapter(JsonAdapter)
 
         # Test with very large integer
-        json_data = (
-            '{"id": 9223372036854775807, "name": "test", "value": 42.5}'  # Max int64
-        )
+        json_data = '{"id": 9223372036854775807, "name": "test", "value": 42.5}'  # Max int64
         model = TestModel.adapt_from(json_data, obj_key="json")
         assert model.id == 9223372036854775807
 

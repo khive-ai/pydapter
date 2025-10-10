@@ -1,16 +1,18 @@
 # pg_vector_model.py
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional, cast
+from typing import TYPE_CHECKING, Annotated, Any, Optional, cast
 
 from pgvector.sqlalchemy import Vector
 from pydantic import BaseModel, Field, create_model
 from sqlalchemy import Index, func, inspect, select
-from sqlalchemy.orm import DeclarativeBase, Session
 
 from pydapter.exceptions import ConfigurationError, TypeConversionError, ValidationError
 
 from .sql_model import SQLModelAdapter
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import DeclarativeBase, Session
 
 
 class PGVectorModelAdapter(SQLModelAdapter):
@@ -32,7 +34,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
     ):
         """Add vector_dim metadata when converting back to Pydantic."""
 
-        mapper = cast(Any, inspect(orm_cls))
+        mapper = cast("Any", inspect(orm_cls))
         fields: dict[str, tuple[type, Any]] = {}
 
         for col in mapper.columns:
@@ -50,8 +52,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
                     py_type = py_type | None
                 default_val = (
                     col.default.arg
-                    if col.default is not None
-                    and getattr(col.default, "is_scalar", False)
+                    if col.default is not None and getattr(col.default, "is_scalar", False)
                     else (None if col.nullable or col.primary_key else ...)
                 )
                 fields[col.key] = (py_type, default_val)
@@ -238,9 +239,7 @@ class PGVectorModelAdapter(SQLModelAdapter):
         elif metric == "inner":
             # For inner product, we want to maximize the value, so we negate it
             return session.execute(
-                select(model)
-                .order_by(func.inner_product(col, vector).desc())
-                .limit(limit)
+                select(model).order_by(func.inner_product(col, vector).desc()).limit(limit)
             )
         else:
             raise ConfigurationError(

@@ -24,9 +24,7 @@ try:
         wait_exponential,
     )
 except ImportError as e:
-    raise ImportError(
-        "Redis async adapter requires: pip install 'pydapter[redis]'"
-    ) from e
+    raise ImportError("Redis async adapter requires: pip install 'pydapter[redis]'") from e
 
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
@@ -232,9 +230,7 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
         }
 
     @classmethod
-    async def _execute_with_retry(
-        cls, operation, operation_name: str = "redis_operation"
-    ):
+    async def _execute_with_retry(cls, operation, operation_name: str = "redis_operation"):
         """Execute Redis operation with comprehensive retry logic."""
         try:
             retry_config = cls._get_retry_config()
@@ -480,9 +476,7 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
                         resource=key,
                     )
 
-                return cls._deserialize_model(
-                    value, subj_cls, adapt_meth, adapt_kw, serialization
-                )
+                return cls._deserialize_model(value, subj_cls, adapt_meth, adapt_kw, serialization)
 
         finally:
             await client.aclose()
@@ -539,9 +533,7 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
                         pipe = client.pipeline()
                         for model in batch:
                             key = cls._generate_key(model, config)
-                            value = cls._serialize_model(
-                                model, adapt_meth, adapt_kw, serialization
-                            )
+                            value = cls._serialize_model(model, adapt_meth, adapt_kw, serialization)
 
                             if ttl and nx:
                                 pipe.set(key, value, ex=ttl, nx=True)
@@ -558,9 +550,7 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
 
                         return await pipe.execute()
 
-                    results = await cls._execute_with_retry(
-                        pipeline_operation, "pipeline_set"
-                    )
+                    results = await cls._execute_with_retry(pipeline_operation, "pipeline_set")
                     total_set += sum(1 for r in results if r)
 
                 return total_set

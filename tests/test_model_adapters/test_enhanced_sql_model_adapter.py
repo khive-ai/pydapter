@@ -1,7 +1,7 @@
 from typing import Optional
 
-import pytest
 from pydantic import BaseModel, Field
+import pytest
 from sqlalchemy import Integer, inspect
 
 from pydapter.exceptions import TypeConversionError
@@ -36,9 +36,7 @@ def test_register_type_mapping():
     # Clean up by restoring original mapping
     from sqlalchemy import Boolean
 
-    SQLModelAdapter.register_type_mapping(
-        python_type=bool, sql_type_factory=lambda: Boolean()
-    )
+    SQLModelAdapter.register_type_mapping(python_type=bool, sql_type_factory=lambda: Boolean())
 
 
 @pytest.mark.skip("Relationship handling needs more complex changes")
@@ -50,9 +48,7 @@ def test_one_to_one_relationship():
         name: str
         profile: Optional["Profile"] = Field(
             None,
-            json_schema_extra={
-                "relationship": {"type": "one_to_one", "back_populates": "user"}
-            },
+            json_schema_extra={"relationship": {"type": "one_to_one", "back_populates": "user"}},
         )
 
     class Profile(BaseModel):
@@ -60,9 +56,7 @@ def test_one_to_one_relationship():
         bio: str
         user: User | None = Field(
             None,
-            json_schema_extra={
-                "relationship": {"type": "one_to_one", "back_populates": "profile"}
-            },
+            json_schema_extra={"relationship": {"type": "one_to_one", "back_populates": "profile"}},
         )
 
     # Update forward references
@@ -95,9 +89,7 @@ def test_one_to_many_relationship():
         name: str
         books: list["Book"] = Field(
             default_factory=list,
-            json_schema_extra={
-                "relationship": {"type": "one_to_many", "back_populates": "author"}
-            },
+            json_schema_extra={"relationship": {"type": "one_to_many", "back_populates": "author"}},
         )
 
     class Book(BaseModel):
@@ -106,9 +98,7 @@ def test_one_to_many_relationship():
         author_id: int | None = None
         author: Author | None = Field(
             None,
-            json_schema_extra={
-                "relationship": {"type": "many_to_one", "back_populates": "books"}
-            },
+            json_schema_extra={"relationship": {"type": "many_to_one", "back_populates": "books"}},
         )
 
     # Update forward references

@@ -2,8 +2,8 @@
 Unit tests for WeaviateAdapter.
 """
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.core import Adaptable
 from pydapter.exceptions import ConnectionError, QueryError, ResourceError
@@ -23,9 +23,7 @@ def is_weaviate_available():
         # Use importlib.util to check if the module is available without importing it
         import importlib.util
 
-        if importlib.util.find_spec("weaviate") is None:
-            return False
-        return True
+        return importlib.util.find_spec("weaviate") is not None
     except (ImportError, AttributeError):
         return False
 
@@ -93,9 +91,7 @@ class TestWeaviateAdapterFunctionality:
         mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
 
         # Test to_obj
-        test_model.adapt_to(
-            obj_key="weav", class_name="TestModel", url="http://localhost:8080"
-        )
+        test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://localhost:8080")
 
         # Verify the client was created with the correct URL
         WeaviateAdapter._client.assert_called_once_with("http://localhost:8080")
@@ -269,15 +265,11 @@ class TestWeaviateAdapterErrorHandling:
         test_model.__class__.register_adapter(WeaviateAdapter)
 
         # Mock client creation to raise exception
-        mocker.patch.object(
-            WeaviateAdapter, "_client", side_effect=Exception("Connection failed")
-        )
+        mocker.patch.object(WeaviateAdapter, "_client", side_effect=Exception("Connection failed"))
 
         # Test to_obj with connection error
         with pytest.raises(ConnectionError) as excinfo:
-            test_model.adapt_to(
-                obj_key="weav", class_name="TestModel", url="http://invalid-url"
-            )
+            test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://invalid-url")
 
         assert "Failed to connect to Weaviate" in str(excinfo.value)
 
@@ -416,8 +408,6 @@ class TestWeaviateAdapterErrorHandling:
 
         # Test to_obj with missing vector field
         with pytest.raises(AdapterValidationError) as excinfo:
-            test_model.adapt_to(
-                obj_key="weav", class_name="TestModel", url="http://localhost:8080"
-            )
+            test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://localhost:8080")
 
         assert "Vector field 'embedding' not found in model" in str(excinfo.value)

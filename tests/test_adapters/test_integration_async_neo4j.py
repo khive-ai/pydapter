@@ -7,8 +7,8 @@ These tests use mocked Neo4j connections to simulate database interactions.
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import ConnectionError, ResourceError
@@ -92,9 +92,7 @@ class TestAsyncNeo4jIntegration:
     """Integration tests for AsyncNeo4jAdapter."""
 
     @pytest.mark.asyncio
-    async def test_async_neo4j_single_node(
-        self, async_model_factory, mock_neo4j_driver
-    ):
+    async def test_async_neo4j_single_node(self, async_model_factory, mock_neo4j_driver):
         """Test creating and retrieving a single node."""
         mock_driver, mock_session, mock_result = mock_neo4j_driver
 
@@ -152,17 +150,14 @@ class TestAsyncNeo4jIntegration:
         assert retrieved.value == test_model.value
 
     @pytest.mark.asyncio
-    async def test_async_neo4j_batch_operations(
-        self, async_model_factory, mock_neo4j_driver
-    ):
+    async def test_async_neo4j_batch_operations(self, async_model_factory, mock_neo4j_driver):
         """Test batch operations with multiple nodes."""
         mock_driver, mock_session, mock_result = mock_neo4j_driver
 
         # Create test instances
         model_cls = async_model_factory(id=1, name="test1", value=1.1).__class__
         models = [
-            async_model_factory(id=i, name=f"batch_{i}", value=float(i * 1.5))
-            for i in range(1, 6)
+            async_model_factory(id=i, name=f"batch_{i}", value=float(i * 1.5)) for i in range(1, 6)
         ]
 
         # Mock multiple records for batch retrieval
@@ -223,9 +218,7 @@ class TestAsyncNeo4jIntegration:
         test_model = async_model_factory(id=44, name="test_async_neo4j", value=90.12)
 
         # Mock a connection error
-        with patch(
-            "neo4j.AsyncGraphDatabase.driver", side_effect=Exception("Connection error")
-        ):
+        with patch("neo4j.AsyncGraphDatabase.driver", side_effect=Exception("Connection error")):
             # Try to connect to an invalid Neo4j instance
             with pytest.raises(ConnectionError) as exc_info:
                 await test_model.adapt_to_async(
@@ -236,9 +229,7 @@ class TestAsyncNeo4jIntegration:
             assert "Neo4j" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_async_neo4j_resource_not_found(
-        self, async_model_factory, mock_neo4j_driver
-    ):
+    async def test_async_neo4j_resource_not_found(self, async_model_factory, mock_neo4j_driver):
         """Test handling of resource not found errors."""
         mock_driver, mock_session, mock_result = mock_neo4j_driver
         model_cls = async_model_factory(id=1, name="test1", value=1.1).__class__
@@ -268,9 +259,7 @@ class TestAsyncNeo4jIntegration:
         assert "No nodes found matching the query" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_async_neo4j_update_node(
-        self, async_model_factory, mock_neo4j_driver
-    ):
+    async def test_async_neo4j_update_node(self, async_model_factory, mock_neo4j_driver):
         """Test updating an existing node."""
         mock_driver, mock_session, mock_result = mock_neo4j_driver
 
@@ -330,9 +319,7 @@ class TestAsyncNeo4jIntegration:
         assert retrieved.value == 200.0
 
     @pytest.mark.asyncio
-    async def test_async_neo4j_where_clause(
-        self, async_model_factory, mock_neo4j_driver
-    ):
+    async def test_async_neo4j_where_clause(self, async_model_factory, mock_neo4j_driver):
         """Test filtering with where clause."""
         mock_driver, mock_session, mock_result = mock_neo4j_driver
         model_cls = async_model_factory(id=1, name="test1", value=1.1).__class__
@@ -391,9 +378,7 @@ class TestAsyncNeo4jIntegration:
             assert model.value > 115
 
     @pytest.mark.asyncio
-    async def test_async_neo4j_custom_merge_on(
-        self, async_model_factory, mock_neo4j_driver
-    ):
+    async def test_async_neo4j_custom_merge_on(self, async_model_factory, mock_neo4j_driver):
         """Test using a custom merge property."""
         mock_driver, mock_session, mock_result = mock_neo4j_driver
 
@@ -464,9 +449,7 @@ class TestAsyncNeo4jIntegration:
         assert retrieved.value == 987.65  # Updated value
 
     @pytest.mark.asyncio
-    async def test_async_neo4j_empty_result_many(
-        self, async_model_factory, mock_neo4j_driver
-    ):
+    async def test_async_neo4j_empty_result_many(self, async_model_factory, mock_neo4j_driver):
         """Test handling of empty result set with many=True."""
         mock_driver, mock_session, mock_result = mock_neo4j_driver
         model_cls = async_model_factory(id=1, name="test1", value=1.1).__class__
