@@ -4,8 +4,15 @@ Generic async SQL adapter - SQLAlchemy 2.x asyncio + asyncpg driver.
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Sequence
-from typing import Any, Literal, NotRequired, Required, TypedDict, TypeVar
+from typing import Any, Literal, TypeVar
+
+# Python 3.10 compatibility: NotRequired, Required, TypedDict
+if sys.version_info < (3, 11):
+    from typing_extensions import NotRequired, Required, TypedDict
+else:
+    from typing import NotRequired, Required, TypedDict
 
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError

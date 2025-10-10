@@ -314,9 +314,14 @@ class PostgresModelAdapter(SQLModelAdapter):
                 default = info.default if info.default is not None else None
 
                 # Skip if this is a vector field (handled by PGVectorModelAdapter)
-                if (item_type is float or (
-                    isinstance(item_type, type) and issubclass(item_type, float)
-                )) and hasattr(cls, "_python_type_for") and cls.__name__ == "PGVectorModelAdapter":
+                if (
+                    (
+                        item_type is float
+                        or (isinstance(item_type, type) and issubclass(item_type, float))
+                    )
+                    and hasattr(cls, "_python_type_for")
+                    and cls.__name__ == "PGVectorModelAdapter"
+                ):
                     continue
 
                 ns[name] = cls.handle_array(item_type, 1, is_nullable, default)
