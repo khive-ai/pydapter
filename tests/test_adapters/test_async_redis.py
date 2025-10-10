@@ -428,9 +428,11 @@ class TestAsyncRedisAdapterOperations:
             await AsyncRedisAdapter.from_obj(User, read_config)
         assert "Key not found" in str(exc_info.value)
 
-        # Test invalid configuration
-        with pytest.raises(AdapterValidationError):
-            await AsyncRedisAdapter.from_obj(User, {})
+        # Test invalid serialization format
+        invalid_config = {**redis_container, "key": "test", "serialization": "invalid"}
+        with pytest.raises(AdapterValidationError) as exc_info:
+            await AsyncRedisAdapter.from_obj(User, invalid_config)
+        assert "Unsupported serialization format" in str(exc_info.value)
 
         # Test missing key parameter for single retrieval
         with pytest.raises(AdapterValidationError) as exc_info:

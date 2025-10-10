@@ -199,6 +199,7 @@ result = await AsyncSQLAdapter.to_obj(
 
 **Important**: Raw SQL operations do NOT require a `table` parameter and do NOT
 perform table inspection. This makes them ideal for:
+
 - Complex queries across multiple tables
 - Aggregations and analytical queries
 - DDL operations (CREATE, ALTER, DROP)
