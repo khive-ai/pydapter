@@ -485,8 +485,8 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         self._validate_cypher(cypher)
 
         try:
-            # Execute the query - in Neo4j 5.x, await session.run() to get the result
-            result = await self._session.run(cypher, **params)
+            # Execute the query - session.run() returns Result immediately (not awaitable)
+            result = self._session.run(cypher, **params)
 
             # Process the results - handle arbitrary query result structures
             rows = []

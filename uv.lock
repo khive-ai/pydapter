@@ -2729,6 +2729,7 @@ dependencies = [
     { name = "orjson" },
     { name = "pydantic" },
     { name = "toml" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -2951,6 +2952,7 @@ requires-dist = [
     { name = "toml", specifier = ">=0.8.0" },
     { name = "trio", marker = "extra == 'test'", specifier = ">=0.22.0" },
     { name = "types-toml", marker = "extra == 'docs'", specifier = ">=0.10.8" },
+    { name = "typing-extensions", specifier = ">=4.5.0" },
     { name = "weaviate", marker = "extra == 'weaviate'", specifier = ">=0.1.2" },
     { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.10" },
     { name = "xlsxwriter", marker = "extra == 'excel'", specifier = ">=3.2.5" },

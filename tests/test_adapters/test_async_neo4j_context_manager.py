@@ -58,8 +58,8 @@ class TestAsyncNeo4jContextManager:
                 # Verify the result
                 assert result is not None
                 assert len(result) == 1
-                # query() returns list of _properties dicts directly
-                assert result[0]["id"] == 1
+                # query() returns list of dicts with column names as keys
+                assert result[0]["n"]["id"] == 1
 
             # Verify the session was closed
             mock_session.close.assert_called_once()

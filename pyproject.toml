@@ -9,6 +9,7 @@ dependencies = [
     "orjson>=3.10.0",
     "pydantic>=2.6",
     "toml>=0.8.0",
+    "typing-extensions>=4.5.0",
 ]
 
 [dependency-groups]
