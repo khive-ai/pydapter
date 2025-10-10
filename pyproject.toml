@@ -47,7 +47,7 @@ test = [
     "pytest-mock>=3.10.0",
     "pytest-xdist>=3.3.0",
     "pytest-watch>=4.2.0",
-    "testcontainers[mongodb,postgres,qdrant, weaviate]>=3.7.0",
+    "testcontainers[mongodb,postgres,qdrant,weaviate,redis]>=3.7.0",
     "hypothesis>=6.130.0",
     "hypothesis-jsonschema>=0.23.0",
     "mutmut>=3.3.0",
@@ -116,17 +116,11 @@ qdrant = [
     "qdrant-client>=1.10",
 ]
 
-memvid = [
-    "memvid>=0.1.0",
-]
-
-pulsar = [
-    "pulsar-client>=3.7.0",
-]
-
-memvid-pulsar = [
-    "pydapter[memvid]",
-    "pydapter[pulsar]",
+redis = [
+    "redis[hiredis]>=4.2.0",
+    "ormsgpack>=1.4.0",
+    "orjson>=3.8.0",
+    "tenacity>=8.0.0",
 ]
 
 aiohttp = [
@@ -160,7 +154,7 @@ all = [
     "pydapter[neo4j]",
     "pydapter[motor]",
     "pydapter[qdrant]",
-    "pydapter[memvid-pulsar]",
+    "pydapter[redis]",
     "pydapter[aiohttp]",
     "pydapter[email]",
     "pydapter[migrations]",
