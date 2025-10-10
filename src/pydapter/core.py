@@ -196,7 +196,7 @@ class AdapterRegistry:
             return result
 
         except Exception as exc:
-            if isinstance(exc, AdapterError | PYDAPTER_PYTHON_ERRORS):
+            if isinstance(exc, (AdapterError, *PYDAPTER_PYTHON_ERRORS)):
                 raise
 
             raise AdapterError(f"Error adapting from {obj_key}", original_error=str(exc)) from exc
@@ -227,7 +227,7 @@ class AdapterRegistry:
             return result
 
         except Exception as exc:
-            if isinstance(exc, AdapterError | PYDAPTER_PYTHON_ERRORS):
+            if isinstance(exc, (AdapterError, *PYDAPTER_PYTHON_ERRORS)):
                 raise
 
             raise AdapterError(f"Error adapting to {obj_key}", original_error=str(exc)) from exc

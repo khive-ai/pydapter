@@ -84,7 +84,7 @@ class AsyncAdapterRegistry:
                 raise AdapterError(f"Async adapter {obj_key} returned None", adapter=obj_key)
             return result
         except Exception as exc:
-            if isinstance(exc, AdapterError | PYDAPTER_PYTHON_ERRORS):
+            if isinstance(exc, (AdapterError, *PYDAPTER_PYTHON_ERRORS)):
                 raise
 
             # Wrap other exceptions with context
@@ -99,7 +99,7 @@ class AsyncAdapterRegistry:
                 raise AdapterError(f"Async adapter {obj_key} returned None", adapter=obj_key)
             return result
         except Exception as exc:
-            if isinstance(exc, AdapterError | PYDAPTER_PYTHON_ERRORS):
+            if isinstance(exc, (AdapterError, *PYDAPTER_PYTHON_ERRORS)):
                 raise
 
             raise AdapterError(
