@@ -16,9 +16,7 @@ from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
-import redis.asyncio as aioredis
 from pydantic import BaseModel
-from testcontainers.redis import RedisContainer
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import (
@@ -31,10 +29,11 @@ from pydapter.exceptions import ValidationError as AdapterValidationError
 def is_redis_available():
     """Check if Redis async adapter dependencies are properly installed."""
     try:
-        import orjson
-        import ormsgpack
-        import redis.asyncio as redis
-        from tenacity import AsyncRetrying
+        import orjson  # noqa: F401
+        import ormsgpack  # noqa: F401
+        import redis.asyncio as redis  # noqa: F401
+        from tenacity import AsyncRetrying  # noqa: F401
+        from testcontainers.redis import RedisContainer  # noqa: F401
 
         return True
     except ImportError:
@@ -46,6 +45,11 @@ redis_skip_marker = pytest.mark.skipif(
     not is_redis_available(),
     reason="Redis dependencies not available. Install with: pip install 'pydapter[redis]'",
 )
+
+# Import dependencies conditionally after availability check
+if is_redis_available():
+    import redis.asyncio as aioredis
+    from testcontainers.redis import RedisContainer
 
 
 # Test Models
