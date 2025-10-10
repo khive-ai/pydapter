@@ -211,7 +211,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to return a mock result
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Mock the async iterator for result
         mock_record = MagicMock()
@@ -267,7 +268,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to return a mock result
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Mock the async iterator for result
         mock_record = MagicMock()
@@ -323,7 +325,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to return a mock result
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Mock the async iterator for result
         mock_record = MagicMock()
@@ -373,7 +376,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to return a mock result
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Set up the async iterator
         mock_result.__aiter__ = MagicMock()
@@ -417,7 +421,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to return a mock result
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Set up the async iterator
         mock_result.__aiter__ = MagicMock()
@@ -456,7 +461,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to raise an exception
-        mock_session.run = AsyncMock(side_effect=CypherSyntaxError("Syntax error"))
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(side_effect=CypherSyntaxError("Syntax error"))
 
         # Mock session.close to return a completed future
         close_future = asyncio.Future()
@@ -489,7 +495,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to return a mock result
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Mock the async iterator for result with invalid data
         mock_record = MagicMock()
@@ -561,7 +568,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to return a mock result
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Mock session.close to return a completed future
         close_future = asyncio.Future()
@@ -603,7 +611,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to return a mock result
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Mock session.close to return a completed future
         close_future = asyncio.Future()
@@ -665,7 +674,8 @@ class TestAsyncNeo4jAdapter:
         mock_driver.session = MagicMock(return_value=mock_session)
 
         # Configure the run method to return a mock result
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Mock session.close to return a completed future
         close_future = asyncio.Future()
@@ -706,7 +716,8 @@ class TestAsyncNeo4jAdapter:
         mock_session.__aenter__.return_value = mock_session
 
         # Configure the run method to raise an exception
-        mock_session.run = AsyncMock(side_effect=CypherSyntaxError("Syntax error"))
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(side_effect=CypherSyntaxError("Syntax error"))
 
         # Patch the _create_driver method
         with patch.object(

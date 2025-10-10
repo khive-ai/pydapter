@@ -31,8 +31,8 @@ class TestAsyncNeo4jContextManager:
         mock_session.__aexit__.return_value = None
 
         # Configure the run method to return a mock result
-        # Make sure run() is an async method that can be awaited
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Mock the async iterator for result
         mock_node = MagicMock(_properties={"id": 1})
@@ -58,8 +58,8 @@ class TestAsyncNeo4jContextManager:
                 # Verify the result
                 assert result is not None
                 assert len(result) == 1
-                # Result structure is {"n": {"id": 1}} because query returns column "n"
-                assert result[0]["n"]["id"] == 1
+                # query() returns list of _properties dicts directly
+                assert result[0]["id"] == 1
 
             # Verify the session was closed
             mock_session.close.assert_called_once()
@@ -80,7 +80,8 @@ class TestAsyncNeo4jContextManager:
         mock_session.__aexit__.return_value = None
 
         # Configure the run method to raise an exception
-        mock_session.run = AsyncMock(side_effect=CypherSyntaxError("Syntax error"))
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(side_effect=CypherSyntaxError("Syntax error"))
 
         # Patch the _create_driver method
         with patch.object(
@@ -163,8 +164,8 @@ class TestAsyncNeo4jContextManager:
         mock_session.__aexit__.return_value = None
 
         # Configure the run method to return a mock result
-        # Make sure run() is an async method that can be awaited
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Configure the session close method to raise an exception
         mock_session.close = MagicMock(side_effect=Exception("Session close failed"))
@@ -199,8 +200,8 @@ class TestAsyncNeo4jContextManager:
         mock_session.__aexit__.return_value = None
 
         # Configure the run method to return a mock result
-        # Make sure run() is an async method that can be awaited
-        mock_session.run = AsyncMock(return_value=mock_result)
+        # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+        mock_session.run = MagicMock(return_value=mock_result)
 
         # Mock the async iterator for result
         mock_node = MagicMock(_properties={"id": 1})
