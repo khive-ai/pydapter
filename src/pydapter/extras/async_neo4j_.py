@@ -177,8 +177,8 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                 session = driver.session()
                 try:
                     try:
-                        # Execute the query - in Neo4j 5.x, await session.run() to get the result
-                        result = await session.run(cypher)
+                        # Execute the query - session.run() returns Result immediately (not awaitable)
+                        result = session.run(cypher)
                         # Process the results
                         rows = []
                         async for record in result:
@@ -360,8 +360,8 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
 
                         # Execute query
                         try:
-                            # Execute the query - in Neo4j 5.x, await session.run() to get the result
-                            result = await session.run(
+                            # Execute the query - session.run() returns Result immediately (not awaitable)
+                            result = session.run(
                                 cypher, val=props[merge_on], props=props
                             )
                             # Consume the result to ensure it's executed

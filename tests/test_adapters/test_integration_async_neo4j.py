@@ -67,7 +67,8 @@ def mock_neo4j_driver():
     mock_driver.session = MagicMock(return_value=mock_session)
 
     # Configure the run method to return the mock result directly
-    mock_session.run = AsyncMock(return_value=mock_result)
+    # session.run() returns Result immediately (not awaitable in Neo4j 5.x)
+    mock_session.run = MagicMock(return_value=mock_result)
 
     # Mock session.close to return a completed future
     close_future = asyncio.Future()
