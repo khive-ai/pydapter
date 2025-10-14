@@ -2,110 +2,318 @@
 pydapter.exceptions - Custom exception hierarchy for pydapter.
 """
 
+from __future__ import annotations
+
 from typing import Any
+
+from .types import BaseError
 
 PYDAPTER_PYTHON_ERRORS = (KeyError, ImportError, AttributeError, ValueError)
 
 
-class AdapterError(Exception):
+__all__ = (
+    "PydapterError",
+    "ValidationError",
+    "TypeConversionError",
+    "ParseError",
+    "ConnectionError",
+    "QueryError",
+    "ResourceError",
+    "ConfigurationError",
+    "AdapterNotFoundError",
+    "AdapterError",  # backward compatibility alias
+    "PYDAPTER_PYTHON_ERRORS",
+)
+
+
+class PydapterError(BaseError):
     """Base exception for all pydapter errors."""
 
-    def __init__(self, message: str, **context: Any):
-        super().__init__(message)
-        self.message = message
-        self.context = context
+    default_message = "Pydapter error"
+    default_status_code = 500
+    __slots__ = ()
 
-    def __str__(self) -> str:
-        context_str = ", ".join(f"{k}={v!r}" for k, v in self.context.items())
-        if context_str:
-            return f"{self.message} ({context_str})"
-        return self.message
+    def __init__(
+        self,
+        message: str | None = None,
+        *,
+        adapter: str | None = None,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
+    ):
+        details = details or {}
+        if adapter:
+            details["adapter"] = adapter
+        super().__init__(message, details=details, status_code=status_code, cause=cause)
 
 
-class ValidationError(AdapterError):
+# Error classes
+class ValidationError(PydapterError):
     """Exception raised when data validation fails."""
 
-    def __init__(self, message: str, data: Any | None = None, **context: Any):
-        super().__init__(message, **context)
-        self.data = data
+    default_message = "Validation failed"
+    default_status_code = 422  # Unprocessable Entity
+    __slots__ = ()
+
+    def __init__(
+        self,
+        message: str | None = None,
+        *,
+        data: Any | None = None,
+        errors: list[dict] | None = None,
+        field_path: str | None = None,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
+        adapter: str | None = None,
+    ):
+        details = details or {}
+        params = {
+            "data": data,
+            "errors": errors,
+            "field_path": field_path,
+        }
+        details.update({k: v for k, v in params.items() if v is not None})
+        super().__init__(
+            message,
+            details=details,
+            status_code=status_code,
+            cause=cause,
+            adapter=adapter,
+        )
 
 
 class TypeConversionError(ValidationError):
     """Exception raised when type conversion fails."""
 
+    default_message = "Type conversion failed"
+    __slots__ = ()
+
     def __init__(
         self,
-        message: str,
+        message: str | None = None,
+        *,
         source_type: type | None = None,
         target_type: type | None = None,
         field_name: str | None = None,
         model_name: str | None = None,
-        **context: Any,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
+        adapter: str | None = None,
     ):
-        super().__init__(message, **context)
-        self.source_type = source_type
-        self.target_type = target_type
-        self.field_name = field_name
-        self.model_name = model_name
+        details = details or {}
+        params = {
+            "source_type": source_type.__name__ if source_type else None,
+            "target_type": target_type.__name__ if target_type else None,
+            "field_name": field_name,
+            "model_name": model_name,
+        }
+        details.update({k: v for k, v in params.items() if v is not None})
+
+        super().__init__(
+            message,
+            details=details,
+            status_code=status_code,
+            cause=cause,
+            adapter=adapter,
+        )
 
 
-class ParseError(AdapterError):
+class ParseError(PydapterError):
     """Exception raised when data parsing fails."""
 
-    def __init__(self, message: str, source: str | None = None, **context: Any):
-        super().__init__(message, **context)
-        self.source = source
+    default_message = "Parse failed"
+    default_status_code = 400  # Bad Request
+    __slots__ = ()
+
+    def __init__(
+        self,
+        message: str | None = None,
+        *,
+        source: str | None = None,
+        position: int | None = None,
+        line: int | None = None,
+        column: int | None = None,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
+        adapter: str | None = None,
+    ):
+        details = details or {}
+        params = {
+            "source": source,
+            "position": position,
+            "line": line,
+            "column": column,
+        }
+        details.update({k: v for k, v in params.items() if v is not None})
+        super().__init__(
+            message,
+            details=details,
+            status_code=status_code,
+            cause=cause,
+            adapter=adapter,
+        )
 
 
-class ConnectionError(AdapterError):
+class ConnectionError(PydapterError):
     """Exception raised when a connection to a data source fails."""
 
+    default_message = "Connection failed"
+    default_status_code = 503  # Service Unavailable
+    __slots__ = ()
+
     def __init__(
         self,
-        message: str,
-        adapter: str | None = None,
+        message: str | None = None,
+        *,
         url: str | None = None,
-        **context: Any,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
+        adapter: str | None = None,
     ):
-        super().__init__(message, **context)
-        self.adapter = adapter
-        self.url = url
+        details = details or {}
+        params = {
+            "url": url,
+        }
+        details.update({k: v for k, v in params.items() if v is not None})
+        super().__init__(
+            message,
+            details=details,
+            status_code=status_code,
+            cause=cause,
+            adapter=adapter,
+        )
 
 
-class QueryError(AdapterError):
+class QueryError(PydapterError):
     """Exception raised when a query to a data source fails."""
 
+    default_message = "Query failed"
+    default_status_code = 400  # Bad Request
+    __slots__ = ()
+
     def __init__(
         self,
-        message: str,
+        message: str | None = None,
+        *,
         query: Any | None = None,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
         adapter: str | None = None,
-        **context: Any,
     ):
-        super().__init__(message, **context)
-        self.query = query
-        self.adapter = adapter
+        details = details or {}
+        params = {
+            "query": query,
+        }
+        details.update({k: v for k, v in params.items() if v is not None})
+        super().__init__(
+            message,
+            details=details,
+            status_code=status_code,
+            cause=cause,
+            adapter=adapter,
+        )
 
 
-class ResourceError(AdapterError):
+class ResourceError(PydapterError):
     """Exception raised when a resource (file, database, etc.) cannot be accessed."""
 
-    def __init__(self, message: str, resource: str | None = None, **context: Any):
-        super().__init__(message, **context)
-        self.resource = resource
+    default_message = "Resource not found"
+    default_status_code = 404  # Not Found
+    __slots__ = ()
+
+    def __init__(
+        self,
+        message: str | None = None,
+        *,
+        resource: str | None = None,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
+        adapter: str | None = None,
+    ):
+        details = details or {}
+        params = {
+            "resource": resource,
+        }
+        details.update({k: v for k, v in params.items() if v is not None})
+        super().__init__(
+            message,
+            details=details,
+            status_code=status_code,
+            cause=cause,
+            adapter=adapter,
+        )
 
 
-class ConfigurationError(AdapterError):
+class ConfigurationError(PydapterError):
     """Exception raised when adapter configuration is invalid."""
 
-    def __init__(self, message: str, config: dict[str, Any] | None = None, **context: Any):
-        super().__init__(message, **context)
-        self.config = config
+    default_message = "Configuration invalid"
+    default_status_code = 500  # Internal Server Error
+    __slots__ = ()
+
+    def __init__(
+        self,
+        message: str | None = None,
+        *,
+        config: dict[str, Any] | None = None,
+        adapter_class: str | None = None,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
+        adapter: str | None = None,
+    ):
+        details = details or {}
+        params = {
+            "config": config,
+            "adapter_class": adapter_class,
+        }
+        details.update({k: v for k, v in params.items() if v is not None})
+        super().__init__(
+            message,
+            details=details,
+            status_code=status_code,
+            cause=cause,
+            adapter=adapter,
+        )
 
 
-class AdapterNotFoundError(AdapterError):
+class AdapterNotFoundError(PydapterError):
     """Exception raised when an adapter is not found."""
 
-    def __init__(self, message: str, obj_key: str | None = None, **context: Any):
-        super().__init__(message, **context)
-        self.obj_key = obj_key
+    default_message = "Adapter not found"
+    default_status_code = 404  # Not Found
+    __slots__ = ()
+
+    def __init__(
+        self,
+        message: str | None = None,
+        *,
+        obj_key: str | None = None,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
+        adapter: str | None = None,
+    ):
+        details = details or {}
+        params = {
+            "obj_key": obj_key,
+        }
+        details.update({k: v for k, v in params.items() if v is not None})
+        super().__init__(
+            message,
+            details=details,
+            status_code=status_code,
+            cause=cause,
+            adapter=adapter,
+        )
+
+
+# Backward compatibility alias
+AdapterError = PydapterError
