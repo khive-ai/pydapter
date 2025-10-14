@@ -110,9 +110,16 @@ class TypeConversionError(ValidationError):
         **extra_context: Any,
     ):
         details = details or {}
+        # Always include source_type and target_type (even if None) for attribute access
+        details["source_type"] = source_type
+        details["target_type"] = target_type
+        # Store string names for serialization (only if type is not None)
+        if source_type:
+            details["source_type_name"] = source_type.__name__
+        if target_type:
+            details["target_type_name"] = target_type.__name__
+        # Add other optional fields
         params = {
-            "source_type": source_type.__name__ if source_type else None,
-            "target_type": target_type.__name__ if target_type else None,
             "field_name": field_name,
             "model_name": model_name,
         }

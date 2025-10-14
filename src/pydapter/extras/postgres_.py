@@ -4,11 +4,12 @@ PostgresAdapter - thin preset over SQLAdapter (pgvector-ready if you add vec col
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TypeVar
 
 from pydantic import BaseModel
 
-from ..exceptions import ConnectionError
+from ..exceptions import PydapterError
 from .sql_ import SQLAdapter
 
 T = TypeVar("T", bound=BaseModel)
@@ -55,8 +56,68 @@ class PostgresAdapter(SQLAdapter[T]):
         ```
     """
 
-    obj_key = "postgres"
+    adapter_key = "postgres"
+    obj_key = "postgres"  # Backward compatibility
     DEFAULT = "postgresql+psycopg://user:pass@localhost/db"
+
+    # -------- Helper Methods --------
+
+    @classmethod
+    def _detect_postgres_error_type(cls, error_str: str, url: str, exc: Exception) -> None:
+        """
+        Detect and raise appropriate PostgreSQL-specific errors.
+
+        Args:
+            error_str: Lowercase error message string
+            url: Connection URL for context
+            exc: Original exception
+
+        Raises:
+            ConnectionError: If PostgreSQL-specific error detected
+        """
+        error_str_lower = error_str.lower()
+
+        if "authentication" in error_str_lower:
+            cls._handle_error(
+                exc,
+                "connection",
+                reason="authentication_failed",
+                url=url,
+            )
+        elif "connection" in error_str_lower and "refused" in error_str_lower:
+            cls._handle_error(
+                exc,
+                "connection",
+                reason="connection_refused",
+                url=url,
+            )
+        elif "does not exist" in error_str_lower and "database" in error_str_lower:
+            cls._handle_error(
+                exc,
+                "connection",
+                reason="database_not_found",
+                url=url,
+            )
+
+    @classmethod
+    def _prepare_config(cls, obj: dict | None = None, **kw) -> dict:
+        """
+        Prepare configuration with default PostgreSQL connection string.
+
+        Args:
+            obj: Config dict (for from_obj)
+            kw: Keyword args (for to_obj)
+
+        Returns:
+            Config dict with defaults applied
+        """
+        if obj is not None:
+            config = obj.copy()
+        else:
+            config = kw.copy()
+
+        config.setdefault("engine_url", cls.DEFAULT)
+        return config
 
     @classmethod
     def from_obj(
@@ -66,91 +127,71 @@ class PostgresAdapter(SQLAdapter[T]):
         /,
         *,
         many: bool = True,
-        adapt_meth: str = "model_validate",
+        adapt_meth: str | Callable = "model_validate",
+        adapt_kw: dict | None = None,
         **kw,
     ):
         try:
-            # Set default connection string if not provided
-            obj.setdefault("engine_url", cls.DEFAULT)
+            # Prepare config with defaults
+            obj = cls._prepare_config(obj)
 
-            # Add PostgreSQL-specific error handling
+            # Call parent SQLAdapter
             try:
-                return super().from_obj(subj_cls, obj, many=many, adapt_meth=adapt_meth, **kw)
+                return super().from_obj(
+                    subj_cls, obj, many=many, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
+                )
             except Exception as e:
-                # Check for common PostgreSQL-specific errors
-                error_str = str(e).lower()
-                if "authentication" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL authentication failed: {e}",
-                        adapter="postgres",
-                        url=obj["engine_url"],
-                    ) from e
-                elif "connection" in error_str and "refused" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL connection refused: {e}",
-                        adapter="postgres",
-                        url=obj["engine_url"],
-                    ) from e
-                elif "does not exist" in error_str and "database" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL database does not exist: {e}",
-                        adapter="postgres",
-                        url=obj["engine_url"],
-                    ) from e
-                # Re-raise the original exception
+                # Detect PostgreSQL-specific errors
+                cls._detect_postgres_error_type(str(e), obj["engine_url"], e)
+                # If not PostgreSQL-specific, re-raise
                 raise
 
-        except ConnectionError:
-            # Re-raise ConnectionError
+        except PydapterError:
+            # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise ConnectionError(
-                f"Unexpected error in PostgreSQL adapter: {e}",
-                adapter="postgres",
+            # Outer safety net
+            cls._handle_error(
+                e,
+                "connection",
                 url=obj.get("engine_url", cls.DEFAULT),
-            ) from e
+                unexpected=True,
+            )
 
     @classmethod
-    def to_obj(cls, subj, /, *, many: bool = True, adapt_meth: str = "model_dump", **kw):
+    def to_obj(
+        cls,
+        subj,
+        /,
+        *,
+        many: bool = True,
+        adapt_meth: str | Callable = "model_dump",
+        adapt_kw: dict | None = None,
+        **kw,
+    ):
         try:
-            # Set default connection string if not provided
-            kw.setdefault("engine_url", cls.DEFAULT)
+            # Prepare config with defaults
+            kw = cls._prepare_config(None, **kw)
 
-            # Add PostgreSQL-specific error handling
+            # Call parent SQLAdapter
             try:
-                return super().to_obj(subj, many=many, adapt_meth=adapt_meth, **kw)
+                return super().to_obj(
+                    subj, many=many, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
+                )
             except Exception as e:
-                # Check for common PostgreSQL-specific errors
-                error_str = str(e).lower()
-                if "authentication" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL authentication failed: {e}",
-                        adapter="postgres",
-                        url=kw["engine_url"],
-                    ) from e
-                elif "connection" in error_str and "refused" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL connection refused: {e}",
-                        adapter="postgres",
-                        url=kw["engine_url"],
-                    ) from e
-                elif "does not exist" in error_str and "database" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL database does not exist: {e}",
-                        adapter="postgres",
-                        url=kw["engine_url"],
-                    ) from e
-                # Re-raise the original exception
+                # Detect PostgreSQL-specific errors
+                cls._detect_postgres_error_type(str(e), kw["engine_url"], e)
+                # If not PostgreSQL-specific, re-raise
                 raise
 
-        except ConnectionError:
-            # Re-raise ConnectionError
+        except PydapterError:
+            # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise ConnectionError(
-                f"Unexpected error in PostgreSQL adapter: {e}",
-                adapter="postgres",
+            # Outer safety net
+            cls._handle_error(
+                e,
+                "connection",
                 url=kw.get("engine_url", cls.DEFAULT),
-            ) from e
+                unexpected=True,
+            )

@@ -30,11 +30,7 @@ from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
 
 from ..async_core import AsyncAdapter
-from ..exceptions import (
-    ConnectionError,
-    QueryError,
-    ResourceError,
-)
+from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)

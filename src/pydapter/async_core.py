@@ -4,6 +4,7 @@ pydapter.async_core - async counterparts to the sync Adapter stack
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, ClassVar, Protocol, TypeVar, runtime_checkable
 
 from .exceptions import (
@@ -11,9 +12,92 @@ from .exceptions import (
     AdapterError,
     AdapterNotFoundError,
     ConfigurationError,
+    ConnectionError,
+    ParseError,
+    QueryError,
+    ResourceError,
 )
+from .exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T")
+
+
+# --------------------------------------------------- dispatch_adapt_meth
+def dispatch_adapt_meth(
+    adapt_meth: str | Callable,
+    obj: Any,
+    adapt_kw: dict[str, Any] | None = None,
+    cls: type | None = None,
+) -> Any:
+    """
+    Dispatch adapt_meth as either a string method name or a callable.
+
+    Args:
+        adapt_meth: Method name (str) or callable function
+        obj: Object to adapt (passed to method/callable)
+        adapt_kw: Keyword arguments for the method/callable
+        cls: Class to get method from (required if adapt_meth is str)
+
+    Returns:
+        Result of calling the method/callable
+    """
+    if callable(adapt_meth):
+        return adapt_meth(obj, **(adapt_kw or {}))
+    else:
+        if cls is None:
+            raise ValueError("cls required when adapt_meth is a string")
+        return getattr(cls, adapt_meth)(obj, **(adapt_kw or {}))
+
+
+# ------------------------------------------------------------ AsyncAdapterBase
+class AsyncAdapterBase:
+    """Base class providing _handle_error() for consistent exception wrapping in async adapters."""
+
+    adapter_key: str = "base"
+
+    # Exception category → PydapterError subclass mapping
+    _error_mapping: dict[str, type] = {
+        "parse": ParseError,
+        "validation": AdapterValidationError,
+        "connection": ConnectionError,
+        "query": QueryError,
+        "resource": ResourceError,
+    }
+
+    @classmethod
+    def _handle_error(cls, exc: Exception, category: str, **extra_details) -> None:
+        """Wrap exception in appropriate PydapterError subclass with context."""
+        error_class = cls._error_mapping.get(category, AdapterError)
+
+        # Build error details - safely handle source/data truncation
+        details = {
+            "category": category,
+            "original_exception": exc.__class__.__name__,
+        }
+
+        # Safely truncate source/data fields if present
+        for key in ("source", "data"):
+            if key in extra_details:
+                value = extra_details[key]
+                if isinstance(value, (str, bytes)):
+                    # Truncate long strings/bytes to 100 chars
+                    if len(value) > 100:
+                        details[key] = f"{value[:100]}... (truncated)"
+                    else:
+                        details[key] = value
+                else:
+                    # For other types (dict, list, etc.), include as-is
+                    details[key] = value
+
+        # Add other details
+        details.update({k: v for k, v in extra_details.items() if k not in ("source", "data")})
+
+        # Add adapter_key if available
+        if hasattr(cls, "adapter_key"):
+            details["adapter"] = cls.adapter_key
+
+        # Raise with original traceback preserved
+        raise error_class(str(exc), **details) from exc
 
 
 # ----------------------------------------------------------------- AsyncAdapter
