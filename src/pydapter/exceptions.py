@@ -41,10 +41,13 @@ class PydapterError(BaseError):
         details: dict[str, Any] | None = None,
         status_code: int | None = None,
         cause: Exception | None = None,
+        **extra_context: Any,
     ):
         details = details or {}
         if adapter:
             details["adapter"] = adapter
+        # Merge any extra kwargs into details
+        details.update(extra_context)
         super().__init__(message, details=details, status_code=status_code, cause=cause)
 
 
@@ -67,6 +70,7 @@ class ValidationError(PydapterError):
         status_code: int | None = None,
         cause: Exception | None = None,
         adapter: str | None = None,
+        **extra_context: Any,
     ):
         details = details or {}
         params = {
@@ -75,6 +79,7 @@ class ValidationError(PydapterError):
             "field_path": field_path,
         }
         details.update({k: v for k, v in params.items() if v is not None})
+        details.update(extra_context)
         super().__init__(
             message,
             details=details,
@@ -102,6 +107,7 @@ class TypeConversionError(ValidationError):
         status_code: int | None = None,
         cause: Exception | None = None,
         adapter: str | None = None,
+        **extra_context: Any,
     ):
         details = details or {}
         params = {
@@ -111,6 +117,7 @@ class TypeConversionError(ValidationError):
             "model_name": model_name,
         }
         details.update({k: v for k, v in params.items() if v is not None})
+        details.update(extra_context)
 
         super().__init__(
             message,
@@ -140,6 +147,7 @@ class ParseError(PydapterError):
         status_code: int | None = None,
         cause: Exception | None = None,
         adapter: str | None = None,
+        **extra_context: Any,
     ):
         details = details or {}
         params = {
@@ -149,6 +157,7 @@ class ParseError(PydapterError):
             "column": column,
         }
         details.update({k: v for k, v in params.items() if v is not None})
+        details.update(extra_context)
         super().__init__(
             message,
             details=details,
@@ -174,12 +183,14 @@ class ConnectionError(PydapterError):
         status_code: int | None = None,
         cause: Exception | None = None,
         adapter: str | None = None,
+        **extra_context: Any,
     ):
         details = details or {}
         params = {
             "url": url,
         }
         details.update({k: v for k, v in params.items() if v is not None})
+        details.update(extra_context)
         super().__init__(
             message,
             details=details,
@@ -205,12 +216,14 @@ class QueryError(PydapterError):
         status_code: int | None = None,
         cause: Exception | None = None,
         adapter: str | None = None,
+        **extra_context: Any,
     ):
         details = details or {}
         params = {
             "query": query,
         }
         details.update({k: v for k, v in params.items() if v is not None})
+        details.update(extra_context)
         super().__init__(
             message,
             details=details,
@@ -236,12 +249,14 @@ class ResourceError(PydapterError):
         status_code: int | None = None,
         cause: Exception | None = None,
         adapter: str | None = None,
+        **extra_context: Any,
     ):
         details = details or {}
         params = {
             "resource": resource,
         }
         details.update({k: v for k, v in params.items() if v is not None})
+        details.update(extra_context)
         super().__init__(
             message,
             details=details,
@@ -268,6 +283,7 @@ class ConfigurationError(PydapterError):
         status_code: int | None = None,
         cause: Exception | None = None,
         adapter: str | None = None,
+        **extra_context: Any,
     ):
         details = details or {}
         params = {
@@ -275,6 +291,7 @@ class ConfigurationError(PydapterError):
             "adapter_class": adapter_class,
         }
         details.update({k: v for k, v in params.items() if v is not None})
+        details.update(extra_context)
         super().__init__(
             message,
             details=details,
@@ -300,12 +317,14 @@ class AdapterNotFoundError(PydapterError):
         status_code: int | None = None,
         cause: Exception | None = None,
         adapter: str | None = None,
+        **extra_context: Any,
     ):
         details = details or {}
         params = {
             "obj_key": obj_key,
         }
         details.update({k: v for k, v in params.items() if v is not None})
+        details.update(extra_context)
         super().__init__(
             message,
             details=details,
