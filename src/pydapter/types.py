@@ -35,6 +35,15 @@ class BaseError(Exception):
             return f"{self.message} ({details_str})"
         return self.message
 
+    def __getattr__(self, name: str) -> Any:
+        """Allow attribute-style access to details fields."""
+        if name == "context":
+            # Backward compatibility: context is alias for details
+            return self.details
+        if name in self.details:
+            return self.details[name]
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
     def to_dict(self, *, include_cause: bool = False) -> dict[str, Any]:
         """Serialize to dict for logging/API responses."""
         data = {
