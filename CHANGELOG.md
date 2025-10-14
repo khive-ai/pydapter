@@ -4,7 +4,8 @@
 
 ### Changed
 
-- **BREAKING**: Framework-agnostic architecture - supports all Python objects (Pydantic remains a dependency for backward compatibility)
+- **BREAKING**: Framework-agnostic architecture - supports all Python objects
+  (Pydantic remains a dependency for backward compatibility)
 - Complete error handling overhaul with standardized exception hierarchy
 - All adapters refactored to align with new error handling standards
 

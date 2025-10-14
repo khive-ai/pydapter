@@ -9,14 +9,16 @@ Note: Uses mocking for unit tests. Integration tests with real Qdrant are in tes
 
 import importlib.util
 
-import pytest
 from pydantic import BaseModel
+import pytest
 from qdrant_client.http import models as qd
 
 from pydapter.exceptions import (
     ConnectionError,
     QueryError,
     ResourceError,
+)
+from pydapter.exceptions import (
     ValidationError as AdapterValidationError,
 )
 from pydapter.extras.async_qdrant_ import AsyncQdrantAdapter
@@ -596,9 +598,7 @@ class TestAsyncQdrantAdapterConnectionErrors:
         from qdrant_client.http.exceptions import UnexpectedResponse
 
         # Mock AsyncQdrantClient constructor to raise exception
-        original_init = AsyncQdrantAdapter._client
-
-        def mock_client_error(url):
+        def mock_client_error(_url):
             raise UnexpectedResponse(
                 status_code=503,
                 reason_phrase="Service Unavailable",

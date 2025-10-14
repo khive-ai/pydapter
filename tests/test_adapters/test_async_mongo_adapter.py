@@ -10,8 +10,7 @@ This test suite covers:
 
 from unittest.mock import AsyncMock, patch
 
-from bson import ObjectId
-from pydantic import BaseModel, ValidationError as PydanticValidationError
+from pydantic import BaseModel
 import pymongo
 import pymongo.errors
 import pytest
@@ -20,6 +19,8 @@ import pytest_asyncio
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import (
     ConnectionError as AdapterConnectionError,
+)
+from pydapter.exceptions import (
     PydapterError,
     QueryError,
     ResourceError,
@@ -261,7 +262,7 @@ class TestAsyncMongoAdapterErrorHandling:
             name: str
 
         # Mock the client and connection to focus on filter validation
-        with patch.object(AsyncMongoAdapter, "_client") as mock_client:
+        with patch.object(AsyncMongoAdapter, "_client"):
             with patch.object(AsyncMongoAdapter, "_validate_connection") as mock_validate:
                 mock_validate.return_value = None
 
