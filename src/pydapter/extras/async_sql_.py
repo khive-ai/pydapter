@@ -10,7 +10,9 @@ from typing import Any, Literal, TypeVar
 
 # Python 3.10 compatibility: NotRequired, Required, TypedDict
 if sys.version_info < (3, 11):
-    from typing_extensions import NotRequired, Required, TypedDict
+    from typing import NotRequired, Required
+
+    from typing_extensions import TypedDict
 else:
     from typing import NotRequired, Required, TypedDict
 
@@ -226,6 +228,9 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
         try:
             return create_async_engine(dsn, future=True)
         except cls.connection_errors as e:
+            cls._handle_error(e, "connection", url=dsn)
+        except Exception as e:
+            # Catch all other engine creation errors (e.g., NoSuchModuleError for invalid dialects)
             cls._handle_error(e, "connection", url=dsn)
 
     @classmethod

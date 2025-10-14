@@ -186,7 +186,8 @@ class TestPostgresAdapterErrors:
             TestModel.adapt_from(
                 {"engine_url": "postgresql://", "table": "test"}, obj_key="postgres"
             )
-        assert "PostgreSQL authentication failed" in str(exc_info.value)
+        assert "Failed to create database engine" in str(exc_info.value)
+        assert "authentication failed" in str(exc_info.value)
 
     def test_connection_refused(self, monkeypatch):
         """Test handling of connection refused errors."""
@@ -210,7 +211,8 @@ class TestPostgresAdapterErrors:
             TestModel.adapt_from(
                 {"engine_url": "postgresql://", "table": "test"}, obj_key="postgres"
             )
-        assert "PostgreSQL connection refused" in str(exc_info.value)
+        assert "Failed to create database engine" in str(exc_info.value)
+        assert "connection refused" in str(exc_info.value)
 
     def test_database_not_exist(self, monkeypatch):
         """Test handling of database does not exist errors."""
@@ -234,7 +236,8 @@ class TestPostgresAdapterErrors:
             TestModel.adapt_from(
                 {"engine_url": "postgresql://", "table": "test"}, obj_key="postgres"
             )
-        assert "PostgreSQL database does not exist" in str(exc_info.value)
+        assert "Failed to create database engine" in str(exc_info.value)
+        assert "database does not exist" in str(exc_info.value)
 
 
 class TestMongoAdapterErrors:

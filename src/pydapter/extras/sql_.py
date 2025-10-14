@@ -91,9 +91,21 @@ class SQLAdapter(AdapterBase, Adapter[T]):
         try:
             return sa.create_engine(engine_url, future=True)
         except cls.connection_errors as e:
-            cls._handle_error(e, "connection", url=engine_url)
+            from ..exceptions import ConnectionError
+
+            raise ConnectionError(
+                f"Failed to create database engine: {e}",
+                adapter=cls.adapter_key,
+                url=engine_url,
+            ) from e
         except Exception as e:
-            cls._handle_error(e, "connection", url=engine_url)
+            from ..exceptions import ConnectionError
+
+            raise ConnectionError(
+                f"Failed to create database engine: {e}",
+                adapter=cls.adapter_key,
+                url=engine_url,
+            ) from e
 
     @classmethod
     def _reflect_metadata(cls, engine: sa.Engine, table_name: str) -> tuple[sa.MetaData, sa.Table]:
