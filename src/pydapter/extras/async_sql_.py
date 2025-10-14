@@ -10,9 +10,7 @@ from typing import Any, Literal, TypeVar
 
 # Python 3.10 compatibility: NotRequired, Required, TypedDict
 if sys.version_info < (3, 11):
-    from typing import NotRequired, Required
-
-    from typing_extensions import TypedDict
+    from typing_extensions import NotRequired, Required, TypedDict
 else:
     from typing import NotRequired, Required, TypedDict
 
