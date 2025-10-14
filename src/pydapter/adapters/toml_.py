@@ -8,15 +8,15 @@ Pydantic models to TOML format.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 import toml
 
-from ..core import Adapter
-from ..exceptions import ParseError
-from ..exceptions import ValidationError as AdapterValidationError
+from ..core import Adapter, AdapterBase, dispatch_adapt_meth
+from ..exceptions import PydapterError
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -34,7 +34,7 @@ def _ensure_list(d):
     return [d]
 
 
-class TomlAdapter(Adapter[T]):
+class TomlAdapter(AdapterBase, Adapter[T]):
     """
     Adapter for converting between Pydantic models and TOML data.
 
@@ -44,7 +44,8 @@ class TomlAdapter(Adapter[T]):
     - Handle both single objects and arrays of objects
 
     Attributes:
-        obj_key: The key identifier for this adapter type ("toml")
+        adapter_key: The key identifier for this adapter type ("toml")
+        obj_key: Legacy key identifier for backward compatibility ("toml")
 
     Example:
         ```python
@@ -79,8 +80,66 @@ class TomlAdapter(Adapter[T]):
         ```
     """
 
-    obj_key = "toml"
+    adapter_key = "toml"
+    obj_key = "toml"  # Backward compatibility
 
+    # Declarative exception handling
+    parse_errors = (toml.TomlDecodeError,)
+
+    # ---------------- incoming helpers
+    @classmethod
+    def _read_obj_to_toml(cls, obj: str | Path, **kw) -> dict | list:
+        """Read and parse TOML from file or string."""
+        text = None
+
+        # Read from Path
+        if isinstance(obj, Path):
+            try:
+                text = obj.read_text()
+            except Exception as e:
+                cls._handle_error(e, "resource", resource=str(obj))
+        else:
+            text = obj
+
+        # Check for empty input
+        if not text or (isinstance(text, str) and not text.strip()):
+            cls._handle_error(
+                ValueError("Empty TOML content"),
+                "parse",
+                source=text,
+            )
+
+        # Parse TOML
+        try:
+            return toml.loads(text, **kw)
+        except cls.parse_errors as e:
+            cls._handle_error(
+                e,
+                "parse",
+                source=text,
+            )
+
+    @classmethod
+    def _validate(
+        cls,
+        data: dict | list,
+        subj_cls: type[T],
+        many: bool,
+        adapt_meth: str | Callable,
+        adapt_kw: dict | None,
+        validation_errors: tuple[type[Exception], ...],
+    ) -> T | list[T]:
+        """Validate parsed TOML data against model."""
+        try:
+            if many:
+                # Ensure data is in list format for TOML's structure
+                data_list = _ensure_list(data)
+                return [dispatch_adapt_meth(adapt_meth, i, adapt_kw, subj_cls) for i in data_list]
+            return dispatch_adapt_meth(adapt_meth, data, adapt_kw, subj_cls)
+        except validation_errors as e:
+            cls._handle_error(e, "validation", data=data, errors=e.errors())
+
+    # ---------------- incoming
     @classmethod
     def from_obj(
         cls,
@@ -89,61 +148,26 @@ class TomlAdapter(Adapter[T]):
         /,
         *,
         many=False,
-        adapt_meth: str = "model_validate",
+        adapt_meth: str | Callable = "model_validate",
         adapt_kw: dict | None = None,
+        validation_errors: tuple[type[Exception], ...] = (ValidationError,),
         **kw,
     ):
         try:
-            # Handle file path
-            if isinstance(obj, Path):
-                try:
-                    text = Path(obj).read_text()
-                except Exception as e:
-                    raise ParseError(f"Failed to read TOML file: {e}", source=str(obj))
-            else:
-                text = obj
-
-            # Check for empty input
-            if not text or (isinstance(text, str) and not text.strip()):
-                raise ParseError(
-                    "Empty TOML content",
-                    source=str(obj)[:100] if isinstance(obj, str) else str(obj),
-                )
-
             # Parse TOML
-            try:
-                parsed = toml.loads(text, **kw)
-            except toml.TomlDecodeError as e:
-                raise ParseError(
-                    f"Invalid TOML: {e}",
-                    source=str(text)[:100] if isinstance(text, str) else str(text),
-                )
+            toml_data = cls._read_obj_to_toml(obj, **kw)
 
             # Validate against model
-            try:
-                if many:
-                    return [
-                        getattr(subj_cls, adapt_meth)(x, **(adapt_kw or {}))
-                        for x in _ensure_list(parsed)
-                    ]
-                return getattr(subj_cls, adapt_meth)(parsed, **(adapt_kw or {}))
-            except ValidationError as e:
-                raise AdapterValidationError(
-                    f"Validation error: {e}",
-                    data=parsed,
-                    errors=e.errors(),
-                )
+            return cls._validate(toml_data, subj_cls, many, adapt_meth, adapt_kw, validation_errors)
 
-        except (ParseError, AdapterValidationError):
+        except PydapterError:
             # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise ParseError(
-                f"Unexpected error parsing TOML: {e}",
-                source=str(obj)[:100] if isinstance(obj, str) else str(obj),
-            )
+            # Catch any unexpected errors and wrap them
+            cls._handle_error(e, "parse", unexpected=True)
 
+    # ---------------- outgoing
     @classmethod
     def to_obj(
         cls,
@@ -151,23 +175,20 @@ class TomlAdapter(Adapter[T]):
         /,
         *,
         many=False,
-        adapt_meth: str = "model_dump",
+        adapt_meth: str | Callable = "model_dump",
         adapt_kw: dict | None = None,
         **kw,
     ) -> str:
-        try:
-            items = subj if isinstance(subj, list) else [subj]
+        items = subj if isinstance(subj, list) else [subj]
 
-            if not items:
-                return ""
+        if not items:
+            return ""
 
-            payload = (
-                {"items": [getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items]}
-                if many
-                else getattr(items[0], adapt_meth)(**(adapt_kw or {}))
-            )
-            return toml.dumps(payload, **kw)
+        if many:
+            payload = {
+                "items": [dispatch_adapt_meth(adapt_meth, i, adapt_kw, type(i)) for i in items]
+            }
+        else:
+            payload = dispatch_adapt_meth(adapt_meth, items[0], adapt_kw, type(items[0]))
 
-        except Exception as e:
-            # Wrap exceptions
-            raise ParseError(f"Error generating TOML: {e}")
+        return toml.dumps(payload, **kw)

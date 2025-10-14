@@ -107,7 +107,9 @@ class TestInvalidAdapters:
                 return {}
 
         registry = AdapterRegistry()
-        with pytest.raises(ConfigurationError, match="Adapter must define 'obj_key'"):
+        with pytest.raises(
+            ConfigurationError, match="Adapter must define 'adapter_key' or 'obj_key'"
+        ):
             registry.register(MissingKeyAdapter)
 
     def test_missing_methods(self):
@@ -169,7 +171,8 @@ class TestJsonAdapterErrors:
         # Test invalid JSON
         with pytest.raises(ParseError) as exc_info:
             TestModel.adapt_from("{invalid json}", obj_key="json")
-        assert "Invalid JSON" in str(exc_info.value)
+        # The error message contains the actual JSON decode error
+        assert "json" in str(exc_info.value).lower()
 
     def test_empty_json(self):
         """Test handling of empty JSON input."""
@@ -199,7 +202,7 @@ class TestJsonAdapterErrors:
         # Test missing required fields
         with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from('{"id": 1}', obj_key="json")
-        assert "Validation error" in str(exc_info.value)
+        # Check that the error mentions the missing fields
         assert "name" in str(exc_info.value) or "value" in str(exc_info.value)
 
     def test_invalid_field_types(self):
@@ -217,7 +220,7 @@ class TestJsonAdapterErrors:
             TestModel.adapt_from(
                 '{"id": "not_an_int", "name": "test", "value": 42.5}', obj_key="json"
             )
-        assert "Validation error" in str(exc_info.value)
+        # Check that the error mentions the invalid field
         assert "id" in str(exc_info.value)
 
     def test_json_file_not_found(self):
@@ -230,10 +233,10 @@ class TestJsonAdapterErrors:
 
         TestModel.register_adapter(JsonAdapter)
 
-        # Test non-existent file
-        with pytest.raises(ParseError) as exc_info:
+        # Test non-existent file - now raises ResourceError (more specific)
+        with pytest.raises(ResourceError) as exc_info:
             TestModel.adapt_from(Path("nonexistent.json"), obj_key="json")
-        assert "Failed to read" in str(exc_info.value)
+        assert "nonexistent.json" in str(exc_info.value)
 
     def test_json_array_with_many_false(self):
         """Test handling of JSON array with many=False."""
@@ -245,12 +248,13 @@ class TestJsonAdapterErrors:
 
         TestModel.register_adapter(JsonAdapter)
 
-        # Test JSON array with many=False
+        # Test JSON array with many=False - should fail validation
         with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from(
                 '[{"id": 1, "name": "test", "value": 42.5}]', obj_key="json", many=False
             )
-        assert "Validation error" in str(exc_info.value)
+        # Error should mention that it received a list instead of dict/model
+        assert "list" in str(exc_info.value).lower() or "array" in str(exc_info.value).lower()
 
 
 class TestCsvAdapterErrors:
@@ -322,7 +326,7 @@ class TestCsvAdapterErrors:
         # Test CSV with invalid field types
         with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from("id,name,value\nnot_an_int,test,42.5", obj_key="csv")
-        assert "Validation error" in str(exc_info.value)
+        # Check that error mentions the invalid field
         assert "id" in str(exc_info.value)
 
     def test_csv_file_not_found(self):
@@ -335,10 +339,10 @@ class TestCsvAdapterErrors:
 
         TestModel.register_adapter(CsvAdapter)
 
-        # Test non-existent file
-        with pytest.raises(ParseError) as exc_info:
+        # Test non-existent file - now raises ResourceError (more specific)
+        with pytest.raises(ResourceError) as exc_info:
             TestModel.adapt_from(Path("nonexistent.csv"), obj_key="csv")
-        assert "Failed to read" in str(exc_info.value)
+        assert "nonexistent.csv" in str(exc_info.value)
 
     def test_csv_dialect_support(self):
         """Test CSV adapter with different dialects."""
@@ -404,7 +408,8 @@ class TestTomlAdapterErrors:
         # Test invalid TOML
         with pytest.raises(ParseError) as exc_info:
             TestModel.adapt_from("invalid toml = data", obj_key="toml")
-        assert "Invalid TOML" in str(exc_info.value)
+        # Check that error contains toml-related info
+        assert "toml" in str(exc_info.value).lower()
 
     def test_empty_toml(self):
         """Test handling of empty TOML input."""
@@ -434,7 +439,7 @@ class TestTomlAdapterErrors:
         # Test TOML with missing required fields
         with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from("id = 1\nname = 'test'", obj_key="toml")
-        assert "Validation error" in str(exc_info.value)
+        # Check that error mentions the missing field
         assert "value" in str(exc_info.value)
 
     def test_invalid_field_types(self):
@@ -450,7 +455,7 @@ class TestTomlAdapterErrors:
         # Test TOML with invalid field types
         with pytest.raises(AdapterValidationError) as exc_info:
             TestModel.adapt_from("id = 'not_an_int'\nname = 'test'\nvalue = 42.5", obj_key="toml")
-        assert "Validation error" in str(exc_info.value)
+        # Check that error mentions the invalid field
         assert "id" in str(exc_info.value)
 
     def test_toml_file_not_found(self):
@@ -463,10 +468,10 @@ class TestTomlAdapterErrors:
 
         TestModel.register_adapter(TomlAdapter)
 
-        # Test non-existent file
-        with pytest.raises(ParseError) as exc_info:
+        # Test non-existent file - now raises ResourceError (more specific)
+        with pytest.raises(ResourceError) as exc_info:
             TestModel.adapt_from(Path("nonexistent.toml"), obj_key="toml")
-        assert "Failed to read" in str(exc_info.value)
+        assert "nonexistent.toml" in str(exc_info.value)
 
 
 class TestRegistryErrors:

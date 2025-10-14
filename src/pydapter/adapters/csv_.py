@@ -1,13 +1,8 @@
-"""
-CSV Adapter for Pydantic Models.
-
-This module provides the CsvAdapter class for converting between Pydantic models
-and CSV data formats. It supports reading from CSV files or strings and writing
-Pydantic models to CSV format.
-"""
+"""CSV adapter for converting between Python objects and CSV format."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import csv
 import io
 from pathlib import Path
@@ -15,53 +10,116 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from ..core import Adapter
-from ..exceptions import ParseError
-from ..exceptions import ValidationError as AdapterValidationError
+from ..core import Adapter, AdapterBase, dispatch_adapt_meth
+from ..exceptions import PydapterError
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class CsvAdapter(Adapter[T]):
+class CsvAdapter(AdapterBase, Adapter[T]):
     """
-    Adapter for converting between Pydantic models and CSV data.
-
-    This adapter handles CSV files and strings, providing methods to:
-    - Parse CSV data into Pydantic model instances
-    - Convert Pydantic models to CSV format
-    - Handle various CSV dialects and formatting options
-
-    Attributes:
-        obj_key: The key identifier for this adapter type ("csv")
-        DEFAULT_CSV_KWARGS: Default CSV parsing parameters
+    CSV adapter for Python objects.
 
     Example:
         ```python
-        from pydantic import BaseModel
-        from pydapter.adapters.csv_ import CsvAdapter
+        # Parse CSV string
+        person = CsvAdapter.from_obj(Person, 'id,name\n1,John', many=True)
 
-        class Person(BaseModel):
-            name: str
-            age: int
-
-        # Parse CSV data
-        csv_data = "name,age\\nJohn,30\\nJane,25"
-        people = CsvAdapter.from_obj(Person, csv_data, many=True)
+        # Parse CSV file
+        people = CsvAdapter.from_obj(Person, Path('data.csv'), many=True)
 
         # Convert to CSV
-        csv_output = CsvAdapter.to_obj(people, many=True)
+        csv_str = CsvAdapter.to_obj(people, many=True)
         ```
     """
 
-    obj_key = "csv"
+    adapter_key = "csv"
+    obj_key = "csv"  # Backward compatibility
 
-    # Default CSV dialect settings
-    DEFAULT_CSV_KWARGS = {
-        "escapechar": "\\",
-        "quotechar": '"',
-        "delimiter": ",",
-        "quoting": csv.QUOTE_MINIMAL,
-    }
+    # Declarative exception handling
+    parse_errors = (csv.Error,)
+
+    # ---------------- incoming helpers
+    @classmethod
+    def _read_obj_to_csv(cls, obj: str | Path, **kw) -> tuple[list[dict], list[str]]:
+        """Read and parse CSV, return (rows, fieldnames)."""
+        # Read from Path or string
+        if isinstance(obj, Path):
+            try:
+                text = obj.read_text()
+            except Exception as e:
+                cls._handle_error(e, "resource", resource=str(obj))
+        else:
+            text = obj
+
+        # Sanitize NULL bytes
+        text = text.replace("\0", "")
+
+        # Check for empty input
+        if not text.strip():
+            cls._handle_error(ValueError("Empty CSV content"), "parse", source=text)
+
+        # Parse CSV
+        try:
+            reader = csv.DictReader(io.StringIO(text), **kw)
+            rows = list(reader)
+            fieldnames = list(reader.fieldnames) if reader.fieldnames else []
+
+            if not fieldnames:
+                cls._handle_error(ValueError("CSV has no headers"), "parse", source=text)
+
+            return rows, fieldnames
+
+        except cls.parse_errors as e:
+            cls._handle_error(e, "parse", source=text)
+
+    @classmethod
+    def _validate(
+        cls,
+        rows: list[dict],
+        fieldnames: list[str],
+        subj_cls: type[T],
+        many: bool,
+        adapt_meth: str | Callable,
+        adapt_kw: dict | None,
+        validation_errors: tuple[type[Exception], ...],
+    ) -> T | list[T]:
+        """Validate parsed CSV data against model."""
+        # Check for missing required fields
+        required_fields = [
+            field for field, info in subj_cls.model_fields.items() if info.is_required()
+        ]
+        missing_fields = [f for f in required_fields if f not in fieldnames]
+
+        if missing_fields:
+            cls._handle_error(
+                ValueError(f"CSV missing required fields: {', '.join(missing_fields)}"),
+                "parse",
+                fields=missing_fields,
+            )
+
+        # Validate rows
+        try:
+            result = []
+            for i, row in enumerate(rows):
+                try:
+                    result.append(dispatch_adapt_meth(adapt_meth, row, adapt_kw, subj_cls))
+                except validation_errors as e:
+                    cls._handle_error(
+                        e,
+                        "validation",
+                        data=row,
+                        row=i + 1,
+                        errors=e.errors() if hasattr(e, "errors") else str(e),
+                    )
+
+            # Return single object if many=False and exactly one row
+            if len(result) == 1 and not many:
+                return result[0]
+            return result
+
+        except validation_errors as e:
+            cls._handle_error(e, "validation", data=rows, errors=e.errors())
 
     # ---------------- incoming
     @classmethod
@@ -71,116 +129,28 @@ class CsvAdapter(Adapter[T]):
         obj: str | Path,
         /,
         *,
-        many: bool = True,
-        adapt_meth: str = "model_validate",
+        many=True,
+        adapt_meth: str | Callable = "model_validate",
         adapt_kw: dict | None = None,
+        validation_errors: tuple[type[Exception], ...] = (ValidationError,),
         **kw,
     ):
         try:
-            # Handle file path or string content
-            if isinstance(obj, Path):
-                try:
-                    text = Path(obj).read_text()
-                except Exception as e:
-                    raise ParseError(f"Failed to read CSV file: {e}", source=str(obj))
-            else:
-                text = obj
+            # Parse CSV (single pass)
+            rows, fieldnames = cls._read_obj_to_csv(obj, **kw)
 
-            # Sanitize text to remove NULL bytes
-            text = text.replace("\0", "")
+            if not rows:
+                return [] if many else None
 
-            if not text.strip():
-                raise ParseError(
-                    "Empty CSV content",
-                    source=str(obj)[:100] if isinstance(obj, str) else str(obj),
-                )
+            # Validate against model
+            return cls._validate(
+                rows, fieldnames, subj_cls, many, adapt_meth, adapt_kw, validation_errors
+            )
 
-            # Merge default CSV kwargs with user-provided kwargs
-            csv_kwargs = cls.DEFAULT_CSV_KWARGS.copy()
-            csv_kwargs.update(kw)  # User-provided kwargs override defaults
-
-            # Parse CSV
-            try:
-                # Extract specific parameters from csv_kwargs
-                delimiter = ","
-                quotechar = '"'
-                escapechar = "\\"
-                quoting = csv.QUOTE_MINIMAL
-
-                if "delimiter" in csv_kwargs:
-                    delimiter = str(csv_kwargs.pop("delimiter"))
-                if "quotechar" in csv_kwargs:
-                    quotechar = str(csv_kwargs.pop("quotechar"))
-                if "escapechar" in csv_kwargs:
-                    escapechar = str(csv_kwargs.pop("escapechar"))
-                if "quoting" in csv_kwargs:
-                    quoting_value = csv_kwargs.pop("quoting")
-                    quoting = quoting_value if isinstance(quoting_value, int) else csv.QUOTE_MINIMAL
-
-                reader = csv.DictReader(
-                    io.StringIO(text),
-                    delimiter=delimiter,
-                    quotechar=quotechar,
-                    escapechar=escapechar,
-                    quoting=quoting,
-                )
-                rows = list(reader)
-
-                if not rows:
-                    return [] if many else None
-
-                # Check for missing fieldnames
-                if not reader.fieldnames:
-                    raise ParseError("CSV has no headers", source=text[:100])
-
-                # Check for missing required fields in the model
-                model_fields = subj_cls.model_fields
-                required_fields = [
-                    field for field, info in model_fields.items() if info.is_required()
-                ]
-
-                missing_fields = [
-                    field for field in required_fields if field not in reader.fieldnames
-                ]
-
-                if missing_fields:
-                    raise ParseError(
-                        f"CSV missing required fields: {', '.join(missing_fields)}",
-                        source=text[:100],
-                        fields=missing_fields,
-                    )
-
-                # Convert rows to model instances
-                result = []
-                for i, row in enumerate(rows):
-                    try:
-                        result.append(getattr(subj_cls, adapt_meth)(row, **(adapt_kw or {})))
-                    except ValidationError as e:
-                        raise AdapterValidationError(
-                            f"Validation error in row {i + 1}: {e}",
-                            data=row,
-                            row=i + 1,
-                            errors=e.errors(),
-                        )
-
-                # If there's only one row and many=False, return a single object
-                if len(result) == 1 and not many:
-                    return result[0]
-                # Otherwise, return a list of objects
-                return result
-
-            except csv.Error as e:
-                raise ParseError(f"CSV parsing error: {e}", source=text[:100])
-
-        except (ParseError, AdapterValidationError):
-            # Re-raise our custom exceptions
+        except PydapterError:
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise ParseError(
-                f"Unexpected error parsing CSV: {e}",
-                source=str(obj)[:100] if isinstance(obj, str) else str(obj),
-            )
+            cls._handle_error(e, "parse", unexpected=True)
 
     # ---------------- outgoing
     @classmethod
@@ -189,63 +159,29 @@ class CsvAdapter(Adapter[T]):
         subj: T | list[T],
         /,
         *,
-        many: bool = False,
-        adapt_meth: str = "model_dump",
+        many=False,
+        adapt_meth: str | Callable = "model_dump",
         adapt_kw: dict | None = None,
         **kw,
     ) -> str:
-        try:
-            items = subj if isinstance(subj, list) else [subj]
+        items = subj if isinstance(subj, list) else [subj]
 
-            if not items:
-                return ""
+        if not items:
+            return ""
 
-            buf = io.StringIO()
-
-            # Sanitize any string values to remove NULL bytes
-            sanitized_items = []
-            for item in items:
-                item_dict = getattr(item, adapt_meth)(**(adapt_kw or {}))
-                for key, value in item_dict.items():
-                    if isinstance(value, str):
-                        item_dict[key] = value.replace("\0", "")
-                sanitized_items.append(item_dict)
-
-            # Merge default CSV kwargs with user-provided kwargs
-            csv_kwargs = cls.DEFAULT_CSV_KWARGS.copy()
-            csv_kwargs.update(kw)  # User-provided kwargs override defaults
-
-            # Get fieldnames from the first item
-            fieldnames = list(getattr(items[0], adapt_meth)(**(adapt_kw or {})).keys())
-
-            # Extract specific parameters from csv_kwargs
-            delimiter = ","
-            quotechar = '"'
-            escapechar = "\\"
-            quoting = csv.QUOTE_MINIMAL
-
-            if "delimiter" in csv_kwargs:
-                delimiter = str(csv_kwargs.pop("delimiter"))
-            if "quotechar" in csv_kwargs:
-                quotechar = str(csv_kwargs.pop("quotechar"))
-            if "escapechar" in csv_kwargs:
-                escapechar = str(csv_kwargs.pop("escapechar"))
-            if "quoting" in csv_kwargs:
-                quoting_value = csv_kwargs.pop("quoting")
-                quoting = quoting_value if isinstance(quoting_value, int) else csv.QUOTE_MINIMAL
-
-            writer = csv.DictWriter(
-                buf,
-                fieldnames=fieldnames,
-                delimiter=delimiter,
-                quotechar=quotechar,
-                escapechar=escapechar,
-                quoting=quoting,
+        # Convert to dicts and sanitize NULL bytes
+        data = []
+        for item in items:
+            row = dispatch_adapt_meth(adapt_meth, item, adapt_kw, type(item))
+            # Sanitize string values
+            data.append(
+                {k: v.replace("\0", "") if isinstance(v, str) else v for k, v in row.items()}
             )
-            writer.writeheader()
-            writer.writerows([getattr(i, adapt_meth)(**(adapt_kw or {})) for i in items])
-            return buf.getvalue()
 
-        except Exception as e:
-            # Wrap exceptions
-            raise ParseError(f"Error generating CSV: {e}")
+        # Write CSV
+        buf = io.StringIO()
+        fieldnames = list(data[0].keys())
+        writer = csv.DictWriter(buf, fieldnames=fieldnames, **kw)
+        writer.writeheader()
+        writer.writerows(data)
+        return buf.getvalue()

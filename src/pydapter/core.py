@@ -122,12 +122,21 @@ class AdapterBase:
         """Wrap exception in appropriate PydapterError subclass with context."""
         error_class = cls._error_mapping.get(category, AdapterError)
 
-        # Build error details
+        # Build error details - safely handle source/data truncation
         details = {
             "category": category,
             "original_exception": exc.__class__.__name__,
-            **extra_details,
         }
+
+        # Safely truncate source/data fields if present
+        for key in ("source", "data"):
+            if key in extra_details:
+                value = extra_details[key]
+                if isinstance(value, (str, bytes)):
+                    # Truncate long strings/bytes to 100 chars
+                    extra_details[key] = value[:100] if len(value) > 100 else value
+
+        details.update(extra_details)
 
         # Get adapter key safely
         adapter_key = getattr(cls, "adapter_key", None) or getattr(cls, "obj_key", "unknown")

@@ -1,12 +1,12 @@
-"""JSON adapter for converting between Python objects and JSON format."""
+"""YAML adapter for converting between Python objects and YAML format."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
-import json
 from pathlib import Path
 from typing import TypeVar
 
+import yaml
 from pydantic import BaseModel, ValidationError
 
 from ..core import Adapter, AdapterBase, dispatch_adapt_meth
@@ -16,33 +16,33 @@ from ..exceptions import ValidationError as AdapterValidationError
 T = TypeVar("T", bound=BaseModel)
 
 
-class JsonAdapter(AdapterBase, Adapter[T]):
+class YamlAdapter(AdapterBase, Adapter[T]):
     """
-    JSON adapter for Python objects with support for files, strings, and bytes.
+    YAML adapter for Python objects with support for files, strings, and bytes.
 
     Example:
         ```python
-        # Parse JSON string
-        person = JsonAdapter.from_obj(Person, '{"name": "John", "age": 30}')
+        # Parse YAML string
+        person = YamlAdapter.from_obj(Person, 'name: John\\nage: 30')
 
-        # Parse JSON array
-        people = JsonAdapter.from_obj(Person, '[{...}, {...}]', many=True)
+        # Parse YAML array
+        people = YamlAdapter.from_obj(Person, '[{...}, {...}]', many=True)
 
-        # Convert to JSON
-        json_str = JsonAdapter.to_obj(person, indent=4)
+        # Convert to YAML
+        yaml_str = YamlAdapter.to_obj(person)
         ```
     """
 
-    adapter_key = "json"
-    obj_key = "json"  # Backward compatibility
+    adapter_key = "yaml"
+    obj_key = "yaml"  # Backward compatibility
 
     # Declarative exception handling
-    parse_errors = (json.JSONDecodeError,)
+    parse_errors = (yaml.YAMLError,)
 
     # ---------------- incoming helpers
     @classmethod
-    def _read_obj_to_json(cls, obj: str | bytes | Path, **kw) -> dict | list:
-        """Read and parse JSON from file/string/bytes."""
+    def _read_obj_to_yaml(cls, obj: str | bytes | Path, **kw) -> dict | list:
+        """Read and parse YAML from file/string/bytes."""
         text = None
 
         # Read from Path or decode bytes
@@ -57,22 +57,19 @@ class JsonAdapter(AdapterBase, Adapter[T]):
         # Check for empty input
         if not text or (isinstance(text, str) and not text.strip()):
             cls._handle_error(
-                ValueError("Empty JSON content"),
+                ValueError("Empty YAML content"),
                 "parse",
                 source=text,
             )
 
-        # Parse JSON
+        # Parse YAML
         try:
-            return json.loads(text, **kw)
+            return yaml.safe_load(text)
         except cls.parse_errors as e:
             cls._handle_error(
                 e,
                 "parse",
                 source=text,
-                position=e.pos,
-                line=e.lineno,
-                column=e.colno,
             )
 
     @classmethod
@@ -85,7 +82,7 @@ class JsonAdapter(AdapterBase, Adapter[T]):
         adapt_kw: dict | None,
         validation_errors: tuple[type[Exception], ...],
     ) -> T | list[T]:
-        """Validate parsed JSON data against model."""
+        """Validate parsed YAML data against model."""
         try:
             if many:
                 return [dispatch_adapt_meth(adapt_meth, i, adapt_kw, subj_cls) for i in data]
@@ -108,20 +105,20 @@ class JsonAdapter(AdapterBase, Adapter[T]):
         **kw,
     ):
         try:
-            # Parse JSON
-            json_data = cls._read_obj_to_json(obj, **kw)
+            # Parse YAML
+            yaml_data = cls._read_obj_to_yaml(obj, **kw)
 
             # Check for array when many=True
-            if many and not isinstance(json_data, list):
+            if many and not isinstance(yaml_data, list):
                 raise AdapterValidationError(
-                    "Expected JSON array for many=True",
-                    adapter="json",
-                    data=json_data,
-                    details={"data_type": type(json_data).__name__, "expected": "list"},
+                    "Expected YAML array for many=True",
+                    adapter="yaml",
+                    data=yaml_data,
+                    details={"data_type": type(yaml_data).__name__, "expected": "list"},
                 )
 
             # Validate against model
-            return cls._validate(json_data, subj_cls, many, adapt_meth, adapt_kw, validation_errors)
+            return cls._validate(yaml_data, subj_cls, many, adapt_meth, adapt_kw, validation_errors)
 
         except PydapterError:
             # Re-raise our custom exceptions
@@ -147,11 +144,11 @@ class JsonAdapter(AdapterBase, Adapter[T]):
         if not items:
             return "[]" if many else "{}"
 
-        # Set default JSON serialization options
-        json_kwargs = {
-            "indent": 2,
-            "sort_keys": True,
-            "ensure_ascii": False,
+        # Set default YAML serialization options
+        yaml_kwargs = {
+            "default_flow_style": False,  # Use block style (more readable)
+            "allow_unicode": True,  # Support Unicode characters
+            "sort_keys": True,  # Sort dictionary keys
             **kw,  # User overrides
         }
 
@@ -160,4 +157,4 @@ class JsonAdapter(AdapterBase, Adapter[T]):
         else:
             payload = dispatch_adapt_meth(adapt_meth, items[0], adapt_kw, type(items[0]))
 
-        return json.dumps(payload, **json_kwargs)
+        return yaml.safe_dump(payload, **yaml_kwargs)
