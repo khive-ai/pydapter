@@ -1,7 +1,7 @@
 import pytest
 
 from pydapter import Adaptable
-from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
+from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter, YamlAdapter
 from pydapter.async_core import AsyncAdaptable
 
 
@@ -19,6 +19,7 @@ def _ModelFactory():  # type: ignore[no-redef]
             M.register_adapter(JsonAdapter)
             M.register_adapter(CsvAdapter)
             M.register_adapter(TomlAdapter)
+            M.register_adapter(YamlAdapter)
             return M(**kw)
 
     return Factory()

@@ -1,6 +1,6 @@
 [project]
 name            = "pydapter"
-version         = "1.1.2"
+version         = "1.2.0"
 description     = "Tiny trait + adapter toolkit for pydantic models"
 readme          = "README.md"
 requires-python = ">=3.10"
@@ -8,6 +8,7 @@ authors         = [{ name = "HaiyangLi", email = "quantocean.li@gmail.com" }]
 dependencies = [
     "orjson>=3.10.0",
     "pydantic>=2.6",
+    "pyyaml>=6.0.0",
     "toml>=0.8.0",
     "typing-extensions>=4.5.0",
 ]

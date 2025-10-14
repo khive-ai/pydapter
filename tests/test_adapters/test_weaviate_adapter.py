@@ -386,7 +386,7 @@ class TestWeaviateAdapterErrorHandling:
                 many=False,
             )
 
-        assert "Validation error" in str(excinfo.value)
+        assert "validation error" in str(excinfo.value).lower()
 
     def test_missing_vector_field(self, mocker):
         """Test handling of missing vector field."""

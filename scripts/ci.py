@@ -35,12 +35,12 @@ Examples:
 """
 
 import argparse
+from enum import Enum
 import os
+from pathlib import Path
 import subprocess
 import sys
 import time
-from enum import Enum
-from pathlib import Path
 
 
 class Colors:
@@ -207,9 +207,7 @@ class CIRunner:
             f"{Colors.WARNING}Installing missing dependencies: {', '.join(missing_deps)}{Colors.ENDC}"
         )
         for dep in missing_deps:
-            exit_code, output = self.run_command(
-                ["uv", "pip", "install", dep], check=False
-            )
+            exit_code, output = self.run_command(["uv", "pip", "install", dep], check=False)
             if exit_code != 0:
                 print(f"{Colors.FAIL}Failed to install {dep}: {output}{Colors.ENDC}")
                 self.missing_deps.add(dep)
@@ -316,9 +314,7 @@ class CIRunner:
 
     def run_integration_tests(self) -> StepResult:
         """Run integration tests."""
-        if self.args.skip_integration or (
-            self.args.only and self.args.only != "integration"
-        ):
+        if self.args.skip_integration or (self.args.only and self.args.only != "integration"):
             return StepResult.SKIPPED
 
         if not self.check_dependencies("integration_tests"):
@@ -405,12 +401,8 @@ class CIRunner:
             if not link_check_available:
                 missing_tools.append("markdown-link-check")
 
-            error_msg = (
-                f"Missing documentation validation tools: {', '.join(missing_tools)}\n"
-            )
-            error_msg += (
-                "Install with: npm install -g markdownlint-cli markdown-link-check"
-            )
+            error_msg = f"Missing documentation validation tools: {', '.join(missing_tools)}\n"
+            error_msg += "Install with: npm install -g markdownlint-cli markdown-link-check"
             step.complete(StepResult.FAILURE, error_msg)
             return StepResult.FAILURE
 
@@ -471,9 +463,7 @@ class CIRunner:
 
         # Print warning if skipping external dependencies
         if self.should_skip_external_deps():
-            print(
-                f"{Colors.WARNING}Skipping tests that require external dependencies{Colors.ENDC}"
-            )
+            print(f"{Colors.WARNING}Skipping tests that require external dependencies{Colors.ENDC}")
             print(
                 f"{Colors.WARNING}To run all tests, install all dependencies with: uv sync --extra all{Colors.ENDC}\n"
             )
@@ -534,15 +524,9 @@ def parse_args():
     # Skip options
     parser.add_argument("--skip-lint", action="store_true", help="Skip linting checks")
     parser.add_argument("--skip-unit", action="store_true", help="Skip unit tests")
-    parser.add_argument(
-        "--skip-integration", action="store_true", help="Skip integration tests"
-    )
-    parser.add_argument(
-        "--skip-coverage", action="store_true", help="Skip coverage report"
-    )
-    parser.add_argument(
-        "--skip-docs", action="store_true", help="Skip documentation validation"
-    )
+    parser.add_argument("--skip-integration", action="store_true", help="Skip integration tests")
+    parser.add_argument("--skip-coverage", action="store_true", help="Skip coverage report")
+    parser.add_argument("--skip-docs", action="store_true", help="Skip documentation validation")
     parser.add_argument(
         "--skip-external-deps",
         action="store_true",

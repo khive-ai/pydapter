@@ -330,30 +330,46 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
             top_k = obj.get("top_k", 5)
             class_name = obj["class_name"]
 
-            # Create a dynamic GraphQL query that only includes properties
-            # that are actually defined in the schema
+            # Validate class_name to prevent GraphQL injection (alphanumeric + underscore only)
+            if not class_name or not all(c.isalnum() or c == "_" for c in class_name):
+                raise AdapterValidationError(
+                    f"Invalid class_name '{class_name}': must contain only alphanumeric characters and underscores",
+                    data=obj,
+                )
+
+            # Validate top_k is a positive integer
+            try:
+                top_k = int(top_k)
+                if top_k <= 0:
+                    raise ValueError("top_k must be positive")
+            except (ValueError, TypeError) as e:
+                raise AdapterValidationError(
+                    f"Invalid top_k '{top_k}': must be a positive integer", data=obj
+                ) from e
+
+            # Build GraphQL query using JSON format (safer than string interpolation)
+            # Use json.dumps for all dynamic values to prevent injection
             query = {
-                "query": """
-                {
-                  Get {
-                    %s(
-                      nearVector: {
-                        vector: %s
+                "query": f"""
+                {{
+                  Get {{
+                    {class_name}(
+                      nearVector: {{
+                        vector: {json.dumps(obj["query_vector"])}
                         distance: 0.7
-                      }
-                      limit: %d
-                    ) {
-                      _additional {
+                      }}
+                      limit: {top_k}
+                    ) {{
+                      _additional {{
                         id
                         vector
-                      }
+                      }}
                       name
                       value
-                    }
-                  }
-                }
+                    }}
+                  }}
+                }}
                 """
-                % (class_name, json.dumps(obj["query_vector"]), top_k)
             }
 
             try:

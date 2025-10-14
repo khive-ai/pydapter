@@ -7,32 +7,37 @@ with comprehensive error handling and validation.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, TypeVar
+from collections.abc import Callable, Sequence
+from typing import Any, ClassVar, TypeVar
 import urllib.parse
 import uuid
 
 from pydantic import BaseModel, ValidationError
 
-from ..core import Adapter
-from ..exceptions import ConnectionError, QueryError, ResourceError
+from ..core import Adapter, AdapterBase, dispatch_adapt_meth
+from ..exceptions import ConnectionError, PydapterError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class WeaviateAdapter(Adapter[T]):
+class WeaviateAdapter(AdapterBase, Adapter[T]):
     """
     Adapter for Weaviate vector database.
 
     This adapter provides methods to convert between Pydantic models and Weaviate objects,
     with support for vector search operations.
+
+    Attributes:
+        adapter_key: The key identifier for this adapter type ("weav")
+        obj_key: Legacy key identifier (for backward compatibility)
     """
 
-    obj_key = "weav"
+    adapter_key: ClassVar[str] = "weav"
+    obj_key: ClassVar[str] = "weav"  # Backward compatibility
 
-    @staticmethod
-    def _client(url: str | None = None):
+    @classmethod
+    def _client(cls, url: str | None = None):
         """
         Create a Weaviate client with error handling.
 
@@ -106,9 +111,10 @@ class WeaviateAdapter(Adapter[T]):
         vector_field: str = "embedding",
         url: str | None = None,
         many: bool = True,
-        adapt_meth: str = "model_dump",
+        adapt_meth: str | Callable = "model_dump",
+        adapt_kw: dict | None = None,
         **kw,
-    ) -> dict[str, Any]:
+    ) -> dict | None:
         """
         Convert from Pydantic models to Weaviate objects.
 
@@ -178,7 +184,7 @@ class WeaviateAdapter(Adapter[T]):
                     if not hasattr(it, vector_field):
                         raise AdapterValidationError(
                             f"Vector field '{vector_field}' not found in model",
-                            data=getattr(it, adapt_meth)(),
+                            data=dispatch_adapt_meth(adapt_meth, it, adapt_kw or {}, type(it)),
                         )
 
                     # Get vector data
@@ -186,11 +192,14 @@ class WeaviateAdapter(Adapter[T]):
                     if not isinstance(vector, list):
                         raise AdapterValidationError(
                             f"Vector field '{vector_field}' must be a list of floats",
-                            data=getattr(it, adapt_meth)(),
+                            data=dispatch_adapt_meth(adapt_meth, it, adapt_kw or {}, type(it)),
                         )
 
-                    # Exclude id and vector_field from properties
-                    properties = getattr(it, adapt_meth)(exclude={vector_field, "id"})
+                    # Exclude id and vector_field from properties using dispatch_adapt_meth
+                    # Create modified adapt_kw with exclude parameter
+                    modified_kw = (adapt_kw or {}).copy()
+                    modified_kw["exclude"] = {vector_field, "id"}
+                    properties = dispatch_adapt_meth(adapt_meth, it, modified_kw, type(it))
 
                     # Generate a UUID based on the model's ID if available
                     obj_uuid = None
@@ -220,29 +229,23 @@ class WeaviateAdapter(Adapter[T]):
 
                 return {"added_count": added_count}
 
-            except (QueryError, AdapterValidationError):
+            except PydapterError:
                 # Re-raise our custom exceptions
                 raise
             except Exception as e:
                 # Wrap other exceptions
-                raise QueryError(
-                    f"Error in Weaviate operation: {e}",
-                    adapter="weav",
-                ) from e
+                cls._handle_error(e, "query", unexpected=True)
 
-        except (ConnectionError, QueryError, AdapterValidationError):
+        except PydapterError:
             # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            if "Connection failed" in str(e):
+            # Safety net for unexpected errors - check for connection failures
+            if "Connection failed" in str(e) or "Connection" in str(e):
                 raise ConnectionError(
                     f"Failed to connect to Weaviate: {e}", adapter="weav", url=url
                 ) from e
-            else:
-                raise QueryError(
-                    f"Unexpected error in Weaviate adapter: {e}", adapter="weav"
-                ) from e
+            cls._handle_error(e, "query", unexpected=True)
 
     # incoming
     @classmethod
@@ -253,7 +256,9 @@ class WeaviateAdapter(Adapter[T]):
         /,
         *,
         many: bool = True,
-        adapt_meth: str = "model_validate",
+        adapt_meth: str | Callable = "model_validate",
+        adapt_kw: dict | None = None,
+        validation_errors: tuple[type[Exception], ...] = (ValidationError,),
         **kw,
     ) -> T | list[T]:
         """
@@ -335,31 +340,32 @@ class WeaviateAdapter(Adapter[T]):
                         resource=obj["class_name"],
                     )
 
-                # Convert to model instances
+                # Convert to model instances using dispatch_adapt_meth
                 try:
                     if many:
-                        return [getattr(subj_cls, adapt_meth)(r) for r in data]
-                    return getattr(subj_cls, adapt_meth)(data[0])
-                except ValidationError as e:
-                    raise AdapterValidationError(
-                        f"Validation error: {e}",
+                        return [
+                            dispatch_adapt_meth(adapt_meth, r, adapt_kw or {}, subj_cls)
+                            for r in data
+                        ]
+                    return dispatch_adapt_meth(adapt_meth, data[0], adapt_kw or {}, subj_cls)
+                except validation_errors as e:
+                    cls._handle_error(
+                        e,
+                        "validation",
                         data=data[0] if not many else data,
-                        errors=e.errors(),
-                    ) from e
+                        errors=e.errors() if hasattr(e, "errors") else None,
+                    )
 
-            except (QueryError, ResourceError, AdapterValidationError):
+            except PydapterError:
                 # Re-raise our custom exceptions
                 raise
             except Exception as e:
                 # Wrap other exceptions
-                raise QueryError(
-                    f"Error in Weaviate query: {e}",
-                    adapter="weav",
-                ) from e
+                cls._handle_error(e, "query", unexpected=True)
 
-        except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
+        except PydapterError:
             # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(f"Unexpected error in Weaviate adapter: {e}", adapter="weav") from e
+            # Safety net for unexpected errors
+            cls._handle_error(e, "query", unexpected=True)

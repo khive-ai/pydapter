@@ -4,12 +4,12 @@ AsyncPostgresAdapter - presets AsyncSQLAdapter for PostgreSQL/pgvector.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TypeVar
 
 from pydantic import BaseModel
 
-from ..exceptions import ConnectionError
-from ..exceptions import ValidationError as AdapterValidationError
+from ..exceptions import PydapterError
 from .async_sql_ import AsyncSQLAdapter
 
 T = TypeVar("T", bound=BaseModel)
@@ -59,8 +59,98 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
         ```
     """
 
-    obj_key = "async_pg"
+    adapter_key = "async_pg"
+    obj_key = "async_pg"  # Backward compatibility
     DEFAULT = "postgresql+asyncpg://test:test@localhost/test"
+
+    # -------- Helper Methods --------
+
+    @classmethod
+    def _detect_postgres_error_type(cls, error_str: str, url: str, exc: Exception) -> None:
+        """
+        Detect and raise appropriate PostgreSQL-specific errors.
+
+        Args:
+            error_str: Lowercase error message string
+            url: Connection URL for context
+            exc: Original exception
+
+        Raises:
+            ConnectionError: If PostgreSQL-specific error detected
+        """
+        error_str_lower = error_str.lower()
+
+        if "authentication" in error_str_lower:
+            cls._handle_error(
+                exc,
+                "connection",
+                reason="authentication_failed",
+                url=url,
+            )
+        elif "connection" in error_str_lower and "refused" in error_str_lower:
+            cls._handle_error(
+                exc,
+                "connection",
+                reason="connection_refused",
+                url=url,
+            )
+        elif "does not exist" in error_str_lower and "database" in error_str_lower:
+            cls._handle_error(
+                exc,
+                "connection",
+                reason="database_not_found",
+                url=url,
+            )
+
+    @classmethod
+    def _prepare_config(cls, obj: dict | None = None, **kw) -> dict:
+        """
+        Prepare configuration with default PostgreSQL connection string and driver conversion.
+
+        Args:
+            obj: Config dict (for from_obj)
+            kw: Keyword args (for to_obj)
+
+        Returns:
+            Config dict with defaults applied
+        """
+        if obj is not None:
+            config = obj.copy()
+        else:
+            config = kw.copy()
+
+        # Validate only one engine parameter
+        engine_params = sum(["engine" in config, "dsn" in config, "engine_url" in config])
+
+        if engine_params > 1:
+            cls._handle_error(
+                ValueError("Multiple engine parameters provided"),
+                "validation",
+                data=config,
+            )
+
+        # Handle DSN/engine setup
+        if "engine" not in config:
+            # Get DSN from config or use default
+            if "dsn" in config:
+                dsn = config["dsn"]
+            elif "engine_url" in config:  # Backward compatibility
+                dsn = config["engine_url"]
+                config["dsn"] = dsn  # Convert to dsn
+                del config["engine_url"]  # Remove to avoid confusion
+            else:
+                dsn = cls.DEFAULT
+                config["dsn"] = dsn
+
+            # Convert PostgreSQL URL to SQLAlchemy format if needed
+            # BUT skip this for SQLite DSNs
+            if dsn.startswith("sqlite"):
+                # Keep SQLite DSN as-is
+                pass
+            elif not dsn.startswith("postgresql+asyncpg://"):
+                config["dsn"] = dsn.replace("postgresql://", "postgresql+asyncpg://")
+
+        return config
 
     @classmethod
     async def from_obj(
@@ -70,44 +160,18 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
         /,
         *,
         many: bool = True,
-        adapt_meth: str = "model_validate",
+        adapt_meth: str | Callable = "model_validate",
         adapt_kw: dict | None = None,
         **kw,
     ):
         try:
-            # Validate only one engine parameter is provided
-            engine_params = sum(["engine" in obj, "dsn" in obj, "dsn" in kw, "engine_url" in obj])
+            # Prepare config with defaults using helper
+            # Handle DSN from kw if present
+            if "dsn" in kw:
+                obj["dsn"] = kw["dsn"]
+            obj = cls._prepare_config(obj)
 
-            if engine_params > 1:
-                raise AdapterValidationError(
-                    "Multiple engine parameters provided. Use only one of: 'engine', 'dsn', or 'engine_url'"
-                )
-
-            # Handle DSN/engine setup
-            if "engine" not in obj:
-                # Get DSN from obj, kw, or use default
-                if "dsn" in obj:
-                    dsn = obj["dsn"]
-                elif "dsn" in kw:
-                    dsn = kw["dsn"]
-                    obj["dsn"] = dsn  # Move to obj for parent class
-                elif "engine_url" in obj:  # Backward compatibility
-                    dsn = obj["engine_url"]
-                    obj["dsn"] = dsn  # Convert to dsn
-                    del obj["engine_url"]  # Remove to avoid confusion
-                else:
-                    dsn = cls.DEFAULT
-                    obj["dsn"] = dsn
-
-                # Convert PostgreSQL URL to SQLAlchemy format if needed
-                # BUT skip this for SQLite DSNs
-                if dsn.startswith("sqlite"):
-                    # Keep SQLite DSN as-is
-                    pass
-                elif not dsn.startswith("postgresql+asyncpg://"):
-                    obj["dsn"] = dsn.replace("postgresql://", "postgresql+asyncpg://")
-
-            # Add PostgreSQL-specific error handling
+            # Call parent AsyncSQLAdapter
             try:
                 return await super().from_obj(
                     subj_cls,
@@ -118,40 +182,22 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
                     **kw,
                 )
             except Exception as e:
-                # Check for common PostgreSQL-specific errors
-                error_str = str(e).lower()
-                conn_url = obj.get("dsn", obj.get("engine_url", cls.DEFAULT))
-                if "authentication" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL authentication failed: {e}",
-                        adapter="async_pg",
-                        url=conn_url,
-                    ) from e
-                elif "connection" in error_str and "refused" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL connection refused: {e}",
-                        adapter="async_pg",
-                        url=conn_url,
-                    ) from e
-                elif "does not exist" in error_str and "database" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL database does not exist: {e}",
-                        adapter="async_pg",
-                        url=conn_url,
-                    ) from e
-                # Re-raise the original exception
+                # Detect PostgreSQL-specific errors using helper
+                cls._detect_postgres_error_type(str(e), obj.get("dsn", cls.DEFAULT), e)
+                # If not PostgreSQL-specific, re-raise
                 raise
 
-        except ConnectionError:
-            # Re-raise ConnectionError
+        except PydapterError:
+            # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise ConnectionError(
-                f"Unexpected error in async PostgreSQL adapter: {e}",
-                adapter="async_pg",
-                url=obj.get("engine_url", cls.DEFAULT),
-            ) from e
+            # Outer safety net
+            cls._handle_error(
+                e,
+                "connection",
+                url=obj.get("dsn", cls.DEFAULT),
+                unexpected=True,
+            )
 
     @classmethod
     async def to_obj(
@@ -160,73 +206,37 @@ class AsyncPostgresAdapter(AsyncSQLAdapter[T]):
         /,
         *,
         many: bool = True,
-        adapt_meth: str = "model_dump",
+        adapt_meth: str | Callable = "model_dump",
         adapt_kw: dict | None = None,
         **kw,
     ):
         try:
-            # Validate only one engine parameter is provided
-            engine_params = sum(["engine" in kw, "dsn" in kw, "engine_url" in kw])
+            # Prepare config with defaults using helper
+            kw = cls._prepare_config(None, **kw)
 
-            if engine_params > 1:
-                raise AdapterValidationError(
-                    "Multiple engine parameters provided. Use only one of: 'engine', 'dsn', or 'engine_url'"
-                )
-
-            # Handle DSN/engine setup
-            if "engine" not in kw:
-                # Get DSN from kw or use default
-                if "dsn" in kw:
-                    dsn = kw["dsn"]
-                elif "engine_url" in kw:  # Backward compatibility
-                    dsn = kw["engine_url"]
-                    kw["dsn"] = dsn  # Convert to dsn
-                    del kw["engine_url"]  # Remove to avoid confusion
-                else:
-                    dsn = cls.DEFAULT
-                    kw["dsn"] = dsn
-
-                # Convert PostgreSQL URL to SQLAlchemy format if needed
-                if not dsn.startswith("postgresql+asyncpg://"):
-                    kw["dsn"] = dsn.replace("postgresql://", "postgresql+asyncpg://")
-
-            # Add PostgreSQL-specific error handling
+            # Call parent AsyncSQLAdapter
             try:
                 return await super().to_obj(
-                    subj, many=many, adapt_meth=adapt_meth, adapt_kw=adapt_kw, **kw
+                    subj,
+                    many=many,
+                    adapt_meth=adapt_meth,
+                    adapt_kw=adapt_kw,
+                    **kw,
                 )
             except Exception as e:
-                # Check for common PostgreSQL-specific errors
-                error_str = str(e).lower()
-                conn_url = kw.get("dsn", kw.get("engine_url", cls.DEFAULT))
-                if "authentication" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL authentication failed: {e}",
-                        adapter="async_pg",
-                        url=conn_url,
-                    ) from e
-                elif "connection" in error_str and "refused" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL connection refused: {e}",
-                        adapter="async_pg",
-                        url=conn_url,
-                    ) from e
-                elif "does not exist" in error_str and "database" in error_str:
-                    raise ConnectionError(
-                        f"PostgreSQL database does not exist: {e}",
-                        adapter="async_pg",
-                        url=conn_url,
-                    ) from e
-                # Re-raise the original exception
+                # Detect PostgreSQL-specific errors using helper
+                cls._detect_postgres_error_type(str(e), kw.get("dsn", cls.DEFAULT), e)
+                # If not PostgreSQL-specific, re-raise
                 raise
 
-        except ConnectionError:
-            # Re-raise ConnectionError
+        except PydapterError:
+            # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise ConnectionError(
-                f"Unexpected error in async PostgreSQL adapter: {e}",
-                adapter="async_pg",
-                url=kw.get("engine_url", cls.DEFAULT),
-            ) from e
+            # Outer safety net
+            cls._handle_error(
+                e,
+                "connection",
+                url=kw.get("dsn", cls.DEFAULT),
+                unexpected=True,
+            )
