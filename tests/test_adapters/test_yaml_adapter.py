@@ -5,8 +5,8 @@ Tests for YAML adapter functionality and error handling.
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import pytest
 from pydantic import BaseModel
+import pytest
 
 from pydapter.adapters.yaml_ import YamlAdapter
 from pydapter.core import Adaptable

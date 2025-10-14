@@ -4,23 +4,23 @@ Neo4j adapter (requires `neo4j`).
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 import re
-from typing import TypeVar
+from typing import ClassVar, TypeVar
 
 import neo4j
 from neo4j import GraphDatabase
 import neo4j.exceptions
 from pydantic import BaseModel, ValidationError
 
-from ..core import Adapter
-from ..exceptions import ConnectionError, QueryError, ResourceError
+from ..core import Adapter, AdapterBase, dispatch_adapt_meth
+from ..exceptions import ConnectionError, PydapterError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class Neo4jAdapter(Adapter[T]):
+class Neo4jAdapter(AdapterBase, Adapter[T]):
     """
     Neo4j graph database adapter for converting between Pydantic models and Neo4j nodes/relationships.
 
@@ -31,7 +31,8 @@ class Neo4jAdapter(Adapter[T]):
     - Support for complex graph operations and traversals
 
     Attributes:
-        obj_key: The key identifier for this adapter type ("neo4j")
+        adapter_key: The key identifier for this adapter type ("neo4j")
+        obj_key: Legacy key identifier (for backward compatibility)
 
     Example:
         ```python
@@ -63,7 +64,8 @@ class Neo4jAdapter(Adapter[T]):
         ```
     """
 
-    obj_key = "neo4j"
+    adapter_key: ClassVar[str] = "neo4j"
+    obj_key: ClassVar[str] = "neo4j"  # Backward compatibility
 
     @classmethod
     def _create_driver(cls, url: str, auth=None) -> neo4j.Driver:
@@ -118,10 +120,11 @@ class Neo4jAdapter(Adapter[T]):
         /,
         *,
         many=True,
-        adapt_meth: str = "model_validate",
+        adapt_meth: str | Callable = "model_validate",
         adapt_kw: dict | None = None,
+        validation_errors: tuple[type[Exception], ...] = (ValidationError,),
         **kw,
-    ):
+    ) -> T | list[T]:
         try:
             # Validate required parameters
             if "url" not in obj:
@@ -180,24 +183,27 @@ class Neo4jAdapter(Adapter[T]):
                     where=obj.get("where", ""),
                 )
 
-            # Convert rows to model instances
+            # Convert rows to model instances using dispatch_adapt_meth
             try:
                 if many:
-                    return [getattr(subj_cls, adapt_meth)(r, **(adapt_kw or {})) for r in rows]
-                return getattr(subj_cls, adapt_meth)(rows[0], **(adapt_kw or {}))
-            except ValidationError as e:
-                raise AdapterValidationError(
-                    f"Validation error: {e}",
+                    return [
+                        dispatch_adapt_meth(adapt_meth, r, adapt_kw or {}, subj_cls) for r in rows
+                    ]
+                return dispatch_adapt_meth(adapt_meth, rows[0], adapt_kw or {}, subj_cls)
+            except validation_errors as e:
+                cls._handle_error(
+                    e,
+                    "validation",
                     data=rows[0] if not many else rows,
-                    errors=e.errors(),
-                ) from e
+                    errors=e.errors() if hasattr(e, "errors") else None,
+                )
 
-        except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
+        except PydapterError:
             # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(f"Unexpected error in Neo4j adapter: {e}", adapter="neo4j")
+            # Safety net for unexpected errors
+            cls._handle_error(e, "query", unexpected=True)
 
     # outgoing
     @classmethod
@@ -211,10 +217,10 @@ class Neo4jAdapter(Adapter[T]):
         label=None,
         merge_on="id",
         many: bool = True,
-        adapt_meth: str = "model_dump",
+        adapt_meth: str | Callable = "model_dump",
         adapt_kw: dict | None = None,
         **kw,
-    ):
+    ) -> dict | None:
         try:
             # Validate required parameters
             if not url:
@@ -237,7 +243,8 @@ class Neo4jAdapter(Adapter[T]):
                 with driver.session() as s:
                     results = []
                     for it in items:
-                        props = getattr(it, adapt_meth)(**(adapt_kw or {}))
+                        # Use dispatch_adapt_meth for flexible method calling
+                        props = dispatch_adapt_meth(adapt_meth, it, adapt_kw or {}, type(it))
 
                         # Check if merge_on property exists
                         if merge_on not in props:
@@ -277,9 +284,9 @@ class Neo4jAdapter(Adapter[T]):
             finally:
                 driver.close()
 
-        except (ConnectionError, QueryError, AdapterValidationError):
+        except PydapterError:
             # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(f"Unexpected error in Neo4j adapter: {e}", adapter="neo4j")
+            # Safety net for unexpected errors
+            cls._handle_error(e, "query", unexpected=True)

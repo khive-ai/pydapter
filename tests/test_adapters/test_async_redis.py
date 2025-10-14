@@ -19,9 +19,7 @@ import pytest
 import pytest_asyncio
 
 from pydapter.async_core import AsyncAdaptable
-from pydapter.exceptions import (
-    ResourceError,
-)
+from pydapter.exceptions import ResourceError
 from pydapter.exceptions import ValidationError as AdapterValidationError
 
 

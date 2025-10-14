@@ -4,8 +4,8 @@ Qdrant vector-store adapter (requires `qdrant-client`).
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import TypeVar
+from collections.abc import Callable, Sequence
+from typing import ClassVar, TypeVar
 
 import grpc
 from pydantic import BaseModel, ValidationError
@@ -13,14 +13,14 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qd
 from qdrant_client.http.exceptions import UnexpectedResponse
 
-from ..core import Adapter
-from ..exceptions import ConnectionError, QueryError, ResourceError
+from ..core import Adapter, AdapterBase, dispatch_adapt_meth
+from ..exceptions import ConnectionError, PydapterError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class QdrantAdapter(Adapter[T]):
+class QdrantAdapter(AdapterBase, Adapter[T]):
     """
     Qdrant vector database adapter for converting between Pydantic models and vector embeddings.
 
@@ -31,7 +31,8 @@ class QdrantAdapter(Adapter[T]):
     - Support for both cloud and self-hosted Qdrant instances
 
     Attributes:
-        obj_key: The key identifier for this adapter type ("qdrant")
+        adapter_key: The key identifier for this adapter type ("qdrant")
+        obj_key: Legacy key identifier (for backward compatibility)
 
     Example:
         ```python
@@ -69,10 +70,11 @@ class QdrantAdapter(Adapter[T]):
         ```
     """
 
-    obj_key = "qdrant"
+    adapter_key: ClassVar[str] = "qdrant"
+    obj_key: ClassVar[str] = "qdrant"  # Backward compatibility
 
-    @staticmethod
-    def _client(url: str | None):
+    @classmethod
+    def _client(cls, url: str | None):
         """
         Create a Qdrant client with proper error handling.
 
@@ -111,7 +113,8 @@ class QdrantAdapter(Adapter[T]):
                 f"Unexpected error connecting to Qdrant: {e}", adapter="qdrant", url=url
             ) from e
 
-    def _validate_vector_dimensions(vector, expected_dim=None):
+    @classmethod
+    def _validate_vector_dimensions(cls, vector, expected_dim=None):
         """Validate that the vector has the correct dimensions."""
         if not isinstance(vector, list | tuple) or not all(
             isinstance(x, int | float) for x in vector
@@ -139,10 +142,10 @@ class QdrantAdapter(Adapter[T]):
         id_field="id",
         url=None,
         many: bool = True,
-        adapt_meth: str = "model_dump",
+        adapt_meth: str | Callable = "model_dump",
         adapt_kw: dict | None = None,
         **kw,
-    ) -> None:
+    ) -> dict | None:
         try:
             # Validate required parameters
             if not collection:
@@ -157,14 +160,14 @@ class QdrantAdapter(Adapter[T]):
             if not hasattr(items[0], vector_field):
                 raise AdapterValidationError(
                     f"Vector field '{vector_field}' not found in model",
-                    data=getattr(items[0], adapt_meth)(**(adapt_kw or {})),
+                    data=dispatch_adapt_meth(adapt_meth, items[0], adapt_kw or {}, type(items[0])),
                 )
 
             # Validate ID field exists
             if not hasattr(items[0], id_field):
                 raise AdapterValidationError(
                     f"ID field '{id_field}' not found in model",
-                    data=getattr(items[0], adapt_meth)(**(adapt_kw or {})),
+                    data=dispatch_adapt_meth(adapt_meth, items[0], adapt_kw or {}, type(items[0])),
                 )
 
             # Create client
@@ -212,12 +215,12 @@ class QdrantAdapter(Adapter[T]):
                     vector = getattr(item, vector_field)
                     cls._validate_vector_dimensions(vector, dim)
 
-                    # Create payload with all fields
+                    # Create payload with all fields using dispatch_adapt_meth
                     # The test_qdrant_to_obj_with_custom_vector_field test expects
                     # the embedding field to be excluded, but other integration tests
                     # expect it to be included. We'll include it for now and handle
                     # the test case separately.
-                    payload = getattr(item, adapt_meth)(**(adapt_kw or {}))
+                    payload = dispatch_adapt_meth(adapt_meth, item, adapt_kw or {}, type(item))
 
                     points.append(
                         qd.PointStruct(
@@ -230,10 +233,11 @@ class QdrantAdapter(Adapter[T]):
                 # Re-raise validation errors
                 raise
             except Exception as e:
-                raise AdapterValidationError(
-                    f"Error creating Qdrant points: {e}",
+                cls._handle_error(
+                    e,
+                    "validation",
                     data=items,
-                ) from e
+                )
 
             # Upsert points
             try:
@@ -250,12 +254,12 @@ class QdrantAdapter(Adapter[T]):
                     adapter="qdrant",
                 ) from e
 
-        except (ConnectionError, QueryError, AdapterValidationError):
+        except PydapterError:
             # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(f"Unexpected error in Qdrant adapter: {e}", adapter="qdrant")
+            # Safety net for unexpected errors
+            cls._handle_error(e, "query", unexpected=True)
 
     # incoming
     @classmethod
@@ -266,10 +270,11 @@ class QdrantAdapter(Adapter[T]):
         /,
         *,
         many=True,
-        adapt_meth: str = "model_validate",
+        adapt_meth: str | Callable = "model_validate",
         adapt_kw: dict | None = None,
+        validation_errors: tuple[type[Exception], ...] = (ValidationError,),
         **kw,
-    ):
+    ) -> T | list[T]:
         try:
             # Validate required parameters
             if "collection" not in obj:
@@ -327,21 +332,24 @@ class QdrantAdapter(Adapter[T]):
                     resource=obj["collection"],
                 )
 
-            # Convert documents to model instances
+            # Convert documents to model instances using dispatch_adapt_meth
             try:
                 if many:
-                    return [getattr(subj_cls, adapt_meth)(d, **(adapt_kw or {})) for d in docs]
-                return getattr(subj_cls, adapt_meth)(docs[0], **(adapt_kw or {}))
-            except ValidationError as e:
-                raise AdapterValidationError(
-                    f"Validation error: {e}",
+                    return [
+                        dispatch_adapt_meth(adapt_meth, d, adapt_kw or {}, subj_cls) for d in docs
+                    ]
+                return dispatch_adapt_meth(adapt_meth, docs[0], adapt_kw or {}, subj_cls)
+            except validation_errors as e:
+                cls._handle_error(
+                    e,
+                    "validation",
                     data=docs[0] if not many else docs,
-                    errors=e.errors(),
-                ) from e
+                    errors=e.errors() if hasattr(e, "errors") else None,
+                )
 
-        except (ConnectionError, QueryError, ResourceError, AdapterValidationError):
+        except PydapterError:
             # Re-raise our custom exceptions
             raise
         except Exception as e:
-            # Wrap other exceptions
-            raise QueryError(f"Unexpected error in Qdrant adapter: {e}", adapter="qdrant")
+            # Safety net for unexpected errors
+            cls._handle_error(e, "query", unexpected=True)

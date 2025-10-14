@@ -10,6 +10,7 @@ This adapter provides async methods to:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, ClassVar, TypeVar
 
 try:
@@ -29,8 +30,9 @@ except ImportError as e:
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
 
-from ..async_core import AsyncAdapter
-from ..exceptions import ConnectionError, QueryError, ResourceError
+from ..async_core import AsyncAdapter, AsyncAdapterBase
+from ..core import dispatch_adapt_meth
+from ..exceptions import ConnectionError, PydapterError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
@@ -41,7 +43,7 @@ __all__ = (
 )
 
 
-class AsyncRedisAdapter(AsyncAdapter[T]):
+class AsyncRedisAdapter(AsyncAdapterBase, AsyncAdapter[T]):
     """
     Asynchronous Redis adapter for converting between Pydantic models and Redis data.
 
@@ -53,7 +55,8 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
     - Comprehensive retry logic for production resilience
 
     Attributes:
-        obj_key: The key identifier for this adapter type ("async_redis")
+        adapter_key: The key identifier for this adapter type ("async_redis")
+        obj_key: Legacy key identifier (for backward compatibility)
 
     Configuration Parameters:
         Connection (choose one):
@@ -132,7 +135,8 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
         ```
     """
 
-    obj_key: ClassVar[str] = "async_redis"
+    adapter_key: ClassVar[str] = "async_redis"
+    obj_key: ClassVar[str] = "async_redis"  # Backward compatibility
 
     @classmethod
     def _validate_config(cls, config: dict[str, Any], operation: str) -> dict[str, Any]:
@@ -262,15 +266,14 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
     def _serialize_model(
         cls,
         model: BaseModel,
-        adapt_meth: str = "model_dump",
+        adapt_meth: str | Callable = "model_dump",
         adapt_kw: dict | None = None,
         serialization: str = "msgpack",
     ) -> bytes:
-        """Serialize Pydantic model to bytes."""
+        """Serialize Pydantic model to bytes using dispatch_adapt_meth."""
         try:
-            adapt_kw = adapt_kw or {}
-            # Use the specified adaptation method instead of hardcoded model_dump
-            data = getattr(model, adapt_meth)(**adapt_kw)
+            # Use dispatch_adapt_meth for flexible method calling
+            data = dispatch_adapt_meth(adapt_meth, model, adapt_kw or {}, type(model))
 
             if serialization == "msgpack":
                 return ormsgpack.packb(data)
@@ -282,27 +285,28 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
                     adapter="async_redis",
                     serialization=serialization,
                 )
+        except AdapterValidationError:
+            raise
         except Exception as e:
-            raise AdapterValidationError(
-                f"Failed to serialize model: {e}",
-                adapter="async_redis",
+            cls._handle_error(
+                e,
+                "validation",
                 model_type=type(model).__name__,
                 serialization=serialization,
-            ) from e
+            )
 
     @classmethod
     def _deserialize_model(
         cls,
         data: bytes,
         model_class: type[T],
-        adapt_meth: str = "model_validate",
+        adapt_meth: str | Callable = "model_validate",
         adapt_kw: dict | None = None,
         serialization: str = "msgpack",
+        validation_errors: tuple[type[Exception], ...] = (PydanticValidationError,),
     ) -> T:
-        """Deserialize bytes to Pydantic model."""
+        """Deserialize bytes to Pydantic model using dispatch_adapt_meth."""
         try:
-            adapt_kw = adapt_kw or {}
-
             if serialization == "msgpack":
                 parsed_data = ormsgpack.unpackb(data)
             elif serialization == "json":
@@ -314,23 +318,26 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
                     serialization=serialization,
                 )
 
-            # Use the specified adaptation method instead of hardcoded model_validate
-            return getattr(model_class, adapt_meth)(parsed_data, **adapt_kw)
+            # Use dispatch_adapt_meth for flexible method calling
+            return dispatch_adapt_meth(adapt_meth, parsed_data, adapt_kw or {}, model_class)
 
-        except PydanticValidationError as e:
-            raise AdapterValidationError(
-                f"Failed to validate model from Redis data: {e}",
-                adapter="async_redis",
+        except validation_errors as e:
+            cls._handle_error(
+                e,
+                "validation",
+                data=parsed_data if "parsed_data" in locals() else None,
+                errors=e.errors() if hasattr(e, "errors") else None,
                 model_type=model_class.__name__,
-                serialization=serialization,
-            ) from e
+            )
+        except AdapterValidationError:
+            raise
         except Exception as e:
-            raise AdapterValidationError(
-                f"Failed to deserialize model: {e}",
-                adapter="async_redis",
+            cls._handle_error(
+                e,
+                "validation",
                 model_type=model_class.__name__,
                 serialization=serialization,
-            ) from e
+            )
 
     @classmethod
     def _generate_key(cls, model: BaseModel | dict, config: dict[str, Any]) -> str:
@@ -387,8 +394,9 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
         /,
         *,
         many: bool = False,
-        adapt_meth: str = "model_validate",
+        adapt_meth: str | Callable = "model_validate",
         adapt_kw: dict | None = None,
+        validation_errors: tuple[type[Exception], ...] = (PydanticValidationError,),
         **kw,
     ) -> T | list[T]:
         """
@@ -399,6 +407,8 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
             obj: Configuration dictionary containing Redis connection and read parameters
             many: Whether to retrieve multiple models (pattern-based scan)
             adapt_meth: Pydantic method to use for validation (default: "model_validate")
+            adapt_kw: Keyword arguments for adaptation method
+            validation_errors: Tuple of expected validation error types
             **kw: Additional keyword arguments
 
         Returns:
@@ -410,72 +420,87 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
             ValidationError: Invalid configuration or model validation errors
             ResourceError: Key not found (when not using patterns)
         """
-        config = cls._validate_config(obj, "read")
-        serialization = config.get("serialization", "msgpack")
-        adapt_kw = adapt_kw or {}
-
-        client = await cls._create_client(config)
-
         try:
-            if many:
-                # Pattern-based retrieval
-                pattern = config.get("pattern", "*")
-                scan_count = config.get("scan_count", 100)
+            config = cls._validate_config(obj, "read")
+            serialization = config.get("serialization", "msgpack")
+            adapt_kw = adapt_kw or {}
 
-                async def scan_operation():
-                    keys = []
-                    async for key in client.scan_iter(match=pattern, count=scan_count):
-                        keys.append(key)
-                    return keys
+            client = await cls._create_client(config)
 
-                keys = await cls._execute_with_retry(scan_operation, "scan_keys")
+            try:
+                if many:
+                    # Pattern-based retrieval
+                    pattern = config.get("pattern", "*")
+                    scan_count = config.get("scan_count", 100)
 
-                if not keys:
-                    return []
+                    async def scan_operation():
+                        keys = []
+                        async for key in client.scan_iter(match=pattern, count=scan_count):
+                            keys.append(key)
+                        return keys
 
-                # Retrieve all values
-                async def mget_operation():
-                    return await client.mget(keys)
+                    keys = await cls._execute_with_retry(scan_operation, "scan_keys")
 
-                values = await cls._execute_with_retry(mget_operation, "mget_values")
+                    if not keys:
+                        return []
 
-                # Deserialize all models
-                models = []
-                for value in values:
-                    if value is not None:
-                        model = cls._deserialize_model(
-                            value, subj_cls, adapt_meth, adapt_kw, serialization
+                    # Retrieve all values
+                    async def mget_operation():
+                        return await client.mget(keys)
+
+                    values = await cls._execute_with_retry(mget_operation, "mget_values")
+
+                    # Deserialize all models
+                    models = []
+                    for value in values:
+                        if value is not None:
+                            model = cls._deserialize_model(
+                                value,
+                                subj_cls,
+                                adapt_meth,
+                                adapt_kw,
+                                serialization,
+                                validation_errors,
+                            )
+                            models.append(model)
+
+                    return models
+
+                else:
+                    # Single key retrieval
+                    key = config.get("key")
+                    if not key:
+                        raise AdapterValidationError(
+                            "Missing 'key' parameter for single object retrieval",
+                            adapter="async_redis",
+                            operation="read",
                         )
-                        models.append(model)
 
-                return models
+                    async def get_operation():
+                        return await client.get(key)
 
-            else:
-                # Single key retrieval
-                key = config.get("key")
-                if not key:
-                    raise AdapterValidationError(
-                        "Missing 'key' parameter for single object retrieval",
-                        adapter="async_redis",
-                        operation="read",
+                    value = await cls._execute_with_retry(get_operation, "get_value")
+
+                    if value is None:
+                        raise ResourceError(
+                            f"Key not found in Redis: {key}",
+                            adapter="async_redis",
+                            resource=key,
+                        )
+
+                    return cls._deserialize_model(
+                        value, subj_cls, adapt_meth, adapt_kw, serialization, validation_errors
                     )
 
-                async def get_operation():
-                    return await client.get(key)
+            finally:
+                await client.aclose()
 
-                value = await cls._execute_with_retry(get_operation, "get_value")
-
-                if value is None:
-                    raise ResourceError(
-                        f"Key not found in Redis: {key}",
-                        adapter="async_redis",
-                        resource=key,
-                    )
-
-                return cls._deserialize_model(value, subj_cls, adapt_meth, adapt_kw, serialization)
-
-        finally:
-            await client.aclose()
+        except PydapterError:
+            # Re-raise our custom exceptions
+            raise
+        except Exception as e:
+            # Safety net for unexpected errors
+            cls._handle_error(e, "query", unexpected=True)
 
     @classmethod
     async def to_obj(
@@ -484,7 +509,7 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
         /,
         *,
         many: bool = False,
-        adapt_meth: str = "model_dump",
+        adapt_meth: str | Callable = "model_dump",
         adapt_kw: dict | None = None,
         **kw,
     ) -> Any:
@@ -495,6 +520,7 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
             subj: Single model instance or list of model instances
             many: Whether storing multiple models
             adapt_meth: Pydantic method to use for dumping (default: "model_dump")
+            adapt_kw: Keyword arguments for adaptation method
             **kw: Configuration dictionary containing Redis connection and write parameters
 
         Returns:
@@ -505,75 +531,85 @@ class AsyncRedisAdapter(AsyncAdapter[T]):
             QueryError: Redis operation failures
             ValidationError: Invalid configuration or serialization errors
         """
-        config = cls._validate_config(kw, "write")
-        serialization = config.get("serialization", "msgpack")
-        adapt_kw = adapt_kw or {}
-        ttl = config.get("ttl")
-        nx = config.get("nx", False)
-        xx = config.get("xx", False)
-
-        client = await cls._create_client(config)
-
         try:
-            if many:
-                # Bulk operations
-                models = subj if isinstance(subj, list) else [subj]
-                pipeline_size = config.get("pipeline_size", 100)
+            config = cls._validate_config(kw, "write")
+            serialization = config.get("serialization", "msgpack")
+            adapt_kw = adapt_kw or {}
+            ttl = config.get("ttl")
+            nx = config.get("nx", False)
+            xx = config.get("xx", False)
 
-                # Process in batches for large datasets
-                total_set = 0
-                for i in range(0, len(models), pipeline_size):
-                    batch = models[i : i + pipeline_size]
+            client = await cls._create_client(config)
 
-                    async def pipeline_operation():
-                        pipe = client.pipeline()
-                        for model in batch:
-                            key = cls._generate_key(model, config)
-                            value = cls._serialize_model(model, adapt_meth, adapt_kw, serialization)
+            try:
+                if many:
+                    # Bulk operations
+                    models = subj if isinstance(subj, list) else [subj]
+                    pipeline_size = config.get("pipeline_size", 100)
 
-                            if ttl and nx:
-                                pipe.set(key, value, ex=ttl, nx=True)
-                            elif ttl and xx:
-                                pipe.set(key, value, ex=ttl, xx=True)
-                            elif ttl:
-                                pipe.setex(key, ttl, value)
-                            elif nx:
-                                pipe.set(key, value, nx=True)
-                            elif xx:
-                                pipe.set(key, value, xx=True)
-                            else:
-                                pipe.set(key, value)
+                    # Process in batches for large datasets
+                    total_set = 0
+                    for i in range(0, len(models), pipeline_size):
+                        batch = models[i : i + pipeline_size]
 
-                        return await pipe.execute()
+                        async def pipeline_operation():
+                            pipe = client.pipeline()
+                            for model in batch:
+                                key = cls._generate_key(model, config)
+                                value = cls._serialize_model(
+                                    model, adapt_meth, adapt_kw, serialization
+                                )
 
-                    results = await cls._execute_with_retry(pipeline_operation, "pipeline_set")
-                    total_set += sum(1 for r in results if r)
+                                if ttl and nx:
+                                    pipe.set(key, value, ex=ttl, nx=True)
+                                elif ttl and xx:
+                                    pipe.set(key, value, ex=ttl, xx=True)
+                                elif ttl:
+                                    pipe.setex(key, ttl, value)
+                                elif nx:
+                                    pipe.set(key, value, nx=True)
+                                elif xx:
+                                    pipe.set(key, value, xx=True)
+                                else:
+                                    pipe.set(key, value)
 
-                return total_set
+                            return await pipe.execute()
 
-            else:
-                # Single model operation
-                model = subj
-                # Use explicit key if provided, otherwise generate one
-                key = config.get("key") or cls._generate_key(model, config)
-                value = cls._serialize_model(model, adapt_meth, adapt_kw, serialization)
+                        results = await cls._execute_with_retry(pipeline_operation, "pipeline_set")
+                        total_set += sum(1 for r in results if r)
 
-                async def set_operation():
-                    if ttl and nx:
-                        return await client.set(key, value, ex=ttl, nx=True)
-                    elif ttl and xx:
-                        return await client.set(key, value, ex=ttl, xx=True)
-                    elif ttl:
-                        return await client.setex(key, ttl, value)
-                    elif nx:
-                        return await client.set(key, value, nx=True)
-                    elif xx:
-                        return await client.set(key, value, xx=True)
-                    else:
-                        return await client.set(key, value)
+                    return total_set
 
-                result = await cls._execute_with_retry(set_operation, "set_value")
-                return 1 if result else 0
+                else:
+                    # Single model operation
+                    model = subj
+                    # Use explicit key if provided, otherwise generate one
+                    key = config.get("key") or cls._generate_key(model, config)
+                    value = cls._serialize_model(model, adapt_meth, adapt_kw, serialization)
 
-        finally:
-            await client.aclose()
+                    async def set_operation():
+                        if ttl and nx:
+                            return await client.set(key, value, ex=ttl, nx=True)
+                        elif ttl and xx:
+                            return await client.set(key, value, ex=ttl, xx=True)
+                        elif ttl:
+                            return await client.setex(key, ttl, value)
+                        elif nx:
+                            return await client.set(key, value, nx=True)
+                        elif xx:
+                            return await client.set(key, value, xx=True)
+                        else:
+                            return await client.set(key, value)
+
+                    result = await cls._execute_with_retry(set_operation, "set_value")
+                    return 1 if result else 0
+
+            finally:
+                await client.aclose()
+
+        except PydapterError:
+            # Re-raise our custom exceptions
+            raise
+        except Exception as e:
+            # Safety net for unexpected errors
+            cls._handle_error(e, "query", unexpected=True)

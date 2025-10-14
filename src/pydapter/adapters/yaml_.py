@@ -6,8 +6,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import TypeVar
 
-import yaml
 from pydantic import BaseModel, ValidationError
+import yaml
 
 from ..core import Adapter, AdapterBase, dispatch_adapt_meth
 from ..exceptions import PydapterError
