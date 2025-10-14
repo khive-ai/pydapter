@@ -65,6 +65,23 @@ class AsyncAdapterBase:
     }
 
     @classmethod
+    def _sanitize_url(cls, url: str) -> str:
+        """Sanitize URLs to remove credentials before logging."""
+        if not isinstance(url, str):
+            return url
+
+        # Check for common URL patterns with credentials
+        # postgresql://user:password@host:port/db → postgresql://user:***@host:port/db
+        # mongodb://user:password@host:port/db → mongodb://user:***@host:port/db
+        # http://user:password@host:port → http://user:***@host:port
+        import re
+
+        # Pattern: scheme://[user[:password]@]host
+        pattern = r"((?:https?|postgresql|mongodb|mysql|redis)://[^:]+:)([^@]+)(@)"
+        sanitized = re.sub(pattern, r"\1***\3", url)
+        return sanitized
+
+    @classmethod
     def _handle_error(cls, exc: Exception, category: str, **extra_details) -> None:
         """Wrap exception in appropriate PydapterError subclass with context."""
         error_class = cls._error_mapping.get(category, AdapterError)
@@ -85,12 +102,34 @@ class AsyncAdapterBase:
                         details[key] = f"{value[:100]}... (truncated)"
                     else:
                         details[key] = value
+                elif isinstance(value, (list, tuple)):
+                    # Truncate long lists/tuples (e.g., embeddings) to first 5 elements
+                    if len(value) > 10:
+                        details[key] = (
+                            f"{type(value).__name__}([{', '.join(map(str, value[:5]))}, ...] len={len(value)})"
+                        )
+                    else:
+                        details[key] = value
+                elif isinstance(value, dict):
+                    # Truncate large dicts to show only keys
+                    if len(value) > 10:
+                        keys = list(value.keys())[:5]
+                        details[key] = f"dict(keys={keys}... len={len(value)})"
+                    else:
+                        details[key] = value
                 else:
-                    # For other types (dict, list, etc.), include as-is
+                    # For other types, include as-is
                     details[key] = value
 
-        # Add other details
-        details.update({k: v for k, v in extra_details.items() if k not in ("source", "data")})
+        # Sanitize URL fields to remove credentials
+        url_fields = ("url", "connection", "connection_string", "database_url", "dsn")
+        for key, value in extra_details.items():
+            if key not in ("source", "data"):
+                if key in url_fields and isinstance(value, str):
+                    # Sanitize URLs to remove passwords
+                    details[key] = cls._sanitize_url(value)
+                else:
+                    details[key] = value
 
         # Add adapter_key if available
         if hasattr(cls, "adapter_key"):

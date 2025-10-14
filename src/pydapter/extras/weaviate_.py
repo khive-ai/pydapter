@@ -311,7 +311,7 @@ class WeaviateAdapter(AdapterBase, Adapter[T]):
                             distance=0.7,  # Default distance threshold
                             limit=obj.get("top_k", 5),
                         )
-                        .with_additional("id")
+                        .with_additional(["id", "vector"])  # Include vector in response
                         .do()
                     )
 
@@ -319,7 +319,18 @@ class WeaviateAdapter(AdapterBase, Adapter[T]):
                     # Handle both mock objects in tests and real objects in production
                     if hasattr(query_result, "objects"):
                         # For real Weaviate client or properly mocked objects
-                        data = [getattr(item, "properties", item) for item in query_result.objects]
+                        data = []
+                        for item in query_result.objects:
+                            # Get properties
+                            props = getattr(item, "properties", item)
+                            # Add additional fields (id, vector)
+                            additional = getattr(item, "additional", {})
+                            if additional:
+                                if "id" in additional:
+                                    props["id"] = additional["id"]
+                                if "vector" in additional:
+                                    props["embedding"] = additional["vector"]
+                            data.append(props)
                     elif isinstance(query_result, dict) and "data" in query_result:
                         # For old API format in tests
                         data = query_result["data"]["Get"].get(obj["class_name"], [])

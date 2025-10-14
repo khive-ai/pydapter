@@ -33,14 +33,20 @@ if TYPE_CHECKING:
 class PostgresModelAdapter(SQLModelAdapter):
     """Extended adapter with PostgreSQL-specific type support."""
 
+    _types_registered = False
+
     def __init__(self):
         super().__init__()
-        # Register PostgreSQL-specific types
-        self._register_postgres_types()
+        # Register PostgreSQL-specific types (idempotent)
+        if not PostgresModelAdapter._types_registered:
+            self._register_postgres_types()
 
     @classmethod
     def _register_postgres_types(cls):
         """Register PostgreSQL-specific type mappings."""
+        if cls._types_registered:
+            return  # Already registered, skip
+
         # JSONB type
         cls.register_type_mapping(
             python_type=dict,
@@ -77,6 +83,20 @@ class PostgresModelAdapter(SQLModelAdapter):
         )
 
         cls.register_type_mapping(
+            python_type=ipaddress.IPv4Interface,
+            sql_type_factory=lambda: INET(),
+            python_to_sql=lambda x: str(x),
+            sql_to_python=lambda x: ipaddress.IPv4Interface(x) if x else None,
+        )
+
+        cls.register_type_mapping(
+            python_type=ipaddress.IPv6Interface,
+            sql_type_factory=lambda: INET(),
+            python_to_sql=lambda x: str(x),
+            sql_to_python=lambda x: ipaddress.IPv6Interface(x) if x else None,
+        )
+
+        cls.register_type_mapping(
             python_type=ipaddress.IPv4Network,
             sql_type_factory=lambda: CIDR(),
             python_to_sql=lambda x: str(x),
@@ -108,6 +128,9 @@ class PostgresModelAdapter(SQLModelAdapter):
                 tuple(float(v) for v in x.strip("()").split(",")) if x else None
             ),
         )
+
+        # Mark types as registered
+        cls._types_registered = True
 
     @classmethod
     def handle_jsonb(
@@ -393,3 +416,7 @@ class PostgresModelAdapter(SQLModelAdapter):
         # Create a new base class with a fresh metadata for each model
         Base = create_base()
         return type(f"{model.__name__}SQL", (Base,), ns)
+
+
+# Register PostgreSQL-specific types when module is loaded
+PostgresModelAdapter._register_postgres_types()

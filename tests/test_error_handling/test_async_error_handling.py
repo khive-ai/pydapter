@@ -73,6 +73,7 @@ class TestAsyncSQLAdapterErrors:
     async def test_invalid_connection_string(self, monkeypatch):
         """Test handling of invalid connection string."""
         import sqlalchemy as sa
+
         from pydapter.extras import async_sql_
 
         class TestModel(AsyncAdaptable, BaseModel):
@@ -95,7 +96,10 @@ class TestAsyncSQLAdapterErrors:
             )
         # Check for engine creation error with plugin loading failure
         error_msg = str(exc_info.value)
-        assert any(text in error_msg for text in ["Can't load plugin", "Invalid connection string", "SQLAlchemy"])
+        assert any(
+            text in error_msg
+            for text in ["Can't load plugin", "Invalid connection string", "SQLAlchemy"]
+        )
 
     @pytest.mark.asyncio
     async def test_table_not_found(self, monkeypatch):
@@ -215,6 +219,7 @@ class TestAsyncPostgresAdapterErrors:
     async def test_authentication_error(self, monkeypatch):
         """Test handling of authentication errors."""
         import sqlalchemy as sa
+
         from pydapter.extras import async_sql_
 
         class TestModel(AsyncAdaptable, BaseModel):
@@ -239,13 +244,15 @@ class TestAsyncPostgresAdapterErrors:
         error_msg = str(exc_info.value)
         # Accept any authentication error pattern
         assert any(
-            text in error_msg.lower() for text in ["authentication", "auth failed", "password", "sqlalchemy"]
+            text in error_msg.lower()
+            for text in ["authentication", "auth failed", "password", "sqlalchemy"]
         )
 
     @pytest.mark.asyncio
     async def test_connection_refused(self, monkeypatch):
         """Test handling of connection refused errors."""
         import sqlalchemy as sa
+
         from pydapter.extras import async_sql_
 
         class TestModel(AsyncAdaptable, BaseModel):
@@ -285,6 +292,7 @@ class TestAsyncPostgresAdapterErrors:
     async def test_database_not_exist(self, monkeypatch):
         """Test handling of database does not exist errors."""
         import sqlalchemy as sa
+
         from pydapter.extras import async_sql_
 
         class TestModel(AsyncAdaptable, BaseModel):
