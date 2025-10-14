@@ -756,20 +756,17 @@ class TestAsyncQdrantAdapterConnectionErrors:
 
     @pytest.mark.asyncio
     async def test_async_qdrant_point_creation_error(self, mocker):
-        """Test exception during point creation."""
-        # Create a document with invalid data that will cause point creation to fail
+        """Test exception during point serialization in upsert."""
         doc = Document(id="doc1", text="test", embedding=[0.1, 0.2, 0.3])
 
-        # Mock client
+        # Mock client with upsert that raises TypeError (invalid point data)
         mock_client = mocker.AsyncMock()
         mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.upsert.side_effect = TypeError("Invalid point data")
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
 
-        # Patch PointStruct to raise an exception
-        mocker.patch("qdrant_client.http.models.PointStruct", side_effect=ValueError("Invalid point"))
-
-        with pytest.raises((AdapterValidationError, QueryError)):
+        with pytest.raises(QueryError):
             await AsyncQdrantAdapter.to_obj(
                 doc,
                 collection="test_point_error",
