@@ -253,7 +253,7 @@ class TestAsyncQdrantAdapterErrorHandling:
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
 
-        with pytest.raises(ResourceError) as excinfo:
+        with pytest.raises(ResourceError):
             await AsyncQdrantAdapter.from_obj(
                 Document,
                 {
