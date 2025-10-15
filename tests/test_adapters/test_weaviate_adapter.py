@@ -158,7 +158,7 @@ class TestWeaviateAdapterFunctionality:
         # Verify query was constructed correctly
         mock_client.collections.get.assert_called_once_with("TestModel")
         mock_query.near_vector.assert_called_once()
-        mock_query.with_additional.assert_called_once_with("id")
+        mock_query.with_additional.assert_called_once_with(["id", "vector"])
         mock_query.do.assert_called_once()
 
         # Verify result
@@ -221,7 +221,7 @@ class TestWeaviateAdapterFunctionality:
         # Verify query was constructed correctly
         mock_client.collections.get.assert_called_once_with("TestModel")
         mock_query.near_vector.assert_called_once()
-        mock_query.with_additional.assert_called_once_with("id")
+        mock_query.with_additional.assert_called_once_with(["id", "vector"])
         mock_query.do.assert_called_once()
 
         # Verify results
@@ -411,3 +411,341 @@ class TestWeaviateAdapterErrorHandling:
             test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://localhost:8080")
 
         assert "Vector field 'embedding' not found in model" in str(excinfo.value)
+
+    def test_missing_query_vector(self):
+        """Test handling of missing query_vector parameter in from_obj."""
+        # Create test class
+        test_cls = TestModel
+
+        # Register adapter
+        test_cls.register_adapter(WeaviateAdapter)
+
+        # Test from_obj with missing query_vector
+        with pytest.raises(AdapterValidationError) as excinfo:
+            test_cls.adapt_from(
+                {
+                    "class_name": "TestModel",
+                    # Missing query_vector
+                },
+                obj_key="weav",
+            )
+
+        assert "Missing required parameter 'query_vector'" in str(excinfo.value)
+
+    def test_invalid_vector_format(self, mocker):
+        """Test handling of invalid vector format (not a list)."""
+
+        # Create test instance with invalid vector
+        class TestModelInvalidVector(Adaptable, BaseModel):
+            id: int
+            name: str
+            value: float
+            embedding: str  # Should be list[float]
+
+        test_model = TestModelInvalidVector(id=1, name="test", value=42.5, embedding="not_a_list")
+
+        # Register adapter
+        test_model.__class__.register_adapter(WeaviateAdapter)
+
+        # Mock the client and collection
+        mock_client = mocker.MagicMock()
+        mock_collection = mocker.MagicMock()
+        mock_client.collections.get.return_value = mock_collection
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test to_obj with invalid vector format
+        with pytest.raises(AdapterValidationError) as excinfo:
+            test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://localhost:8080")
+
+        assert "must be a list of floats" in str(excinfo.value)
+
+    def test_empty_input_list(self, mocker):
+        """Test handling of empty input list to to_obj."""
+        # Mock the client
+        mock_client = mocker.MagicMock()
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test to_obj with empty list
+        result = WeaviateAdapter.to_obj(
+            [], class_name="TestModel", url="http://localhost:8080", many=True
+        )
+
+        # Should return 0 count for empty input
+        assert result == {"added_count": 0}
+
+        # Client should not be called for empty input
+        WeaviateAdapter._client.assert_not_called()
+
+    def test_batch_insertion_multiple_objects(self, mocker):
+        """Test batch insertion with multiple objects."""
+        # Create test instances
+        test_models = [
+            TestModel(id=i, name=f"test{i}", value=float(i * 10), embedding=[0.1 * i] * 5)
+            for i in range(1, 4)
+        ]
+
+        # Mock the client and collection
+        mock_client = mocker.MagicMock()
+        mock_collection = mocker.MagicMock()
+        mock_client.collections.get.return_value = mock_collection
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test to_obj with multiple instances
+        result = WeaviateAdapter.to_obj(
+            test_models, class_name="TestModel", url="http://localhost:8080", many=True
+        )
+
+        # Verify all objects were inserted
+        assert result["added_count"] == 3
+        assert mock_collection.data.insert.call_count == 3
+
+    def test_empty_results_with_many_true(self, mocker):
+        """Test empty query results with many=True."""
+        # Create test class
+        test_cls = TestModel
+
+        # Register adapter
+        test_cls.register_adapter(WeaviateAdapter)
+
+        # Mock the client and collection
+        mock_client = mocker.MagicMock()
+        mock_collection = mocker.MagicMock()
+        mock_query = mocker.MagicMock()
+        mock_client.collections.get.return_value = mock_collection
+        mock_collection.query = mock_query
+        mock_query.near_vector.return_value = mock_query
+        mock_query.with_additional.return_value = mock_query
+
+        # Mock empty result
+        mock_result = mocker.MagicMock()
+        mock_result.objects = []
+        mock_query.do.return_value = mock_result
+
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test from_obj with empty result and many=True
+        results = test_cls.adapt_from(
+            {
+                "class_name": "TestModel",
+                "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
+            },
+            obj_key="weav",
+            many=True,
+        )
+
+        # Should return empty list for many=True
+        assert results == []
+
+    def test_collection_creation_on_missing(self, mocker):
+        """Test collection creation when it doesn't exist."""
+        # Create test instance
+        test_model = TestModel(id=1, name="test", value=42.5)
+
+        # Register adapter
+        test_model.__class__.register_adapter(WeaviateAdapter)
+
+        # Mock the client
+        mock_client = mocker.MagicMock()
+        mock_collection = mocker.MagicMock()
+
+        # First call to get() raises exception, then create() returns collection
+        mock_client.collections.get.side_effect = Exception("Collection not found")
+        mock_client.collections.create.return_value = mock_collection
+
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test to_obj - should create collection
+        test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://localhost:8080")
+
+        # Verify collection creation was attempted
+        mock_client.collections.create.assert_called_once()
+        mock_collection.data.insert.assert_called_once()
+
+    def test_model_without_id_field(self, mocker):
+        """Test insertion of model without id field."""
+
+        # Create test model without id
+        class TestModelNoId(Adaptable, BaseModel):
+            name: str
+            value: float
+            embedding: list[float] = [0.1, 0.2, 0.3, 0.4, 0.5]
+
+        test_model = TestModelNoId(name="test", value=42.5)
+
+        # Register adapter
+        test_model.__class__.register_adapter(WeaviateAdapter)
+
+        # Mock the client and collection
+        mock_client = mocker.MagicMock()
+        mock_collection = mocker.MagicMock()
+        mock_client.collections.get.return_value = mock_collection
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test to_obj
+        test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://localhost:8080")
+
+        # Verify insertion was called without uuid parameter
+        mock_collection.data.insert.assert_called_once()
+        call_kwargs = mock_collection.data.insert.call_args[1]
+        assert "uuid" not in call_kwargs
+
+    def test_insert_operation_failure(self, mocker):
+        """Test handling of insert operation failure."""
+        # Create test instance
+        test_model = TestModel(id=1, name="test", value=42.5)
+
+        # Register adapter
+        test_model.__class__.register_adapter(WeaviateAdapter)
+
+        # Mock the client and collection
+        mock_client = mocker.MagicMock()
+        mock_collection = mocker.MagicMock()
+        mock_client.collections.get.return_value = mock_collection
+
+        # Mock insert to raise exception
+        mock_collection.data.insert.side_effect = Exception("Insert failed")
+
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test to_obj with insert failure
+        with pytest.raises(QueryError) as excinfo:
+            test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://localhost:8080")
+
+        assert "Failed to add object to Weaviate" in str(excinfo.value)
+
+    def test_collection_create_failure(self, mocker):
+        """Test handling of collection creation failure."""
+        # Create test instance
+        test_model = TestModel(id=1, name="test", value=42.5)
+
+        # Register adapter
+        test_model.__class__.register_adapter(WeaviateAdapter)
+
+        # Mock the client
+        mock_client = mocker.MagicMock()
+
+        # Both get and create fail
+        mock_client.collections.get.side_effect = Exception("Collection not found")
+        mock_client.collections.create.side_effect = Exception("Create failed")
+
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test to_obj with collection creation failure
+        with pytest.raises(QueryError) as excinfo:
+            test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://localhost:8080")
+
+        assert "Failed to get or create collection" in str(excinfo.value)
+
+    def test_old_api_response_format(self, mocker):
+        """Test handling of old API response format."""
+        # Create test class
+        test_cls = TestModel
+
+        # Register adapter
+        test_cls.register_adapter(WeaviateAdapter)
+
+        # Mock the client and collection
+        mock_client = mocker.MagicMock()
+        mock_collection = mocker.MagicMock()
+        mock_query = mocker.MagicMock()
+        mock_client.collections.get.return_value = mock_collection
+        mock_collection.query = mock_query
+        mock_query.near_vector.return_value = mock_query
+        mock_query.with_additional.return_value = mock_query
+
+        # Mock query result in old API format (dict instead of object)
+        mock_result = {
+            "data": {
+                "Get": {
+                    "TestModel": [
+                        {
+                            "id": 1,
+                            "name": "test",
+                            "value": 42.5,
+                            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5],
+                        }
+                    ]
+                }
+            }
+        }
+        mock_query.do.return_value = mock_result
+
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test from_obj with old API format
+        results = test_cls.adapt_from(
+            {
+                "class_name": "TestModel",
+                "query_vector": [0.1, 0.2, 0.3, 0.4, 0.5],
+            },
+            obj_key="weav",
+            many=True,
+        )
+
+        # Should handle old format correctly
+        assert isinstance(results, list)
+        assert len(results) == 1
+        assert results[0].id == 1
+        assert results[0].name == "test"
+
+    def test_nested_objects_handling(self, mocker):
+        """Test handling of nested Pydantic models."""
+
+        # Create nested model
+        class NestedModel(BaseModel):
+            nested_value: str
+
+        class TestModelNested(Adaptable, BaseModel):
+            id: int
+            name: str
+            nested: NestedModel
+            embedding: list[float] = [0.1, 0.2, 0.3, 0.4, 0.5]
+
+        test_model = TestModelNested(
+            id=1,
+            name="test",
+            nested=NestedModel(nested_value="nested_data"),
+        )
+
+        # Register adapter
+        test_model.__class__.register_adapter(WeaviateAdapter)
+
+        # Mock the client and collection
+        mock_client = mocker.MagicMock()
+        mock_collection = mocker.MagicMock()
+        mock_client.collections.get.return_value = mock_collection
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test to_obj with nested model
+        test_model.adapt_to(obj_key="weav", class_name="TestModel", url="http://localhost:8080")
+
+        # Verify insertion was called
+        mock_collection.data.insert.assert_called_once()
+        call_kwargs = mock_collection.data.insert.call_args[1]
+
+        # Properties should include serialized nested object
+        assert "properties" in call_kwargs
+        assert "nested" in call_kwargs["properties"]
+
+    def test_large_batch_operations(self, mocker):
+        """Test large batch operations."""
+        # Create large batch of test instances
+        test_models = [
+            TestModel(id=i, name=f"test{i}", value=float(i), embedding=[0.1] * 5)
+            for i in range(100)
+        ]
+
+        # Mock the client and collection
+        mock_client = mocker.MagicMock()
+        mock_collection = mocker.MagicMock()
+        mock_client.collections.get.return_value = mock_collection
+        mocker.patch.object(WeaviateAdapter, "_client", return_value=mock_client)
+
+        # Test to_obj with large batch
+        result = WeaviateAdapter.to_obj(
+            test_models, class_name="TestModel", url="http://localhost:8080", many=True
+        )
+
+        # Verify all objects were inserted
+        assert result["added_count"] == 100
+        assert mock_collection.data.insert.call_count == 100

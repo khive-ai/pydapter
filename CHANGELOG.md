@@ -1,6 +1,29 @@
 # Changelog
 
-## [1.1.2] - 2025-01-10
+## [1.2.0] - 2025-10-14
+
+### Changed
+
+- **BREAKING**: Framework-agnostic architecture - supports all Python objects
+  (Pydantic remains a dependency for backward compatibility)
+- Complete error handling overhaul with standardized exception hierarchy
+- All adapters refactored to align with new error handling standards
+
+### Fixed
+
+- `WeaviateAdapter.from_obj` missing vector field in query results
+- `AsyncWeaviateAdapter` async context manager mocking in tests
+- `PostgresModelAdapter` IPv4Address/IPv6Address type conversion for classmethod usage
+- Migrated to Pydantic v2 `ConfigDict` (eliminated 12 deprecation warnings)
+- pytest_asyncio fixture compatibility (eliminated 15 warnings)
+
+### Improved
+
+- Test coverage: `async_mongo_` 76%→95%, `async_weaviate_` 37%→78%, `weaviate_` 67%→79%
+- Added 40+ comprehensive async_mongo_ tests covering error paths
+- Overall project coverage improved to 83%
+
+## [1.1.2] - 2025-10-10
 
 ### Added
 

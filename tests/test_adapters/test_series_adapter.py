@@ -128,21 +128,27 @@ class TestSeriesAdapterErrorHandling:
 
         # Test from_obj with many=True (should raise AdapterValidationError)
         model_cls = series_sample.__class__
-        with pytest.raises(AdapterValidationError, match="SeriesAdapter supports single records only"):
+        with pytest.raises(
+            AdapterValidationError, match="SeriesAdapter supports single records only"
+        ):
             SeriesAdapter.from_obj(model_cls, mock_series, many=True)
 
     @patch("pydapter.extras.pandas_.pd")
     def test_series_to_obj_many_true_raises_error(self, mock_pd, series_sample):
         """Test that to_obj with many=True raises AdapterValidationError."""
         # Test to_obj with many=True (should raise AdapterValidationError)
-        with pytest.raises(AdapterValidationError, match="SeriesAdapter supports single records only"):
+        with pytest.raises(
+            AdapterValidationError, match="SeriesAdapter supports single records only"
+        ):
             SeriesAdapter.to_obj(series_sample, many=True)
 
     @patch("pydapter.extras.pandas_.pd")
     def test_series_to_obj_with_list_raises_error(self, mock_pd, series_sample):
         """Test that to_obj with list input raises AdapterValidationError."""
         # Test to_obj with list input (should raise AdapterValidationError)
-        with pytest.raises(AdapterValidationError, match="SeriesAdapter supports single records only"):
+        with pytest.raises(
+            AdapterValidationError, match="SeriesAdapter supports single records only"
+        ):
             SeriesAdapter.to_obj([series_sample], many=False)
 
     @patch("pydapter.extras.pandas_.pd")
@@ -184,6 +190,7 @@ class TestSeriesAdapterValidation:
 
     def test_series_adapter_single_record_only(self):
         """Test that SeriesAdapter enforces single record constraint."""
+
         # Create a simple model
         class SimpleModel(BaseModel):
             value: int
@@ -193,14 +200,20 @@ class TestSeriesAdapterValidation:
         mock_series.to_dict.return_value = {"value": 42}
 
         # Test that many=True raises AdapterValidationError in from_obj
-        with pytest.raises(AdapterValidationError, match="SeriesAdapter supports single records only"):
+        with pytest.raises(
+            AdapterValidationError, match="SeriesAdapter supports single records only"
+        ):
             SeriesAdapter.from_obj(SimpleModel, mock_series, many=True)
 
         # Test that many=True raises AdapterValidationError in to_obj
         model = SimpleModel(value=42)
-        with pytest.raises(AdapterValidationError, match="SeriesAdapter supports single records only"):
+        with pytest.raises(
+            AdapterValidationError, match="SeriesAdapter supports single records only"
+        ):
             SeriesAdapter.to_obj(model, many=True)
 
         # Test that list input raises AdapterValidationError in to_obj
-        with pytest.raises(AdapterValidationError, match="SeriesAdapter supports single records only"):
+        with pytest.raises(
+            AdapterValidationError, match="SeriesAdapter supports single records only"
+        ):
             SeriesAdapter.to_obj([model], many=False)

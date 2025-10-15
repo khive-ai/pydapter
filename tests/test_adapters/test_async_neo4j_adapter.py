@@ -33,8 +33,7 @@ def async_neo4j_model_factory():
         name: str
         value: float
 
-        class Config:
-            arbitrary_types_allowed = True
+        model_config = {"arbitrary_types_allowed": True}
 
     # Register the adapter with the model class
     AsyncNeo4jModel.register_async_adapter(AsyncNeo4jAdapter)

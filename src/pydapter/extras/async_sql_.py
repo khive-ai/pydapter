@@ -575,6 +575,7 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
         many: bool,
         adapt_meth: str | Callable,
         adapt_kw: dict | None,
+        validation_errors: tuple[type[Exception], ...] = (PydanticValidationError,),
     ) -> T | list[T]:
         """
         Convert database rows to model instances with validation.
@@ -585,6 +586,7 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
             many: Whether to return list or single instance
             adapt_meth: Method name or callable for adaptation
             adapt_kw: Additional keyword arguments
+            validation_errors: Tuple of validation error types to catch
 
         Returns:
             Model instance(s)
@@ -596,12 +598,12 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
             if many:
                 return [dispatch_adapt_meth(adapt_meth, r, adapt_kw, subj_cls) for r in rows]
             return dispatch_adapt_meth(adapt_meth, rows[0], adapt_kw, subj_cls)
-        except PydanticValidationError as e:
+        except validation_errors as e:
             cls._handle_error(
                 e,
                 "validation",
                 data=rows[0] if not many else rows,
-                errors=e.errors(),
+                errors=e.errors() if hasattr(e, "errors") else None,
             )
 
     @classmethod
@@ -655,11 +657,12 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
         obj: SQLReadConfig | dict,  # TypedDict for IDE support
         /,
         *,
-        many=True,
+        many: bool = True,
         adapt_meth: str | Callable = "model_validate",
         adapt_kw: dict | None = None,
+        validation_errors: tuple[type[Exception], ...] = (PydanticValidationError,),
         **kw,
-    ):
+    ) -> T | list[T]:
         try:
             # Get operation type (default: "select" for backward compatibility)
             operation = obj.get("operation", "select").lower()
@@ -684,7 +687,9 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
                     )
 
                 # Validate rows using helper
-                return cls._validate_rows(rows, subj_cls, many, adapt_meth, adapt_kw)
+                return cls._validate_rows(
+                    rows, subj_cls, many, adapt_meth, adapt_kw, validation_errors
+                )
 
             elif operation == "delete":
                 # Execute DELETE using helper
@@ -713,8 +718,16 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
                         return dispatch_adapt_meth(adapt_meth, records[0], adapt_kw, subj_cls)
                     else:
                         return records if many else records[0]
-                except (PydanticValidationError, TypeError):
-                    # If conversion fails, return raw dicts
+                except validation_errors as e:
+                    # If validation fails, let _handle_error wrap it
+                    cls._handle_error(
+                        e,
+                        "validation",
+                        data=records[0] if not many else records,
+                        errors=e.errors() if hasattr(e, "errors") else None,
+                    )
+                except TypeError:
+                    # If conversion fails for other reasons, return raw dicts
                     return records if many else records[0]
 
             else:

@@ -349,6 +349,22 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
 
             # Build GraphQL query using JSON format (safer than string interpolation)
             # Use json.dumps for all dynamic values to prevent injection
+            # Get all field names from the model to include in query
+            # Use model_fields if available (Pydantic v2) or __fields__ (Pydantic v1)
+            if hasattr(subj_cls, "model_fields"):
+                model_field_names = list(subj_cls.model_fields.keys())
+            elif hasattr(subj_cls, "__fields__"):
+                model_field_names = list(subj_cls.__fields__.keys())
+            else:
+                # Fallback to common fields
+                model_field_names = ["name", "value"]
+
+            # Filter out id and embedding fields as they come from _additional
+            property_fields = [f for f in model_field_names if f not in ("id", "embedding")]
+
+            # Build property fields string for GraphQL query
+            properties_query = "\n                      ".join(property_fields)
+
             query = {
                 "query": f"""
                 {{
@@ -364,8 +380,7 @@ class AsyncWeaviateAdapter(AsyncAdapter[T]):
                         id
                         vector
                       }}
-                      name
-                      value
+                      {properties_query}
                     }}
                   }}
                 }}
