@@ -7,8 +7,8 @@ These tests use mocked Neo4j connections to simulate database interactions.
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import ConnectionError, ResourceError

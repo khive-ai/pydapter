@@ -2,16 +2,16 @@
 Tests for async SQL adapter CRUD operations.
 """
 
-from datetime import datetime
 import os
 
 # Import the adapters
 import sys
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pydantic import BaseModel
 import pytest
 import pytest_asyncio
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import create_async_engine
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/src")

@@ -2,7 +2,7 @@
 pydapter.migrations.exceptions - Custom exceptions for migration operations.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from pydapter.exceptions import AdapterError
 
@@ -13,8 +13,8 @@ class MigrationError(AdapterError):
     def __init__(
         self,
         message: str,
-        original_error: Optional[Exception] = None,
-        adapter: Optional[str] = None,
+        original_error: Exception | None = None,
+        adapter: str | None = None,
         **context: Any,
     ):
         super().__init__(message, **context)
@@ -35,8 +35,8 @@ class MigrationInitError(MigrationError):
     def __init__(
         self,
         message: str,
-        directory: Optional[str] = None,
-        adapter: Optional[str] = None,
+        directory: str | None = None,
+        adapter: str | None = None,
         **context: Any,
     ):
         super().__init__(message, directory=directory, adapter=adapter, **context)
@@ -53,9 +53,9 @@ class MigrationCreationError(MigrationError):
     def __init__(
         self,
         message: str,
-        message_text: Optional[str] = None,
-        autogenerate: Optional[bool] = None,
-        adapter: Optional[str] = None,
+        message_text: str | None = None,
+        autogenerate: bool | None = None,
+        adapter: str | None = None,
         **context: Any,
     ):
         super().__init__(
@@ -79,8 +79,8 @@ class MigrationUpgradeError(MigrationError):
     def __init__(
         self,
         message: str,
-        revision: Optional[str] = None,
-        adapter: Optional[str] = None,
+        revision: str | None = None,
+        adapter: str | None = None,
         **context: Any,
     ):
         super().__init__(message, revision=revision, adapter=adapter, **context)
@@ -97,8 +97,8 @@ class MigrationDowngradeError(MigrationError):
     def __init__(
         self,
         message: str,
-        revision: Optional[str] = None,
-        adapter: Optional[str] = None,
+        revision: str | None = None,
+        adapter: str | None = None,
         **context: Any,
     ):
         super().__init__(message, revision=revision, adapter=adapter, **context)
@@ -115,8 +115,8 @@ class MigrationNotFoundError(MigrationError):
     def __init__(
         self,
         message: str,
-        revision: Optional[str] = None,
-        adapter: Optional[str] = None,
+        revision: str | None = None,
+        adapter: str | None = None,
         **context: Any,
     ):
         super().__init__(message, revision=revision, adapter=adapter, **context)

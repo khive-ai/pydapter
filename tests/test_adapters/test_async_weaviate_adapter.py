@@ -9,9 +9,9 @@ Note: Uses mocking for unit tests. Integration tests with real Weaviate are sepa
 
 import importlib.util
 
+import pytest
 from aiohttp import ClientError
 from pydantic import BaseModel
-import pytest
 
 from pydapter.exceptions import ConnectionError, QueryError, ResourceError
 from pydapter.exceptions import ValidationError as AdapterValidationError

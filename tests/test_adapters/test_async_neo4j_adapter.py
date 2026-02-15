@@ -5,9 +5,9 @@ Unit tests for AsyncNeo4jAdapter.
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from neo4j.exceptions import AuthError, CypherSyntaxError, ServiceUnavailable
 from pydantic import BaseModel
-import pytest
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import ConnectionError, QueryError, ResourceError

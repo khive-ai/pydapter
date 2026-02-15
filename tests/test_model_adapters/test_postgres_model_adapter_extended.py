@@ -1,9 +1,9 @@
-from datetime import date, datetime
 import ipaddress
+from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
 import pytest
+from pydantic import BaseModel, Field
 from sqlalchemy import String, inspect
 from sqlalchemy.dialects.postgresql import (
     ARRAY,

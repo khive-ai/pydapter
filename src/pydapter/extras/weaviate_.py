@@ -7,10 +7,10 @@ with comprehensive error handling and validation.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
-from typing import Any, ClassVar, TypeVar
 import urllib.parse
 import uuid
+from collections.abc import Callable, Sequence
+from typing import Any, ClassVar, TypeVar
 
 from pydantic import BaseModel, ValidationError
 

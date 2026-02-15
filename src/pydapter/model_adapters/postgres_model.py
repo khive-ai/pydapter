@@ -1,8 +1,8 @@
 # postgres_model.py
 from __future__ import annotations
 
-from datetime import datetime
 import ipaddress
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 from pydantic import BaseModel

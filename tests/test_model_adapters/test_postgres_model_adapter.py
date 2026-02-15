@@ -1,5 +1,5 @@
-from datetime import date, datetime
 import ipaddress
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 from sqlalchemy import String, inspect

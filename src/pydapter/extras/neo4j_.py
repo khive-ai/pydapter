@@ -4,13 +4,13 @@ Neo4j adapter (requires `neo4j`).
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
 import re
+from collections.abc import Callable, Sequence
 from typing import ClassVar, TypeVar
 
 import neo4j
-from neo4j import GraphDatabase
 import neo4j.exceptions
+from neo4j import GraphDatabase
 from pydantic import BaseModel, ValidationError
 
 from ..core import Adapter, AdapterBase, dispatch_adapt_meth

@@ -4,7 +4,7 @@ pydapter.migrations.sql.alembic_adapter - Alembic migration adapter implementati
 
 import os
 import shutil
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 import sqlalchemy as sa
 from alembic import command, config
@@ -189,9 +189,7 @@ datefmt = %H:%M:%S
             with open(env_path, "w") as f:
                 f.write(env_content)
 
-    def create_migration(
-        self, message: str, autogenerate: bool = True, **kwargs: Any
-    ) -> str:
+    def create_migration(self, message: str, autogenerate: bool = True, **kwargs: Any) -> str:
         """
         Create a new migration.
 
@@ -295,7 +293,7 @@ datefmt = %H:%M:%S
                 original_error=str(exc),
             ) from exc
 
-    def get_current_revision(self, **kwargs: Any) -> Optional[str]:
+    def get_current_revision(self, **kwargs: Any) -> str | None:
         """
         Get the current revision.
 

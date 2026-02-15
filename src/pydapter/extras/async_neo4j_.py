@@ -8,12 +8,12 @@ resource management.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 import re
+from collections.abc import Sequence
 
 import neo4j
-from neo4j import AsyncGraphDatabase
 import neo4j.exceptions
+from neo4j import AsyncGraphDatabase
 from pydantic import ValidationError
 
 from ..async_core import AsyncAdapter, T

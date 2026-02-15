@@ -9,8 +9,8 @@ Note: Uses mocking for unit tests. Integration tests with real Qdrant are in tes
 
 import importlib.util
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 from qdrant_client.http import models as qd
 
 from pydapter.exceptions import (
@@ -167,7 +167,9 @@ class TestAsyncQdrantAdapterErrorHandling:
         # Try to insert documents with different dimensions
         docs = [
             Document(id="1", text="test1", embedding=[0.1, 0.2, 0.3]),
-            Document(id="2", text="test2", embedding=[0.1, 0.2, 0.3, 0.4, 0.5]),  # Different dimension
+            Document(
+                id="2", text="test2", embedding=[0.1, 0.2, 0.3, 0.4, 0.5]
+            ),  # Different dimension
         ]
 
         with pytest.raises(AdapterValidationError) as excinfo:

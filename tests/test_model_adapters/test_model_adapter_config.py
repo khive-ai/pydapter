@@ -1,5 +1,5 @@
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
 
 from pydapter.model_adapters.config import PostgresAdapterConfig, VectorIndexConfig
 

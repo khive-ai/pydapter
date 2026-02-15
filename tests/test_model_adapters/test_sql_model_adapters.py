@@ -1,8 +1,8 @@
 from datetime import date, datetime, time
 from uuid import UUID
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import (
     Boolean,
     Date,

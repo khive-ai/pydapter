@@ -5,8 +5,8 @@ Comprehensive tests for Pandas DataFrame and Series adapters.
 from datetime import datetime
 
 import pandas as pd
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 
 from pydapter.exceptions import ResourceError
 from pydapter.exceptions import ValidationError as AdapterValidationError

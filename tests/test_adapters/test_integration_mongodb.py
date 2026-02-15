@@ -2,8 +2,8 @@
 Integration tests for MongoDB adapter using TestContainers.
 """
 
-from pymongo import MongoClient
 import pytest
+from pymongo import MongoClient
 
 from pydapter.exceptions import ConnectionError, ResourceError
 from pydapter.extras.mongo_ import MongoAdapter

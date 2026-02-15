@@ -27,9 +27,7 @@ class MigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    def create_migration(
-        cls, message: str, autogenerate: bool = True, **kwargs: Any
-    ) -> str:
+    def create_migration(cls, message: str, autogenerate: bool = True, **kwargs: Any) -> str:
         """
         Create a new migration.
 
@@ -110,9 +108,7 @@ class AsyncMigrationProtocol(Protocol[T]):
         ...
 
     @classmethod
-    async def create_migration(
-        cls, message: str, autogenerate: bool = True, **kwargs: Any
-    ) -> str:
+    async def create_migration(cls, message: str, autogenerate: bool = True, **kwargs: Any) -> str:
         """
         Create a new migration.
 

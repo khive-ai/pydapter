@@ -4,8 +4,8 @@ Tests for async adapter error handling in pydapter.
 
 import asyncio
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import (
