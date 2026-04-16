@@ -1,7 +1,7 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
 import pytest
+from pydantic import BaseModel, Field
 from sqlalchemy import Integer, inspect
 
 from pydapter.exceptions import TypeConversionError

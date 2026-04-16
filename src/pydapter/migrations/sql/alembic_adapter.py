@@ -4,7 +4,7 @@ pydapter.migrations.sql.alembic_adapter - Alembic migration adapter implementati
 
 import os
 import shutil
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 import sqlalchemy as sa
 from alembic import command, config
@@ -74,14 +74,19 @@ class AlembicAdapter(SyncMigrationAdapter):
             # Initialize Alembic directory structure
             template = kwargs.get("template", "generic")
 
-            # Create a temporary config file
+            # Create a temporary config file.
+            # The connection string is NOT written to disk to avoid exposing passwords.
+            # Set sqlalchemy.url to a placeholder; the real URL is injected at runtime
+            # via adapter.alembic_cfg.set_main_option() and is never persisted to the
+            # INI file.  Callers should supply the URL through the DATABASE_URL
+            # environment variable or by calling set_main_option() after initialisation.
             ini_path = os.path.join(directory, "alembic.ini")
             with open(ini_path, "w") as f:
                 f.write(
                     f"""
 [alembic]
 script_location = {directory}
-sqlalchemy.url = {connection_string}
+sqlalchemy.url = ${{DATABASE_URL}}
 
 [loggers]
 keys = root,sqlalchemy,alembic
@@ -119,7 +124,8 @@ datefmt = %H:%M:%S
 """
                 )
 
-            # Initialize Alembic in the specified directory
+            # Initialize Alembic in the specified directory.
+            # Inject the real connection string in-memory only — never persist it.
             adapter.alembic_cfg = config.Config(ini_path)
             adapter.alembic_cfg.set_main_option("script_location", directory)
             adapter.alembic_cfg.set_main_option("sqlalchemy.url", connection_string)
@@ -189,9 +195,7 @@ datefmt = %H:%M:%S
             with open(env_path, "w") as f:
                 f.write(env_content)
 
-    def create_migration(
-        self, message: str, autogenerate: bool = True, **kwargs: Any
-    ) -> str:
+    def create_migration(self, message: str, autogenerate: bool = True, **kwargs: Any) -> str:
         """
         Create a new migration.
 
@@ -295,7 +299,7 @@ datefmt = %H:%M:%S
                 original_error=str(exc),
             ) from exc
 
-    def get_current_revision(self, **kwargs: Any) -> Optional[str]:
+    def get_current_revision(self, **kwargs: Any) -> str | None:
         """
         Get the current revision.
 

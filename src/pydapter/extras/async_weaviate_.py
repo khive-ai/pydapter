@@ -8,11 +8,11 @@ resource management.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 import json
-from typing import Any, TypeVar
 import urllib.parse
 import uuid
+from collections.abc import Sequence
+from typing import Any, TypeVar
 
 import aiohttp
 from pydantic import BaseModel, ValidationError

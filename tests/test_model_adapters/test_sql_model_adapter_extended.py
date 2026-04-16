@@ -1,8 +1,8 @@
 from datetime import date, time
 from typing import Any, Optional, Union
 
-from pydantic import BaseModel, Field
 import pytest
+from pydantic import BaseModel, Field
 from sqlalchemy import (
     Boolean,
     Column,

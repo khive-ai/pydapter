@@ -4,20 +4,22 @@ Generic async SQL adapter - SQLAlchemy 2.x asyncio + asyncpg driver.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
 import sys
+from collections.abc import Callable, Sequence
 from typing import Any, Literal, TypeVar
 
 # Python 3.10 compatibility: NotRequired, Required, TypedDict
 if sys.version_info < (3, 11):
-    from typing_extensions import NotRequired, Required, TypedDict
+    from typing import NotRequired, Required
+
+    from typing_extensions import TypedDict
 else:
     from typing import NotRequired, Required, TypedDict
 
-from pydantic import BaseModel
-from pydantic import ValidationError as PydanticValidationError
 import sqlalchemy as sa
 import sqlalchemy.exc as sa_exc
+from pydantic import BaseModel
+from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.sql import text
 
@@ -458,6 +460,15 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
         Raises:
             QueryError: If update execution fails
         """
+        if not where_conditions:
+            from pydapter.exceptions import QueryError as _QueryError
+
+            raise _QueryError(
+                "UPDATE requires at least one WHERE condition; empty 'where' dict rejected "
+                "to prevent full-table update",
+                adapter="async_sql",
+            )
+
         try:
             async with eng.begin() as conn:
                 # Use run_sync for table reflection
@@ -513,6 +524,15 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
         Raises:
             QueryError: If upsert execution fails
         """
+        if not conflict_columns:
+            from pydapter.exceptions import QueryError as _QueryError
+
+            raise _QueryError(
+                "UPSERT requires at least one conflict column; empty 'conflict_columns' "
+                "rejected to prevent unfiltered SELECT/UPDATE against the full table",
+                adapter="async_sql",
+            )
+
         try:
             async with eng.begin() as conn:
                 # Use run_sync for table reflection

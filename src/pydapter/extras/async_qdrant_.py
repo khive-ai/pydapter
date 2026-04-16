@@ -131,6 +131,7 @@ class AsyncQdrantAdapter(AsyncAdapterBase, AsyncAdapter[T]):
         id_field="id",
         url=None,
         many: bool = True,
+        recreate: bool = False,
         adapt_meth: str = "model_dump",
         adapt_kw: dict | None = None,
         **kw,
@@ -172,12 +173,16 @@ class AsyncQdrantAdapter(AsyncAdapterBase, AsyncAdapter[T]):
             # Create client
             client = cls._client(url)
             try:
-                # Create or recreate collection
+                # Create collection only if absent, or wipe and recreate if recreate=True
                 try:
-                    await client.recreate_collection(
-                        collection,
-                        vectors_config=qd.VectorParams(size=dim, distance="Cosine"),
-                    )
+                    collection_exists = await client.collection_exists(collection)
+                    if recreate or not collection_exists:
+                        if collection_exists:
+                            await client.delete_collection(collection)
+                        await client.create_collection(
+                            collection,
+                            vectors_config=qd.VectorParams(size=dim, distance="Cosine"),
+                        )
                 except UnexpectedResponse as e:
                     cls._handle_error(e, "query", collection=collection)
                 except Exception as e:

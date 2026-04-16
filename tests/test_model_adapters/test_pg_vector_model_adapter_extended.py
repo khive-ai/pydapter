@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
 import pytest
+from pydantic import BaseModel, Field
 
 # Try to import pgvector, skip tests if not available
 try:

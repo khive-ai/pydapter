@@ -7,8 +7,8 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Any, TypeVar
 
-from pydantic import BaseModel, ValidationError
 import sqlalchemy as sa
+from pydantic import BaseModel, ValidationError
 from sqlalchemy import exc as sq_exc
 from sqlalchemy.dialects import postgresql
 

@@ -142,6 +142,7 @@ class QdrantAdapter(AdapterBase, Adapter[T]):
         id_field="id",
         url=None,
         many: bool = True,
+        recreate: bool = False,
         adapt_meth: str | Callable = "model_dump",
         adapt_kw: dict | None = None,
         **kw,
@@ -178,12 +179,16 @@ class QdrantAdapter(AdapterBase, Adapter[T]):
             cls._validate_vector_dimensions(vector)
             dim = len(vector)
 
-            # Create or recreate collection
+            # Create collection only if absent, or wipe and recreate if recreate=True
             try:
-                client.recreate_collection(
-                    collection,
-                    vectors_config=qd.VectorParams(size=dim, distance="Cosine"),
-                )
+                collection_exists = client.collection_exists(collection)
+                if recreate or not collection_exists:
+                    if collection_exists:
+                        client.delete_collection(collection)
+                    client.create_collection(
+                        collection,
+                        vectors_config=qd.VectorParams(size=dim, distance="Cosine"),
+                    )
             except UnexpectedResponse as e:
                 raise QueryError(
                     f"Failed to create Qdrant collection: {e}",

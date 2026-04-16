@@ -10,11 +10,11 @@ This test suite covers:
 
 from unittest.mock import AsyncMock, patch
 
-from pydantic import BaseModel
 import pymongo
 import pymongo.errors
 import pytest
 import pytest_asyncio
+from pydantic import BaseModel
 
 from pydapter.async_core import AsyncAdaptable
 from pydapter.exceptions import (
@@ -41,9 +41,7 @@ def is_docker_available():
 
 
 # Skip integration tests if Docker is not available
-integration_test = pytest.mark.skipif(
-    not is_docker_available(), reason="Docker is not available"
-)
+integration_test = pytest.mark.skipif(not is_docker_available(), reason="Docker is not available")
 
 
 @pytest.fixture
@@ -535,7 +533,9 @@ class TestAsyncMongoAdapterEdgeCases:
 
         # Create nested document
         person = Person(
-            id=1, name="John Doe", address=Address(street="123 Main St", city="NYC", zip_code="10001")
+            id=1,
+            name="John Doe",
+            address=Address(street="123 Main St", city="NYC", zip_code="10001"),
         )
 
         # Insert nested document
@@ -638,9 +638,7 @@ class TestAsyncMongoAdapterIntegration:
 
     @pytest.mark.asyncio
     @integration_test
-    async def test_async_mongo_roundtrip(
-        self, mongo_url, async_mongo_model_factory, mongo_cleanup
-    ):
+    async def test_async_mongo_roundtrip(self, mongo_url, async_mongo_model_factory, mongo_cleanup):
         """Test complete roundtrip: insert and retrieve."""
         model = async_mongo_model_factory(id=42, name="roundtrip", value=99.99)
 
@@ -801,9 +799,7 @@ class TestAsyncMongoAdapterCoverageGaps:
             name: str
 
         # Mock _validate_params to raise unexpected error
-        with patch.object(
-            AsyncMongoAdapter, "_validate_params"
-        ) as mock_validate:
+        with patch.object(AsyncMongoAdapter, "_validate_params") as mock_validate:
             mock_validate.side_effect = RuntimeError("Unexpected validation error")
 
             with pytest.raises(PydapterError):
@@ -829,9 +825,7 @@ class TestAsyncMongoAdapterCoverageGaps:
             mock_client_method.return_value = mock_client
             mock_client.admin.command = AsyncMock()  # Successful connection
 
-            with patch.object(
-                AsyncMongoAdapter, "_validate_filter"
-            ) as mock_validate_filter:
+            with patch.object(AsyncMongoAdapter, "_validate_filter") as mock_validate_filter:
                 mock_validate_filter.side_effect = RuntimeError("Unexpected filter error")
 
                 with pytest.raises(PydapterError):
@@ -862,9 +856,7 @@ class TestAsyncMongoAdapterCoverageGaps:
             # Mock collection find to raise authorization error
             # Create an async function that raises the error
             async def raise_auth_error(*args, **kwargs):
-                raise pymongo.errors.OperationFailure(
-                    "not authorized on testdb to execute command"
-                )
+                raise pymongo.errors.OperationFailure("not authorized on testdb to execute command")
 
             # Use regular Mock for cursor since .find() returns synchronously
             mock_cursor = Mock()
@@ -1038,9 +1030,7 @@ class TestAsyncMongoAdapterCoverageGaps:
 
             # Create an async function that raises the error
             async def raise_auth_error(*args, **kwargs):
-                raise pymongo.errors.OperationFailure(
-                    "not authorized on testdb to execute command"
-                )
+                raise pymongo.errors.OperationFailure("not authorized on testdb to execute command")
 
             mock_collection.insert_many = raise_auth_error
             mock_client.__getitem__.return_value.__getitem__.return_value = mock_collection

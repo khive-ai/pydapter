@@ -4,7 +4,7 @@ pydapter.migrations.base - Base classes for migration adapters.
 
 import os
 from abc import ABC
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from pydapter.migrations.exceptions import MigrationError
 from pydapter.migrations.protocols import AsyncMigrationProtocol, MigrationProtocol
@@ -70,9 +70,7 @@ class SyncMigrationAdapter(BaseMigrationAdapter, MigrationProtocol):
         raise NotImplementedError("Subclasses must implement init_migrations")
 
     @classmethod
-    def create_migration(
-        cls, message: str, autogenerate: bool = True, **kwargs: Any
-    ) -> str:
+    def create_migration(cls, message: str, autogenerate: bool = True, **kwargs: Any) -> str:
         """
         Create a new migration.
 
@@ -118,7 +116,7 @@ class SyncMigrationAdapter(BaseMigrationAdapter, MigrationProtocol):
         raise NotImplementedError("Subclasses must implement downgrade")
 
     @classmethod
-    def get_current_revision(cls, **kwargs: Any) -> Optional[str]:
+    def get_current_revision(cls, **kwargs: Any) -> str | None:
         """
         Get the current migration revision.
 
@@ -168,9 +166,7 @@ class AsyncMigrationAdapter(BaseMigrationAdapter, AsyncMigrationProtocol):
         raise NotImplementedError("Subclasses must implement init_migrations")
 
     @classmethod
-    async def create_migration(
-        cls, message: str, autogenerate: bool = True, **kwargs: Any
-    ) -> str:
+    async def create_migration(cls, message: str, autogenerate: bool = True, **kwargs: Any) -> str:
         """
         Create a new migration.
 
@@ -216,7 +212,7 @@ class AsyncMigrationAdapter(BaseMigrationAdapter, AsyncMigrationProtocol):
         raise NotImplementedError("Subclasses must implement downgrade")
 
     @classmethod
-    async def get_current_revision(cls, **kwargs: Any) -> Optional[str]:
+    async def get_current_revision(cls, **kwargs: Any) -> str | None:
         """
         Get the current migration revision.
 

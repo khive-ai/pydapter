@@ -18,6 +18,7 @@ from .exceptions import (
     ResourceError,
 )
 from .exceptions import ValidationError as AdapterValidationError
+from .types import _redact_url
 
 T = TypeVar("T", contravariant=True)
 
@@ -118,6 +119,17 @@ class AdapterBase:
     }
 
     @classmethod
+    def _sanitize_url(cls, url: str) -> str:
+        """Sanitize URLs to remove credentials before logging.
+
+        Uses ``urllib.parse`` so that driver-specific schemes such as
+        ``postgresql+asyncpg://`` and ``mongodb+srv://`` are handled correctly.
+        """
+        if not isinstance(url, str):
+            return url
+        return _redact_url(url)
+
+    @classmethod
     def _handle_error(cls, exc: Exception, category: str, **extra_details) -> None:
         """Wrap exception in appropriate PydapterError subclass with context."""
         error_class = cls._error_mapping.get(category, AdapterError)
@@ -135,6 +147,12 @@ class AdapterBase:
                 if isinstance(value, (str, bytes)):
                     # Truncate long strings/bytes to 100 chars
                     extra_details[key] = value[:100] if len(value) > 100 else value
+
+        # Sanitize URL/credential fields before storing in details.
+        _url_fields = frozenset(("url", "connection", "connection_string", "database_url", "dsn"))
+        for key, value in extra_details.items():
+            if key in _url_fields and isinstance(value, str):
+                extra_details[key] = cls._sanitize_url(value)
 
         details.update(extra_details)
 

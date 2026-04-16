@@ -9,8 +9,8 @@ Note: Uses mocking for unit tests. Integration tests with real Qdrant are in tes
 
 import importlib.util
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 from qdrant_client.http import models as qd
 
 from pydapter.exceptions import (
@@ -167,7 +167,9 @@ class TestAsyncQdrantAdapterErrorHandling:
         # Try to insert documents with different dimensions
         docs = [
             Document(id="1", text="test1", embedding=[0.1, 0.2, 0.3]),
-            Document(id="2", text="test2", embedding=[0.1, 0.2, 0.3, 0.4, 0.5]),  # Different dimension
+            Document(
+                id="2", text="test2", embedding=[0.1, 0.2, 0.3, 0.4, 0.5]
+            ),  # Different dimension
         ]
 
         with pytest.raises(AdapterValidationError) as excinfo:
@@ -273,12 +275,13 @@ class TestAsyncQdrantAdapterSuccessPaths:
 
     @pytest.mark.asyncio
     async def test_async_qdrant_upsert_single(self, mocker):
-        """Test single vector upsert."""
+        """Test single vector upsert — collection created if absent."""
         doc = Document(id="doc1", text="Sample text", embedding=[0.1, 0.2, 0.3])
 
-        # Mock client
+        # Mock client — collection does not exist, so create_collection should be called
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.collection_exists = mocker.AsyncMock(return_value=False)
+        mock_client.create_collection = mocker.AsyncMock()
         mock_client.upsert = mocker.AsyncMock()
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
@@ -292,7 +295,8 @@ class TestAsyncQdrantAdapterSuccessPaths:
         assert isinstance(result, dict)
         assert "upserted_count" in result
         assert result["upserted_count"] == 1
-        assert mock_client.recreate_collection.called
+        assert mock_client.collection_exists.called
+        assert mock_client.create_collection.called
         assert mock_client.upsert.called
         assert mock_client.close.called
 
@@ -305,9 +309,10 @@ class TestAsyncQdrantAdapterSuccessPaths:
             Document(id="doc3", text="Text 3", embedding=[0.3, 0.4, 0.5]),
         ]
 
-        # Mock client
+        # Mock client — collection does not exist yet
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.collection_exists = mocker.AsyncMock(return_value=False)
+        mock_client.create_collection = mocker.AsyncMock()
         mock_client.upsert = mocker.AsyncMock()
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
@@ -476,9 +481,10 @@ class TestAsyncQdrantAdapterSuccessPaths:
 
         doc = CustomDoc(doc_id="custom1", content="Custom content", vec=[0.1, 0.2, 0.3])
 
-        # Mock client
+        # Mock client — collection does not exist yet
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.collection_exists = mocker.AsyncMock(return_value=False)
+        mock_client.create_collection = mocker.AsyncMock()
         mock_client.upsert = mocker.AsyncMock()
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
@@ -505,9 +511,10 @@ class TestAsyncQdrantAdapterResourceManagement:
         """Test that client.close() is called in to_obj (P0-3 fix)."""
         doc = Document(id="doc1", text="test", embedding=[0.1, 0.2, 0.3])
 
-        # Mock client with close tracking
+        # Mock client with close tracking — collection does not exist yet
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.collection_exists = mocker.AsyncMock(return_value=False)
+        mock_client.create_collection = mocker.AsyncMock()
         mock_client.upsert = mocker.AsyncMock()
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
@@ -555,12 +562,12 @@ class TestAsyncQdrantAdapterResourceManagement:
     @pytest.mark.asyncio
     async def test_async_qdrant_client_closed_on_error(self, mocker):
         """Test that client.close() is called even when error occurs."""
-        # Create a mock that will fail on recreate_collection but still close
+        # Create a mock that will fail on collection_exists but still close
         mock_client = mocker.AsyncMock()
         mock_client.close = mocker.AsyncMock()
 
-        # Make recreate_collection raise an exception
-        mock_client.recreate_collection.side_effect = Exception("Test error")
+        # Make collection_exists raise an exception so the collection-setup path errors out
+        mock_client.collection_exists.side_effect = Exception("Test error")
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
 
         doc = Document(id="doc1", text="test", embedding=[0.1, 0.2, 0.3])
@@ -622,12 +629,12 @@ class TestAsyncQdrantAdapterConnectionErrors:
 
     @pytest.mark.asyncio
     async def test_async_qdrant_recreate_collection_error(self, mocker):
-        """Test error during collection recreation."""
+        """Test error during collection creation (collection_exists raises)."""
         from qdrant_client.http.exceptions import UnexpectedResponse
 
-        # Mock client with failing recreate_collection
+        # Mock client where collection_exists raises an UnexpectedResponse
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection.side_effect = UnexpectedResponse(
+        mock_client.collection_exists.side_effect = UnexpectedResponse(
             status_code=400,
             reason_phrase="Bad Request",
             content="Invalid collection configuration",
@@ -652,9 +659,10 @@ class TestAsyncQdrantAdapterConnectionErrors:
         """Test error during upsert operation."""
         from qdrant_client.http.exceptions import UnexpectedResponse
 
-        # Mock client with failing upsert
+        # Mock client with failing upsert; collection does not exist so create_collection is called
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.collection_exists = mocker.AsyncMock(return_value=False)
+        mock_client.create_collection = mocker.AsyncMock()
         mock_client.upsert.side_effect = UnexpectedResponse(
             status_code=500,
             reason_phrase="Internal Server Error",
@@ -761,7 +769,8 @@ class TestAsyncQdrantAdapterConnectionErrors:
 
         # Mock client with upsert that raises TypeError (invalid point data)
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.collection_exists = mocker.AsyncMock(return_value=False)
+        mock_client.create_collection = mocker.AsyncMock()
         mock_client.upsert.side_effect = TypeError("Invalid point data")
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
@@ -789,9 +798,10 @@ class TestAsyncQdrantAdapterEdgeCases:
             for i in range(100)
         ]
 
-        # Mock client
+        # Mock client — collection does not exist yet
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.collection_exists = mocker.AsyncMock(return_value=False)
+        mock_client.create_collection = mocker.AsyncMock()
         mock_client.upsert = mocker.AsyncMock()
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
@@ -819,9 +829,10 @@ class TestAsyncQdrantAdapterEdgeCases:
         embedding = [0.1] * 384
         doc = HighDimDoc(id="doc1", text="High dimensional", embedding=embedding)
 
-        # Mock client
+        # Mock client — collection does not exist yet
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.collection_exists = mocker.AsyncMock(return_value=False)
+        mock_client.create_collection = mocker.AsyncMock()
         mock_client.upsert = mocker.AsyncMock()
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)
@@ -882,9 +893,10 @@ class TestAsyncQdrantAdapterEdgeCases:
         """Test that vector field is excluded from payload."""
         doc = Document(id="doc1", text="Test payload", embedding=[0.1, 0.2, 0.3], category="test")
 
-        # Mock client and capture the upsert call
+        # Mock client and capture the upsert call — collection does not exist yet
         mock_client = mocker.AsyncMock()
-        mock_client.recreate_collection = mocker.AsyncMock()
+        mock_client.collection_exists = mocker.AsyncMock(return_value=False)
+        mock_client.create_collection = mocker.AsyncMock()
         mock_client.upsert = mocker.AsyncMock()
         mock_client.close = mocker.AsyncMock()
         mocker.patch.object(AsyncQdrantAdapter, "_client", return_value=mock_client)

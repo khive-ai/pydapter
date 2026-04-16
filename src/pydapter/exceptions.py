@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .types import BaseError
+from .types import BaseError, _redact_details
 
 PYDAPTER_PYTHON_ERRORS = (KeyError, ImportError, AttributeError, ValueError)
 
@@ -293,8 +293,11 @@ class ConfigurationError(PydapterError):
         **extra_context: Any,
     ):
         details = details or {}
+        # Redact sensitive keys inside config before storing — config dicts
+        # frequently contain DSNs, passwords, and API keys.
+        safe_config = _redact_details(config) if config is not None else None
         params = {
-            "config": config,
+            "config": safe_config,
             "adapter_class": adapter_class,
         }
         details.update({k: v for k, v in params.items() if v is not None})

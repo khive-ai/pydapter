@@ -35,12 +35,12 @@ Examples:
 """
 
 import argparse
-from enum import Enum
 import os
-from pathlib import Path
 import subprocess
 import sys
 import time
+from enum import Enum
+from pathlib import Path
 
 
 class Colors:

@@ -4,8 +4,8 @@ Extended tests for Async PostgreSQL adapter functionality.
 
 from unittest.mock import AsyncMock, patch
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 
 from pydapter.core import Adaptable
 from pydapter.extras.async_postgres_ import AsyncPostgresAdapter

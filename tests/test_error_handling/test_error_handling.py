@@ -4,8 +4,8 @@ Tests for error handling in pydapter.
 
 from pathlib import Path
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 
 from pydapter.adapters import CsvAdapter, JsonAdapter, TomlAdapter
 from pydapter.core import Adaptable, Adapter, AdapterRegistry

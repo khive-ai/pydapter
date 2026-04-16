@@ -7,11 +7,11 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Any, TypeVar
 
+import pymongo
+import pymongo.errors
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ValidationError
-import pymongo
 from pymongo import MongoClient
-import pymongo.errors
 
 from ..async_core import AsyncAdapter, AsyncAdapterBase
 from ..core import dispatch_adapt_meth

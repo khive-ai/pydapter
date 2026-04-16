@@ -7,10 +7,10 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Any, TypeVar
 
-from pydantic import BaseModel, ValidationError
 import pymongo
-from pymongo import MongoClient
 import pymongo.errors
+from pydantic import BaseModel, ValidationError
+from pymongo import MongoClient
 
 from ..core import Adapter, AdapterBase, dispatch_adapt_meth
 from ..exceptions import ConnectionError, PydapterError, QueryError, ResourceError

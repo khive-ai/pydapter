@@ -4,8 +4,8 @@ Tests for database adapter error handling in pydapter.
 
 from unittest.mock import Mock
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 
 from pydapter.core import Adaptable
 from pydapter.exceptions import ConnectionError, QueryError, ResourceError

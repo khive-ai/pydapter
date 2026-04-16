@@ -4,8 +4,8 @@ Tests for Series adapter functionality.
 
 from unittest.mock import MagicMock, patch
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 
 from pydapter.core import Adaptable
 from pydapter.exceptions import ValidationError as AdapterValidationError

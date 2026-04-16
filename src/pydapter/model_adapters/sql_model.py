@@ -1,8 +1,8 @@
 # sql_model_adapter.py
 from __future__ import annotations
 
-from datetime import date, datetime, time
 import types
+from datetime import date, datetime, time
 from typing import (
     TYPE_CHECKING,
     Annotated,

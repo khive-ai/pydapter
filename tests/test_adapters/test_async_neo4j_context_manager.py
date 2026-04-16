@@ -4,8 +4,8 @@ Tests for the context manager behavior of AsyncNeo4jAdapter.
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from neo4j.exceptions import CypherSyntaxError
 import pytest
+from neo4j.exceptions import CypherSyntaxError
 
 from pydapter.exceptions import QueryError
 from pydapter.extras.async_neo4j_ import AsyncNeo4jAdapter

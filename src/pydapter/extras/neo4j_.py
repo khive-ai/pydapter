@@ -4,13 +4,13 @@ Neo4j adapter (requires `neo4j`).
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
 import re
+from collections.abc import Callable, Sequence
 from typing import ClassVar, TypeVar
 
 import neo4j
-from neo4j import GraphDatabase
 import neo4j.exceptions
+from neo4j import GraphDatabase
 from pydantic import BaseModel, ValidationError
 
 from ..core import Adapter, AdapterBase, dispatch_adapt_meth
@@ -134,10 +134,28 @@ class Neo4jAdapter(AdapterBase, Adapter[T]):
             auth = obj.get("auth")
             driver = cls._create_driver(obj["url"], auth=auth)
 
-            # Prepare Cypher query
+            # Prepare Cypher query using parameterized predicates to prevent injection.
+            # `obj['where']` must be a dict mapping property names to values, not a raw
+            # Cypher string.  Each key becomes a $-prefixed parameter in the query.
             label = obj.get("label", subj_cls.__name__)
-            where = f"WHERE {obj['where']}" if "where" in obj else ""
-            cypher = f"MATCH (n:`{label}`) {where} RETURN n"
+            where_dict = obj.get("where", {})
+            if isinstance(where_dict, str):
+                raise AdapterValidationError(
+                    "The 'where' parameter must be a dict mapping property names to values, "
+                    "not a raw Cypher string. Raw Cypher strings are rejected to prevent "
+                    "Cypher injection.",
+                    data=obj,
+                )
+            where_clause = ""
+            where_params: dict = {}
+            if where_dict:
+                predicates = []
+                for k, v in where_dict.items():
+                    param_name = f"where_{k}"
+                    predicates.append(f"n.`{k}` = ${param_name}")
+                    where_params[param_name] = v
+                where_clause = "WHERE " + " AND ".join(predicates)
+            cypher = f"MATCH (n:`{label}`) {where_clause} RETURN n"
 
             # Validate Cypher query
             cls._validate_cypher(cypher)
@@ -145,7 +163,7 @@ class Neo4jAdapter(AdapterBase, Adapter[T]):
             # Execute query
             try:
                 with driver.session() as s:
-                    result = s.run(cypher)
+                    result = s.run(cypher, **where_params)
                     rows = [r["n"]._properties for r in result]
             except neo4j.exceptions.CypherSyntaxError as e:
                 raise QueryError(

@@ -2,8 +2,8 @@
 Unit tests for WeaviateAdapter.
 """
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 
 from pydapter.core import Adaptable
 from pydapter.exceptions import ConnectionError, QueryError, ResourceError

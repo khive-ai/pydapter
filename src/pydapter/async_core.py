@@ -18,6 +18,7 @@ from .exceptions import (
     ResourceError,
 )
 from .exceptions import ValidationError as AdapterValidationError
+from .types import _redact_url
 
 T = TypeVar("T")
 
@@ -66,20 +67,14 @@ class AsyncAdapterBase:
 
     @classmethod
     def _sanitize_url(cls, url: str) -> str:
-        """Sanitize URLs to remove credentials before logging."""
+        """Sanitize URLs to remove credentials before logging.
+
+        Uses ``urllib.parse`` so that driver-specific schemes such as
+        ``postgresql+asyncpg://`` and ``mongodb+srv://`` are handled correctly.
+        """
         if not isinstance(url, str):
             return url
-
-        # Check for common URL patterns with credentials
-        # postgresql://user:password@host:port/db → postgresql://user:***@host:port/db
-        # mongodb://user:password@host:port/db → mongodb://user:***@host:port/db
-        # http://user:password@host:port → http://user:***@host:port
-        import re
-
-        # Pattern: scheme://[user[:password]@]host
-        pattern = r"((?:https?|postgresql|mongodb|mysql|redis)://[^:]+:)([^@]+)(@)"
-        sanitized = re.sub(pattern, r"\1***\3", url)
-        return sanitized
+        return _redact_url(url)
 
     @classmethod
     def _handle_error(cls, exc: Exception, category: str, **extra_details) -> None:

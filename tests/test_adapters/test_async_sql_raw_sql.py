@@ -4,8 +4,8 @@ Tests for Async SQL adapter raw SQL functionality.
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pydantic import BaseModel
 import pytest
+from pydantic import BaseModel
 
 from pydapter.extras.async_sql_ import AsyncSQLAdapter
 
