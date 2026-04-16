@@ -1,6 +1,7 @@
 # postgres_model.py
 from __future__ import annotations
 
+import ast
 import ipaddress
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, get_args, get_origin
@@ -28,6 +29,27 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from sqlalchemy.orm import DeclarativeBase
+
+
+def _safe_tuple_from_str(x: str) -> tuple | None:
+    """Parse a tuple from a database string using ast.literal_eval (safe, no eval())."""
+    if not x:
+        return None
+    try:
+        result = ast.literal_eval(x)
+    except (ValueError, SyntaxError) as exc:
+        raise TypeConversionError(
+            f"Cannot parse tuple from database value {x!r}: {exc}",
+            source_type=str,
+            target_type=tuple,
+        ) from exc
+    if not isinstance(result, tuple):
+        raise TypeConversionError(
+            f"Expected tuple from database value, got {type(result).__name__}",
+            source_type=str,
+            target_type=tuple,
+        )
+    return result
 
 
 class PostgresModelAdapter(SQLModelAdapter):
@@ -60,7 +82,7 @@ class PostgresModelAdapter(SQLModelAdapter):
             python_type=tuple,
             sql_type_factory=lambda: String(255),
             python_to_sql=lambda x: str(x),
-            sql_to_python=lambda x: eval(x) if x else None,
+            sql_to_python=lambda x: _safe_tuple_from_str(x) if x else None,
         )
 
         # Range types - need special handling for tests

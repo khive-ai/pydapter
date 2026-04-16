@@ -460,6 +460,15 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
         Raises:
             QueryError: If update execution fails
         """
+        if not where_conditions:
+            from pydapter.exceptions import QueryError as _QueryError
+
+            raise _QueryError(
+                "UPDATE requires at least one WHERE condition; empty 'where' dict rejected "
+                "to prevent full-table update",
+                adapter="async_sql",
+            )
+
         try:
             async with eng.begin() as conn:
                 # Use run_sync for table reflection
@@ -515,6 +524,15 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
         Raises:
             QueryError: If upsert execution fails
         """
+        if not conflict_columns:
+            from pydapter.exceptions import QueryError as _QueryError
+
+            raise _QueryError(
+                "UPSERT requires at least one conflict column; empty 'conflict_columns' "
+                "rejected to prevent unfiltered SELECT/UPDATE against the full table",
+                adapter="async_sql",
+            )
+
         try:
             async with eng.begin() as conn:
                 # Use run_sync for table reflection

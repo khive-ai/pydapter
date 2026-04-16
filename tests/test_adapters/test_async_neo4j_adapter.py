@@ -200,7 +200,7 @@ class TestAsyncNeo4jAdapter:
 
     @pytest.mark.asyncio
     async def test_from_obj_with_where_clause(self):
-        """Test from_obj method with where clause."""
+        """Test from_obj method with where clause (dict form for injection safety)."""
         # Setup mock driver and session
         mock_driver = AsyncMock()
         mock_session = AsyncMock()
@@ -235,15 +235,20 @@ class TestAsyncNeo4jAdapter:
 
         # Patch the _create_driver method
         with patch.object(AsyncNeo4jAdapter, "_create_driver", return_value=mock_driver):
+            # 'where' must now be a dict — raw Cypher strings are rejected
             result = await AsyncNeo4jAdapter.from_obj(
                 SampleModel,
-                {"url": "bolt://localhost:7687", "where": "n.id = 1"},
+                {"url": "bolt://localhost:7687", "where": {"id": 1}},
             )
 
-            # Verify the query was constructed correctly
-            mock_session.run.assert_called_once_with(
-                "MATCH (n:`SampleModel`) WHERE n.id = 1 RETURN n"
-            )
+            # Verify the query used a parameterised WHERE predicate
+            mock_session.run.assert_called_once()
+            call_args = mock_session.run.call_args
+            cypher_query = call_args[0][0]
+            assert "WHERE" in cypher_query
+            assert "n.`id` = $where_id" in cypher_query
+            # Parameter must be passed separately, not embedded in the query string
+            assert call_args[1].get("where_id") == 1
 
             # Verify the result
             assert isinstance(result, list)
@@ -252,6 +257,18 @@ class TestAsyncNeo4jAdapter:
             assert result[0].id == 1
             assert result[0].name == "test"
             assert result[0].value == 42.5
+
+    @pytest.mark.asyncio
+    async def test_from_obj_with_where_clause_string_rejected(self):
+        """Test that a raw Cypher string in 'where' raises AdapterValidationError."""
+        from pydapter.exceptions import ValidationError as AdapterValidationError
+
+        with patch.object(AsyncNeo4jAdapter, "_create_driver"):
+            with pytest.raises(AdapterValidationError, match="must be a dict"):
+                await AsyncNeo4jAdapter.from_obj(
+                    SampleModel,
+                    {"url": "bolt://localhost:7687", "where": "n.id = 1"},
+                )
 
     @pytest.mark.asyncio
     async def test_from_obj_with_custom_label(self):

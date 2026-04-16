@@ -39,7 +39,7 @@ class TestNeo4jAdapterExtended:
 
     @patch("pydapter.extras.neo4j_.GraphDatabase")
     def test_neo4j_from_obj_with_where_clause(self, mock_graph_db, neo4j_sample):
-        """Test conversion from Neo4j node to model with where clause."""
+        """Test conversion from Neo4j node to model with where clause (dict form)."""
         # Setup mock session and run
         mock_session = MagicMock()
         # Configure the context manager properly
@@ -49,16 +49,31 @@ class TestNeo4jAdapterExtended:
         mock_result = [{"n": MagicMock(_properties={"id": 1, "name": "test", "value": 42.5})}]
         mock_session.run.return_value = mock_result
 
-        # Test from_obj with where clause
+        # 'where' must be a dict — raw Cypher strings are rejected to prevent injection
         model_cls = neo4j_sample.__class__
         _ = model_cls.adapt_from(
-            {"url": "bolt://localhost:7687", "where": "n.id = 1"}, obj_key="neo4j"
+            {"url": "bolt://localhost:7687", "where": {"id": 1}}, obj_key="neo4j"
         )
 
-        # Verify the cypher query included the where clause
+        # Verify the cypher query included the parameterised where clause
         mock_session.run.assert_called_once()
-        cypher_query = mock_session.run.call_args[0][0]
-        assert "WHERE n.id = 1" in cypher_query
+        call_args = mock_session.run.call_args
+        cypher_query = call_args[0][0]
+        assert "WHERE" in cypher_query
+        assert "n.`id` = $where_id" in cypher_query
+        # Verify the parameter was passed separately, not embedded in the query string
+        assert call_args[1].get("where_id") == 1
+
+    @patch("pydapter.extras.neo4j_.GraphDatabase")
+    def test_neo4j_from_obj_with_where_clause_string_rejected(self, mock_graph_db, neo4j_sample):
+        """Test that raw Cypher string in 'where' is rejected with an informative error."""
+        from pydapter.exceptions import ValidationError as AdapterValidationError
+
+        model_cls = neo4j_sample.__class__
+        with pytest.raises(AdapterValidationError, match="must be a dict"):
+            model_cls.adapt_from(
+                {"url": "bolt://localhost:7687", "where": "n.id = 1"}, obj_key="neo4j"
+            )
 
     @patch("pydapter.extras.neo4j_.GraphDatabase")
     def test_neo4j_from_obj_with_custom_label(self, mock_graph_db, neo4j_sample):

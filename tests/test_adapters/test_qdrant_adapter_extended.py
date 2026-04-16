@@ -69,8 +69,9 @@ class TestQdrantAdapterExtended:
             embedding=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6],  # 6-dimensional vector
         )
 
-        # Setup mock client
+        # Setup mock client — collection does not yet exist so create_collection is called
         mock_client = MagicMock()
+        mock_client.collection_exists.return_value = False
         mock_qdrant_client.return_value = mock_client
 
         # Test to_obj with custom vector field
@@ -81,9 +82,9 @@ class TestQdrantAdapterExtended:
             url="http://localhost:6333",
         )
 
-        # Verify recreate_collection was called with the correct vector dimension
-        mock_client.recreate_collection.assert_called_once()
-        call_args = mock_client.recreate_collection.call_args[1]
+        # Verify create_collection was called (not recreate_collection) with the correct dimension
+        mock_client.create_collection.assert_called_once()
+        call_args = mock_client.create_collection.call_args[1]
         assert call_args["vectors_config"].size == 6  # Should match our 6D vector
 
         # Verify upsert was called with the correct point
