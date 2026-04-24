@@ -364,7 +364,7 @@ class TestAsyncNeo4jIntegration:
                 "url": "bolt://localhost:7687",
                 "auth": ("neo4j", "password"),
                 "label": "AsyncTestModel",
-                "where": {"value": 115},
+                "where": {"value": {"$gt": 115}},
             },
             obj_key="async_neo4j",
             many=True,

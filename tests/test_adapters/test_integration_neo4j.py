@@ -225,7 +225,7 @@ class TestNeo4jIntegration:
                 "url": neo4j_url,
                 "auth": neo4j_auth,
                 "label": "TestModel",
-                "where": {"value": 50},
+                "where": {"value": {"$gt": 50}},
             },
             obj_key="neo4j",
             many=True,

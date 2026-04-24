@@ -18,6 +18,50 @@ from ..exceptions import ValidationError as AdapterValidationError
 
 T = TypeVar("T", bound=BaseModel)
 
+# Map supported operator keys to Cypher comparison operators. Values of a
+# `where` dict may be either a scalar (equality) or a dict of one or more of
+# these keys for comparison predicates.
+_WHERE_OPERATORS: dict[str, str] = {
+    "$eq": "=",
+    "$ne": "<>",
+    "$gt": ">",
+    "$gte": ">=",
+    "$lt": "<",
+    "$lte": "<=",
+}
+
+
+def _build_where(where_dict: dict) -> tuple[str, dict]:
+    """Build a parameterized WHERE clause from a dict.
+
+    Scalar values produce equality predicates; dict values must map one or
+    more operator keys from `_WHERE_OPERATORS` to comparison values. All
+    values are bound as query parameters to prevent Cypher injection.
+    """
+    if not where_dict:
+        return "", {}
+    predicates: list[str] = []
+    params: dict = {}
+    for k, v in where_dict.items():
+        if isinstance(v, dict):
+            for op, rhs in v.items():
+                if op not in _WHERE_OPERATORS:
+                    raise AdapterValidationError(
+                        f"Unsupported where operator '{op}'. "
+                        f"Supported: {sorted(_WHERE_OPERATORS)}",
+                        data={k: v},
+                    )
+                param_name = f"where_{k}_{op.lstrip('$')}"
+                predicates.append(
+                    f"n.`{k}` {_WHERE_OPERATORS[op]} ${param_name}"
+                )
+                params[param_name] = rhs
+        else:
+            param_name = f"where_{k}"
+            predicates.append(f"n.`{k}` = ${param_name}")
+            params[param_name] = v
+    return "WHERE " + " AND ".join(predicates), params
+
 
 class Neo4jAdapter(AdapterBase, Adapter[T]):
     """
@@ -149,15 +193,7 @@ class Neo4jAdapter(AdapterBase, Adapter[T]):
                     "Cypher injection.",
                     data=obj,
                 )
-            where_clause = ""
-            where_params: dict = {}
-            if where_dict:
-                predicates = []
-                for k, v in where_dict.items():
-                    param_name = f"where_{k}"
-                    predicates.append(f"n.`{k}` = ${param_name}")
-                    where_params[param_name] = v
-                where_clause = "WHERE " + " AND ".join(predicates)
+            where_clause, where_params = _build_where(where_dict)
             cypher = f"MATCH (n:`{label}`) {where_clause} RETURN n"
 
             # Validate Cypher query
