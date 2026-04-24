@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1] - 2026-04-24
+
+### Fixed
+
+- `pydapter.extras.async_sql_`: inverted `sys.version_info` guard caused
+  `ImportError: cannot import name 'NotRequired' from 'typing'` on Python 3.10.
+  `NotRequired` and `Required` are now correctly sourced from `typing_extensions`
+  on < 3.11. Unblocks `pydapter[postgres]` / `pydapter[sql]` consumers on 3.10.
+
 ## [1.2.0] - 2025-10-14
 
 ### Changed
