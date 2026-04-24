@@ -8,7 +8,6 @@ resource management.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
 
 import neo4j
@@ -102,8 +101,12 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
         Raises:
             QueryError: If the query contains potentially unsafe patterns
         """
-        # Check for unescaped backticks in label names
-        if re.search(r"`[^`]*`[^`]*`", cypher):
+        # Adjacent backticks (``) are the Cypher escape sequence for a literal
+        # backtick inside a backtick-quoted identifier. Queries built from
+        # trusted labels and property keys never produce them, so their
+        # presence signals an identifier containing a raw backtick was
+        # embedded without sanitization.
+        if "``" in cypher:
             raise QueryError(
                 "Invalid Cypher query: Possible injection in label name",
                 query=cypher,
