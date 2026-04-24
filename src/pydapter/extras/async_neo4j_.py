@@ -18,6 +18,7 @@ from pydantic import ValidationError
 from ..async_core import AsyncAdapter, T
 from ..exceptions import ConnectionError, QueryError, ResourceError
 from ..exceptions import ValidationError as AdapterValidationError
+from .neo4j_ import _build_where
 
 # T is already imported from async_core
 
@@ -176,15 +177,7 @@ class AsyncNeo4jAdapter(AsyncAdapter[T]):
                     "Cypher injection.",
                     data=obj,
                 )
-            where_clause = ""
-            where_params: dict = {}
-            if where_dict:
-                predicates = []
-                for k, v in where_dict.items():
-                    param_name = f"where_{k}"
-                    predicates.append(f"n.`{k}` = ${param_name}")
-                    where_params[param_name] = v
-                where_clause = "WHERE " + " AND ".join(predicates)
+            where_clause, where_params = _build_where(where_dict)
             cypher = f"MATCH (n:`{label}`) {where_clause} RETURN n"
 
             # Validate Cypher query
