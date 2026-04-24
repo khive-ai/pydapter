@@ -13,14 +13,8 @@ import pytest
 from pydantic import BaseModel
 from qdrant_client.http import models as qd
 
-from pydapter.exceptions import (
-    ConnectionError,
-    QueryError,
-    ResourceError,
-)
-from pydapter.exceptions import (
-    ValidationError as AdapterValidationError,
-)
+from pydapter.exceptions import ConnectionError, QueryError, ResourceError
+from pydapter.exceptions import ValidationError as AdapterValidationError
 from pydapter.extras.async_qdrant_ import AsyncQdrantAdapter
 
 
