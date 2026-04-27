@@ -39,7 +39,9 @@ class PGVectorModelAdapter(SQLModelAdapter):
 
         for col in mapper.columns:
             if isinstance(col.type, Vector):
-                py_type = list[float] | (None if col.nullable else Any)
+                py_type = list[float]
+                if col.nullable:
+                    py_type = py_type | None
                 extra = {"vector_dim": col.type.dim}
                 default_val = None if col.nullable else ...
                 fields[col.key] = (

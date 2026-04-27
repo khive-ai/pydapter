@@ -131,7 +131,7 @@ class MongoAdapter(AdapterBase, Adapter[T]):
             if obj is not None:
                 if "url" not in obj:
                     raise AdapterValidationError("Missing required parameter 'url'", data=obj)
-                if "db" not in obj:
+                if "db" not in obj and "database" not in obj:
                     raise AdapterValidationError("Missing required parameter 'db'", data=obj)
                 if "collection" not in obj:
                     raise AdapterValidationError(
@@ -141,7 +141,7 @@ class MongoAdapter(AdapterBase, Adapter[T]):
             else:
                 if not kw.get("url"):
                     raise AdapterValidationError("Missing required parameter 'url'")
-                if not kw.get("db"):
+                if not (kw.get("db") or kw.get("database")):
                     raise AdapterValidationError("Missing required parameter 'db'")
                 if not kw.get("collection"):
                     raise AdapterValidationError("Missing required parameter 'collection'")
@@ -404,17 +404,16 @@ class MongoAdapter(AdapterBase, Adapter[T]):
             cls._validate_connection(client)
 
             # Get collection and validate filter
-            coll = cls._get_collection(client, obj["db"], obj["collection"])
+            db = obj.get("db") or obj.get("database")
+            coll = cls._get_collection(client, db, obj["collection"])
             filter_query = cls._validate_filter(obj.get("filter"))
 
             # Execute query
-            docs = cls._execute_find(coll, filter_query, obj["url"], obj["db"], obj["collection"])
+            docs = cls._execute_find(coll, filter_query, obj["url"], db, obj["collection"])
 
             # Handle empty results
             if not docs:
-                return cls._handle_empty_result(
-                    many, f"{obj['db']}.{obj['collection']}", filter_query
-                )
+                return cls._handle_empty_result(many, f"{db}.{obj['collection']}", filter_query)
 
             # Convert documents to models
             return cls._convert_documents(
@@ -436,7 +435,7 @@ class MongoAdapter(AdapterBase, Adapter[T]):
         /,
         *,
         url: str,
-        db: str,
+        db: str | None = None,
         collection: str,
         many: bool = True,
         adapt_meth: str | Callable = "model_dump",
@@ -445,6 +444,7 @@ class MongoAdapter(AdapterBase, Adapter[T]):
     ) -> dict | None:
         try:
             # Validate parameters
+            db = db or kw.get("database")
             cls._validate_params(None, url=url, db=db, collection=collection)
 
             # Create and validate client

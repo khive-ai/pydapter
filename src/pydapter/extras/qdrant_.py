@@ -137,7 +137,7 @@ class QdrantAdapter(AdapterBase, Adapter[T]):
         subj: T | Sequence[T],
         /,
         *,
-        collection,
+        collection=None,
         vector_field="embedding",
         id_field="id",
         url=None,
@@ -149,6 +149,7 @@ class QdrantAdapter(AdapterBase, Adapter[T]):
     ) -> dict | None:
         try:
             # Validate required parameters
+            collection = collection or kw.get("collection_name")
             if not collection:
                 raise AdapterValidationError("Missing required parameter 'collection'")
 
@@ -282,7 +283,8 @@ class QdrantAdapter(AdapterBase, Adapter[T]):
     ) -> T | list[T]:
         try:
             # Validate required parameters
-            if "collection" not in obj:
+            collection = obj.get("collection") or obj.get("collection_name")
+            if not collection:
                 raise AdapterValidationError("Missing required parameter 'collection'", data=obj)
             if "query_vector" not in obj:
                 raise AdapterValidationError("Missing required parameter 'query_vector'", data=obj)
@@ -297,7 +299,7 @@ class QdrantAdapter(AdapterBase, Adapter[T]):
             try:
                 # Set a high score threshold to ensure we get enough results
                 res = client.search(
-                    obj["collection"],
+                    collection,
                     obj["query_vector"],
                     limit=obj.get("top_k", 5),
                     with_payload=True,
@@ -307,7 +309,7 @@ class QdrantAdapter(AdapterBase, Adapter[T]):
                 if "not found" in str(e).lower():
                     raise ResourceError(
                         f"Qdrant collection not found: {e}",
-                        resource=obj["collection"],
+                        resource=collection,
                     ) from e
                 raise QueryError(
                     f"Failed to search Qdrant: {e}",
@@ -334,7 +336,7 @@ class QdrantAdapter(AdapterBase, Adapter[T]):
                     return []
                 raise ResourceError(
                     "No points found matching the query vector",
-                    resource=obj["collection"],
+                    resource=collection,
                 )
 
             # Convert documents to model instances using dispatch_adapt_meth

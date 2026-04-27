@@ -2747,6 +2747,7 @@ all = [
     { name = "asyncpg" },
     { name = "email-validator" },
     { name = "greenlet" },
+    { name = "grpcio" },
     { name = "motor" },
     { name = "neo4j" },
     { name = "openpyxl" },
@@ -2799,6 +2800,7 @@ migrations-sql = [
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 mongo = [
+    { name = "motor" },
     { name = "pymongo" },
 ]
 motor = [
@@ -2830,6 +2832,7 @@ postgres = [
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 qdrant = [
+    { name = "grpcio" },
     { name = "qdrant-client", version = "1.12.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
     { name = "qdrant-client", version = "1.14.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
 ]
@@ -2866,6 +2869,7 @@ utils = [
     { name = "python-dotenv" },
 ]
 weaviate = [
+    { name = "aiohttp" },
     { name = "weaviate" },
     { name = "weaviate-client" },
 ]
@@ -2892,6 +2896,7 @@ requires-dist = [
     { name = "factory-boy", marker = "extra == 'test'", specifier = ">=3.3.0" },
     { name = "faker", marker = "extra == 'test'", specifier = ">=37.3.0" },
     { name = "greenlet", marker = "extra == 'postgres'", specifier = ">=3.0.0" },
+    { name = "grpcio", marker = "extra == 'qdrant'", specifier = ">=1.60" },
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.130.0" },
     { name = "hypothesis-jsonschema", marker = "extra == 'test'", specifier = ">=0.23.0" },
     { name = "ipykernel", marker = "extra == 'utils'", specifier = ">=6.0.0" },
@@ -2917,6 +2922,7 @@ requires-dist = [
     { name = "py-spy", marker = "extra == 'performance'", specifier = ">=0.4.0" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydapter", extras = ["aiohttp"], marker = "extra == 'all'" },
+    { name = "pydapter", extras = ["aiohttp"], marker = "extra == 'weaviate'" },
     { name = "pydapter", extras = ["aiosqlite"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["email"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["excel"], marker = "extra == 'all'" },
@@ -2924,6 +2930,7 @@ requires-dist = [
     { name = "pydapter", extras = ["migrations-sql"], marker = "extra == 'migrations'" },
     { name = "pydapter", extras = ["mongo"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["motor"], marker = "extra == 'all'" },
+    { name = "pydapter", extras = ["motor"], marker = "extra == 'mongo'" },
     { name = "pydapter", extras = ["neo4j"], marker = "extra == 'all'" },
     { name = "pydapter", extras = ["pandas"], marker = "extra == 'excel'" },
     { name = "pydapter", extras = ["pgvector"], marker = "extra == 'all'" },

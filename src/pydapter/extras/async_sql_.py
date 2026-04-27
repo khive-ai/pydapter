@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Any, Literal, TypeVar
 
-from typing_extensions import NotRequired, Required, TypedDict
+from typing_extensions import NotRequired, Required, TypedDict  # noqa: UP035
 
 import sqlalchemy as sa
 import sqlalchemy.exc as sa_exc
@@ -675,7 +675,7 @@ class AsyncSQLAdapter(AsyncAdapterBase, AsyncAdapter[T]):
         adapt_kw: dict | None = None,
         validation_errors: tuple[type[Exception], ...] = (PydanticValidationError,),
         **kw,
-    ) -> T | list[T]:
+    ) -> T | list[T] | dict[str, Any] | None:
         try:
             # Get operation type (default: "select" for backward compatibility)
             operation = obj.get("operation", "select").lower()

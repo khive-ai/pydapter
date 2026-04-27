@@ -22,6 +22,7 @@ class MigrationRegistry:
 
     def __init__(self) -> None:
         self._reg: dict[str, type[MigrationProtocol]] = {}
+        self._instances: dict[str, Any] = {}
 
     def register(self, adapter_cls: type[MigrationProtocol]) -> None:
         """
@@ -78,7 +79,9 @@ class MigrationRegistry:
         """
         try:
             adapter_cls = self.get(migration_key)
-            adapter_cls.init_migrations(directory, **kwargs)
+            adapter = adapter_cls.init_migrations(directory, **kwargs)
+            if adapter is not None:
+                self._instances[migration_key] = adapter
         except Exception as exc:
             if isinstance(exc, MigrationError):
                 raise
@@ -108,8 +111,8 @@ class MigrationRegistry:
             MigrationCreationError: If creation fails
         """
         try:
-            adapter_cls = self.get(migration_key)
-            return adapter_cls.create_migration(message, autogenerate, **kwargs)
+            adapter = self._instances.get(migration_key) or self.get(migration_key)
+            return adapter.create_migration(message, autogenerate, **kwargs)
         except Exception as exc:
             if isinstance(exc, MigrationError):
                 raise
@@ -134,8 +137,8 @@ class MigrationRegistry:
             MigrationUpgradeError: If upgrade fails
         """
         try:
-            adapter_cls = self.get(migration_key)
-            adapter_cls.upgrade(revision, **kwargs)
+            adapter = self._instances.get(migration_key) or self.get(migration_key)
+            adapter.upgrade(revision, **kwargs)
         except Exception as exc:
             if isinstance(exc, MigrationError):
                 raise
@@ -159,8 +162,8 @@ class MigrationRegistry:
             MigrationDowngradeError: If downgrade fails
         """
         try:
-            adapter_cls = self.get(migration_key)
-            adapter_cls.downgrade(revision, **kwargs)
+            adapter = self._instances.get(migration_key) or self.get(migration_key)
+            adapter.downgrade(revision, **kwargs)
         except Exception as exc:
             if isinstance(exc, MigrationError):
                 raise
@@ -186,8 +189,8 @@ class MigrationRegistry:
             MigrationError: If getting the current revision fails
         """
         try:
-            adapter_cls = self.get(migration_key)
-            return adapter_cls.get_current_revision(**kwargs)
+            adapter = self._instances.get(migration_key) or self.get(migration_key)
+            return adapter.get_current_revision(**kwargs)
         except Exception as exc:
             if isinstance(exc, MigrationError):
                 raise
@@ -212,8 +215,8 @@ class MigrationRegistry:
             MigrationError: If getting the migration history fails
         """
         try:
-            adapter_cls = self.get(migration_key)
-            return adapter_cls.get_migration_history(**kwargs)
+            adapter = self._instances.get(migration_key) or self.get(migration_key)
+            return adapter.get_migration_history(**kwargs)
         except Exception as exc:
             if isinstance(exc, MigrationError):
                 raise

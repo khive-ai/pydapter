@@ -20,7 +20,7 @@ from .exceptions import (
 from .exceptions import ValidationError as AdapterValidationError
 from .types import _redact_url
 
-T = TypeVar("T", contravariant=True)
+T = TypeVar("T")
 
 
 # ---------------------------------------------------------------- Dispatcher
