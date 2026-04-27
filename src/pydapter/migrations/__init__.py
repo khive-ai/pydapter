@@ -59,11 +59,9 @@ __all__ = [
 # Optional imports based on available dependencies
 if find_spec("sqlalchemy") is not None and find_spec("alembic") is not None:
     try:
-        from .sql.alembic_adapter import (  # noqa: F401
-            AlembicAdapter,
-            AsyncAlembicAdapter,
-        )
+        from .sql.alembic_adapter import AlembicAdapter  # noqa: F401
 
-        __all__.extend(["AlembicAdapter", "AsyncAlembicAdapter"])
+        # AsyncAlembicAdapter is incomplete; keep it unexported until implemented.
+        __all__.extend(["AlembicAdapter"])
     except ImportError:
         pass

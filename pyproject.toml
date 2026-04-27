@@ -99,11 +99,13 @@ pgvector = [
 
 mongo = [
     "pymongo>=4.10",
+    "pydapter[motor]",
 ]
 
 weaviate = [
     "weaviate-client>=4.10",
     "weaviate>=0.1.2",
+    "pydapter[aiohttp]",
 ]
 
 neo4j = [
@@ -116,6 +118,7 @@ motor = [
 
 qdrant = [
     "qdrant-client>=1.10",
+    "grpcio>=1.60",
 ]
 
 redis = [
